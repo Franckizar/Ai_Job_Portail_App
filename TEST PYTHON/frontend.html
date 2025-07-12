@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI SQL Server Test Frontend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; background: #f9f9f9; }
+        #container { max-width: 600px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px #ddd; }
+        h2 { text-align: center; }
+        label { font-weight: bold; }
+        textarea { width: 100%; min-height: 60px; }
+        button { padding: 10px 24px; font-size: 1em; margin-top: 1em; border-radius: 4px; border: none; background: #007bff; color: #fff; cursor: pointer; }
+        button:disabled { background: #aaa; }
+        #response { margin-top: 2em; background: #f5f5f5; padding: 1em; border-radius: 6px; }
+        .debug { color: #888; font-size: 0.95em; }
+        pre { background: #eee; padding: 1em; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<div id="container">
+    <h2>AI SQL Server Test</h2>
+    <form id="queryForm">
+        <label for="question">Ask a question about your database:</label><br>
+        <textarea id="question" required placeholder="e.g. Show me all users"></textarea><br>
+        <button type="submit" id="submitBtn">Send</button>
+    </form>
+    <div id="response"></div>
+</div>
+<script>
+document.getElementById('queryForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const question = document.getElementById('question').value.trim();
+    const responseDiv = document.getElementById('response');
+    const submitBtn = document.getElementById('submitBtn');
+    responseDiv.innerHTML = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Loading...';
+
+    try {
+        const res = await fetch('/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        if (data.error) {
+            responseDiv.innerHTML = `<b style="color:crimson;">Error:</b> ${data.error}<br><br>
+                <div class="debug"><b>SQL:</b> <pre>${data.generated_sql || data.sql || ''}</pre>
+                <b>Corrections:</b> ${data.applied_corrections ? data.applied_corrections.join(', ') : ''}<br>
+                <b>Validation Issues:</b> ${data.validation_issues ? data.validation_issues.join(', ') : ''}<br>
+                <b>Suggestions:</b> ${data.suggestions ? data.suggestions.join(', ') : ''}</div>`;
+        } else {
+            responseDiv.innerHTML = `<b>AI Answer:</b><br>${data.answer ? data.answer.replace(/\n/g, '<br>') : ''}<br><br>
+                <div class="debug"><b>SQL:</b> <pre>${data.sql || ''}</pre>
+                <b>Rows:</b> ${data.row_count}<br>
+                <b>Columns:</b> ${data.columns ? data.columns.join(', ') : ''}<br>
+                <b>Preview:</b> <pre>${JSON.stringify(data.data_preview, null, 2)}</pre></div>`;
+        }
+    } catch (err) {
+        responseDiv.innerHTML = `<b style="color:crimson;">Error:</b> ${err}`;
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send';
+});
+</script>
+</body>
+</html>

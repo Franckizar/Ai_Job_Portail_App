@@ -1,0 +1,36 @@
+package com.example.security.config;
+
+import org.springframework.stereotype.Component;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.util.AntPathMatcher;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class RouteRoleMapper {
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    
+    // ROLES WITHOUT PREFIX
+    private final Map<String, Set<String>> roleMappings = Map.of(
+        "/api/v1/admin/**", Set.of("ADMIN"),
+        "/api/v1/user/**", Set.of("USER"),
+        "/api/v1/editor/**", Set.of("EDITOR"),
+        "/api/v1/shared/**", Set.of("USER", "ADMIN")
+    );
+
+    public boolean isAuthorized(String requestURI, Collection<? extends GrantedAuthority> authorities) {
+        // DIRECTLY USE AUTHORITY NAMES (NO ROLE_ PREFIX)
+        Set<String> userRoles = authorities.stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toSet());
+
+        for (Map.Entry<String, Set<String>> entry : roleMappings.entrySet()) {
+            if (pathMatcher.match(entry.getKey(), requestURI)) {
+                return userRoles.stream().anyMatch(entry.getValue()::contains);
+            }
+        }
+        return true; // Allow non-protected routes
+    }
+}

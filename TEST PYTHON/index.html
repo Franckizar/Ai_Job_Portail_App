@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI SQL Assistant</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #eef1f5;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    #container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      max-width: 700px;
+      width: 100%;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #444;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+      background-color: #007bff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+
+    #response {
+      margin-top: 2rem;
+      background: #f7f7f7;
+      padding: 1.5rem;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 0.95rem;
+      color: #222;
+    }
+
+    .error {
+      color: crimson;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    pre {
+      background: #f0f0f0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-top: 0.5rem;
+    }
+
+    .debug {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 1.2rem;
+      border-top: 1px solid #ccc;
+      padding-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h2>🧠 Ask AI About Your Database</h2>
+    <form id="queryForm">
+      <label for="question">Your question:</label>
+      <textarea id="question" placeholder="e.g. List all users registered this month" required></textarea>
+      <button type="submit" id="submitBtn">Ask AI</button>
+    </form>
+    <div id="response"></div>
+  </div>
+
+  <script>
+    document.getElementById('queryForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const question = document.getElementById('question').value.trim();
+      const responseDiv = document.getElementById('response');
+      const submitBtn = document.getElementById('submitBtn');
+
+      responseDiv.innerHTML = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Asking...';
+
+      try {
+        const res = await fetch('/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          responseDiv.innerHTML = `
+            <div class="error">⚠️ ${data.error}</div>
+            <div class="debug">
+              <b>SQL:</b><pre>${data.generated_sql || data.sql || ''}</pre>
+              <b>Corrections:</b> ${data.applied_corrections?.join(', ') || 'None'}<br>
+              <b>Validation Issues:</b> ${data.validation_issues?.join(', ') || 'None'}<br>
+              <b>Suggestions:</b> ${data.suggestions?.join(', ') || 'None'}
+            </div>
+          `;
+        } else {
+          responseDiv.innerHTML = `
+            <b>✅ AI Answer:</b><br>${(data.answer || '').replace(/\n/g, '<br>')}<br><br>
+            <div class="debug">
+              <b>SQL Query Used:</b><pre>${data.sql || ''}</pre>
+              <b>Row Count:</b> ${data.row_count}<br>
+              <b>Columns:</b> ${data.columns?.join(', ') || 'None'}<br>
+              <b>Preview:</b><pre>${JSON.stringify(data.data_preview, null, 2)}</pre>
+            </div>
+          `;
+        }
+      } catch (err) {
+        responseDiv.innerHTML = `<div class="error">❌ Request failed: ${err}</div>`;
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Ask AI';
+    });
+  </script>
+</body>
+</html>
