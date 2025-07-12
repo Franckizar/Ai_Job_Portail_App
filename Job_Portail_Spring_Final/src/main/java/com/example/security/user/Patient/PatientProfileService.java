@@ -3,7 +3,7 @@ package com.example.security.user.Patient;
 import com.example.security.user.User;
 import com.example.security.user.Doctor.DoctorProfile;
 import com.example.security.user.Doctor.DoctorProfileRepository;
-import com.example.security.user.Nurse.NurseProfileRepository;
+import com.example.security.user.Nurse.TechnicianRepository;
 import com.example.security.user.adminthings.AdminProfileRepository;
 import com.example.security.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PatientProfileService {
 
-    private final PatientProfileRepository patientProfileRepository;
+    private final PatientProfileRepository PatientProfileRepository;
     private final AdminProfileRepository adminProfileRepository;
     private final DoctorProfileRepository doctorProfileRepository;
-    private final NurseProfileRepository nurseProfileRepository;
+    private final TechnicianRepository TechnicianRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -31,7 +31,7 @@ public class PatientProfileService {
         // Remove other profiles
         adminProfileRepository.findByUserId(userId).ifPresent(adminProfileRepository::delete);
         doctorProfileRepository.findByUserId(userId).ifPresent(doctorProfileRepository::delete);
-        nurseProfileRepository.findByUserId(userId).ifPresent(nurseProfileRepository::delete);
+        TechnicianRepository.findByUserId(userId).ifPresent(TechnicianRepository::delete);
 
         // Set role
         user.getRoles().clear();
@@ -60,12 +60,12 @@ public class PatientProfileService {
                 .photoUrl(request.getPhotoUrl())
                 .build();
 
-        return patientProfileRepository.save(profile);
+        return PatientProfileRepository.save(profile);
     }
 
     @Transactional
     public PatientProfile updatePatientProfile(Integer patientId, PatientProfileRequest request) {
-        PatientProfile profile = patientProfileRepository.findById(patientId)
+        PatientProfile profile = PatientProfileRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Patient profile not found for id: " + patientId));
 
         profile.setDateOfBirth(request.getDateOfBirth());
@@ -82,30 +82,30 @@ public class PatientProfileService {
         profile.setNotes(request.getNotes());
         profile.setPhotoUrl(request.getPhotoUrl());
 
-        return patientProfileRepository.save(profile);
+        return PatientProfileRepository.save(profile);
     }
 
     @Transactional(readOnly = true)
     public List<PatientProfile> getAllPatientProfiles() {
-        return patientProfileRepository.findAll();
+        return PatientProfileRepository.findAll();
     }
 
     @Transactional(readOnly = true)
     public PatientProfile getPatientById(Integer patientId) {
-        return patientProfileRepository.findById(patientId)
+        return PatientProfileRepository.findById(patientId)
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found with id: " + patientId));
     }
 
     @Transactional
     public void deletePatientProfile(Integer patientId) {
-        patientProfileRepository.findById(patientId)
-                .ifPresent(patientProfileRepository::delete);
+        PatientProfileRepository.findById(patientId)
+                .ifPresent(PatientProfileRepository::delete);
     }
 
     @Transactional(readOnly = true)
     public List<PatientGenderChartData> getPatientGenderChartData() {
-        List<Object[]> genderCounts = patientProfileRepository.countByGender();
-        long total = patientProfileRepository.count();
+        List<Object[]> genderCounts = PatientProfileRepository.countByGender();
+        long total = PatientProfileRepository.count();
 
         List<PatientGenderChartData> data = new ArrayList<>();
         data.add(new PatientGenderChartData("Total", total, "white"));

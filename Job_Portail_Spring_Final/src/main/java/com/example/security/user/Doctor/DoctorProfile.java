@@ -1,10 +1,10 @@
 package com.example.security.user.Doctor;
 
 import com.example.security.user.User;
-import com.example.security.user.Appointment.Appointment;
-import com.example.security.user.MedicalRecord.MedicalRecord;
+// import com.example.security.user.Appointment.Appointment;
+// import com.example.security.user.MedicalRecord.MedicalRecord;
 import com.example.security.user.Patient.PatientProfile;
-import com.example.security.user.Prescription.Prescription;
+// import com.example.security.user.Prescription.Prescription;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -52,14 +52,14 @@ public class DoctorProfile {
     @Builder.Default
     private Boolean active = true;
 
-    @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
-    private List<Appointment> appointments;
+    // @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
+    // private List<Appointment> appointments;
 
-    @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
-    private List<Prescription> prescriptions;
+    // @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
+    // private List<Prescription> prescriptions;
 
-    @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
-    private List<MedicalRecord> medicalRecords;
+    // @OneToMany(mappedBy = "doctor", fetch = FetchType.LAZY)
+    // private List<MedicalRecord> medicalRecords;
 
     public String getFullName() {
         return user != null ? user.getFirstname() + " " + user.getLastname() : null;

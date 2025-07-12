@@ -1,7 +1,7 @@
 package com.example.security.user.Nurse;
 
 import com.example.security.user.User;
-import com.example.security.user.Appointment.Appointment;
+// import com.example.security.user.Appointment.Appointment;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -11,8 +11,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "nurse_profiles")
-public class NurseProfile {
+@Table(name = "Technician")
+public class Technician {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,8 +39,8 @@ public class NurseProfile {
     @Builder.Default
     private Boolean active = true;
 
-    @OneToMany(mappedBy = "nurse", fetch = FetchType.LAZY)
-    private List<Appointment> appointments;
+    // @OneToMany(mappedBy = "nurse", fetch = FetchType.LAZY)
+    // private List<Appointment> appointments;
 
     public String getFullName() {
         return user != null ? user.getFirstname() + " " + user.getLastname() : null;

@@ -11,7 +11,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PatientProfileController {
 
-    private final PatientProfileService patientProfileService;
+    private final PatientProfileService PatientProfileService;
 
 @PostMapping("/create/{userId}/doctor/{doctorId}")
 public ResponseEntity<PatientProfile> createPatientProfile(
@@ -19,7 +19,7 @@ public ResponseEntity<PatientProfile> createPatientProfile(
         @PathVariable Integer doctorId,
         @RequestBody PatientProfileRequest request) {
 
-    PatientProfile profile = patientProfileService.createPatientProfile(userId, doctorId, request);
+    PatientProfile profile = PatientProfileService.createPatientProfile(userId, doctorId, request);
     return ResponseEntity.ok(profile);
 }
 
@@ -28,28 +28,28 @@ public ResponseEntity<PatientProfile> createPatientProfile(
     public ResponseEntity<PatientProfile> updatePatientProfile(
             @PathVariable Integer userId,
             @RequestBody PatientProfileRequest request) {
-        PatientProfile profile = patientProfileService.updatePatientProfile(userId, request);
+        PatientProfile profile = PatientProfileService.updatePatientProfile(userId, request);
         return ResponseEntity.ok(profile);
     }
 
    @GetMapping("/{patientId}")
     public ResponseEntity<PatientProfile> getPatientById(@PathVariable Integer patientId) {
-        PatientProfile patient = patientProfileService.getPatientById(patientId);
+        PatientProfile patient = PatientProfileService.getPatientById(patientId);
         return ResponseEntity.ok(patient);
     }
 
     @GetMapping("/all")
     public ResponseEntity<List<PatientProfile>> getAllPatientProfiles() {
-        return ResponseEntity.ok(patientProfileService.getAllPatientProfiles());
+        return ResponseEntity.ok(PatientProfileService.getAllPatientProfiles());
     }
 
     @DeleteMapping("/delete/{userId}")
     public ResponseEntity<Void> deletePatientProfile(@PathVariable Integer userId) {
-        patientProfileService.deletePatientProfile(userId);
+        PatientProfileService.deletePatientProfile(userId);
         return ResponseEntity.noContent().build();
     }
      @GetMapping("/patient-gender-count")
     public List<PatientGenderChartData> getPatientGenderCounts() {
-        return patientProfileService.getPatientGenderChartData();
+        return PatientProfileService.getPatientGenderChartData();
     }
 }

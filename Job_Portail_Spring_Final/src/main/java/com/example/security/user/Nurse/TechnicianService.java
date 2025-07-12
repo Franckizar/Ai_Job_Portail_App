@@ -12,23 +12,23 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class NurseProfileService {
+public class TechnicianService {
 
-    private final NurseProfileRepository nurseProfileRepository;
+    private final TechnicianRepository TechnicianRepository;
     private final AdminProfileRepository adminProfileRepository;
     private final DoctorProfileRepository doctorProfileRepository;
-    private final PatientProfileRepository patientProfileRepository;
+    private final PatientProfileRepository PatientProfileRepository;
     private final UserRepository userRepository;
 
     @Transactional
-    public NurseProfile registerOrUpdateNurseProfile(Integer userId, NurseProfileRequest request) {
+    public Technician registerOrUpdateTechnician(Integer userId, TechnicianRequest request) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
 
         // Remove all other profiles for this user
         adminProfileRepository.findByUserId(userId).ifPresent(adminProfileRepository::delete);
         doctorProfileRepository.findByUserId(userId).ifPresent(doctorProfileRepository::delete);
-        patientProfileRepository.findById(userId).ifPresent(patientProfileRepository::delete);
+        PatientProfileRepository.findById(userId).ifPresent(PatientProfileRepository::delete);
 
         // Set only NURSE role
         user.getRoles().clear();
@@ -36,8 +36,8 @@ public class NurseProfileService {
         userRepository.save(user);
 
         // Create or update nurse profile
-        NurseProfile profile = nurseProfileRepository.findByUserId(userId)
-            .orElse(NurseProfile.builder().user(user).build());
+        Technician profile = TechnicianRepository.findByUserId(userId)
+            .orElse(Technician.builder().user(user).build());
 
         profile.setDepartment(request.getDepartment());
         profile.setLicenseNumber(request.getLicenseNumber());
@@ -51,39 +51,39 @@ public class NurseProfileService {
         profile.setLanguagesSpoken(request.getLanguagesSpoken());
         profile.setActive(request.getActive() != null ? request.getActive() : true);
 
-        return nurseProfileRepository.save(profile);
+        return TechnicianRepository.save(profile);
     }
 
-    public NurseProfile getNurseProfileById(Integer id) {
-        return nurseProfileRepository.findById(id)
+    public Technician getTechnicianById(Integer id) {
+        return TechnicianRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Nurse profile not found"));
     }
 
-    public NurseProfile getNurseProfileByUserId(Integer userId) {
-        return nurseProfileRepository.findByUserId(userId)
+    public Technician getTechnicianByUserId(Integer userId) {
+        return TechnicianRepository.findByUserId(userId)
             .orElseThrow(() -> new IllegalArgumentException("Nurse profile not found for user"));
     }
 
-    public NurseProfile getNurseProfileByEmail(String email) {
-        return nurseProfileRepository.findByUserEmail(email)
+    public Technician getTechnicianByEmail(String email) {
+        return TechnicianRepository.findByUserEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("Nurse profile not found for email"));
     }
 
-    public NurseProfile getNurseProfileByLicense(String licenseNumber) {
-        return nurseProfileRepository.findByLicenseNumber(licenseNumber)
+    public Technician getTechnicianByLicense(String licenseNumber) {
+        return TechnicianRepository.findByLicenseNumber(licenseNumber)
             .orElseThrow(() -> new IllegalArgumentException("Nurse profile not found for license"));
     }
 
-    public List<NurseProfile> getAllNurseProfiles() {
-        return nurseProfileRepository.findAll();
+    public List<Technician> getAllTechnicians() {
+        return TechnicianRepository.findAll();
     }
 
-    public List<NurseProfile> getNurseProfilesByActive(Boolean active) {
-        return nurseProfileRepository.findByActive(active);
+    public List<Technician> getTechniciansByActive(Boolean active) {
+        return TechnicianRepository.findByActive(active);
     }
 
     @Transactional
-    public void deleteNurseProfile(Integer id) {
-        nurseProfileRepository.deleteById(id);
+    public void deleteTechnician(Integer id) {
+        TechnicianRepository.deleteById(id);
     }
 }

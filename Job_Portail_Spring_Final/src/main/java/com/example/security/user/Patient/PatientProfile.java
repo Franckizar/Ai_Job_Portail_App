@@ -1,11 +1,11 @@
 package com.example.security.user.Patient;
 
 import com.example.security.user.User;
-import com.example.security.user.Appointment.Appointment;
+// import com.example.security.user.Appointment.Appointment;
 import com.example.security.user.Doctor.DoctorProfile;
-import com.example.security.user.Invoice.Invoice;
-import com.example.security.user.MedicalRecord.MedicalRecord;
-import com.example.security.user.Prescription.Prescription;
+// import com.example.security.user.Invoice.Invoice;
+// import com.example.security.user.MedicalRecord.MedicalRecord;
+// import com.example.security.user.Prescription.Prescription;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -61,18 +61,18 @@ public class PatientProfile {
     @Builder.Default
     private Boolean active = true;
 
-    @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<Appointment> appointments;
+    // @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+    // @JsonIgnore
+    // private List<Appointment> appointments;
 
-    @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
-    private List<Invoice> invoices;
+    // @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+    // private List<Invoice> invoices;
 
-    @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
-    private List<Prescription> prescriptions;
+    // @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+    // private List<Prescription> prescriptions;
 
-    @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
-    private List<MedicalRecord> medicalRecords;
+    // @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+    // private List<MedicalRecord> medicalRecords;
 
     public String getFullName() {
         return user != null ? user.getFirstname() + " " + user.getLastname() : null;

@@ -2,7 +2,7 @@ package com.example.security.user.adminthings;
 
 import com.example.security.UserRepository;
 import com.example.security.user.User;
-import com.example.security.user.Nurse.NurseProfileRepository;
+import com.example.security.user.Nurse.TechnicianRepository;
 import com.example.security.user.Patient.PatientProfileRepository;
 import com.example.security.user.Doctor.DoctorProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +16,8 @@ public class AdminProfileService {
 
     private final AdminProfileRepository adminProfileRepository;
     private final DoctorProfileRepository doctorProfileRepository;
-    private final PatientProfileRepository patientProfileRepository;
-    private final NurseProfileRepository nurseProfileRepository;
+    private final PatientProfileRepository PatientProfileRepository;
+    private final TechnicianRepository TechnicianRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -27,8 +27,8 @@ public class AdminProfileService {
 
         // Remove all other profiles for this user
         doctorProfileRepository.findByUserId(userId).ifPresent(doctorProfileRepository::delete);
-        patientProfileRepository.findById(userId).ifPresent(patientProfileRepository::delete);
-        nurseProfileRepository.findByUserId(userId).ifPresent(nurseProfileRepository::delete);
+        PatientProfileRepository.findById(userId).ifPresent(PatientProfileRepository::delete);
+        TechnicianRepository.findByUserId(userId).ifPresent(TechnicianRepository::delete);
 
         // Set only ADMIN role
         user.getRoles().clear();

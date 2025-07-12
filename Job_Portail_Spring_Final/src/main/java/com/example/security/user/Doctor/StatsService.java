@@ -3,7 +3,7 @@ package com.example.security.user.Doctor;
 import org.springframework.stereotype.Service;
 
 import com.example.security.UserRepository;
-import com.example.security.user.Nurse.NurseProfileRepository;
+import com.example.security.user.Nurse.TechnicianRepository;
 import com.example.security.user.Patient.PatientProfileRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -12,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class StatsService {
     private final UserRepository userRepository;
-    private final PatientProfileRepository patientProfileRepository;
-    private final NurseProfileRepository nurseProfileRepository;
+    private final PatientProfileRepository PatientProfileRepository;
+    private final TechnicianRepository TechnicianRepository;
     private final DoctorProfileRepository dentistProfileRepository;
 
     public long getTotalUsers() {
@@ -21,11 +21,11 @@ public class StatsService {
     }
 
     public long getTotalPatients() {
-        return patientProfileRepository.count();
+        return PatientProfileRepository.count();
     }
 
     public long getTotalNurses() {
-        return nurseProfileRepository.count();
+        return TechnicianRepository.count();
     }
 
     public long getTotalDentists() {

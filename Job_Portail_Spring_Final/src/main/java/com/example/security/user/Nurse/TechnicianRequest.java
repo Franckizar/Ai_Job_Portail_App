@@ -3,7 +3,7 @@ package com.example.security.user.Nurse;
 import lombok.Data;
 
 @Data
-public class NurseProfileRequest {
+public class TechnicianRequest {
     private String department;
     private String licenseNumber;
     private String shift;

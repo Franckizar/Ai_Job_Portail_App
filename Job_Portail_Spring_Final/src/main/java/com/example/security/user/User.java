@@ -2,7 +2,7 @@ package com.example.security.user;
 
 import com.example.security.user.Patient.PatientProfile;
 import com.example.security.user.Doctor.DoctorProfile;
-import com.example.security.user.Nurse.NurseProfile;
+import com.example.security.user.Nurse.Technician;
 import com.example.security.user.adminthings.AdminProfile;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,13 +47,13 @@ public class User implements UserDetails {
     // Role profile relationships (Bidirectional)
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
-    private PatientProfile patientProfile;
+    private PatientProfile PatientProfile;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     private DoctorProfile doctorProfile;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
-    private NurseProfile nurseProfile;
+    private Technician Technician;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     private AdminProfile adminProfile;
@@ -106,15 +106,15 @@ public class User implements UserDetails {
 
     // Custom helper getters for JWT or other places:
     public PatientProfile getPatient() {
-        return patientProfile;
+        return PatientProfile;
     }
 
     public DoctorProfile getDoctor() {
         return doctorProfile;
     }
 
-    public NurseProfile getNurse() {
-        return nurseProfile;
+    public Technician getNurse() {
+        return Technician;
     }
 
     public AdminProfile getAdmin() {
