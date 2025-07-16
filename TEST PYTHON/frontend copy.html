@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI SQL Chat Assistant</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      height: 95vh;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      padding: 20px;
+      text-align: center;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .features {
+      padding: 10px 20px;
+      background: #f1f1f1;
+      font-size: 0.85rem;
+      color: #333;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: #f9f9f9;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .message.user {
+      text-align: right;
+    }
+
+    .message.assistant {
+      text-align: left;
+    }
+
+    .message .content {
+      display: inline-block;
+      padding: 12px 18px;
+      border-radius: 18px;
+      max-width: 75%;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .message.user .content {
+      background: #667eea;
+      color: white;
+    }
+
+    .message.assistant .content {
+      background: #ffffff;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .input-form {
+      display: flex;
+      padding: 15px;
+      border-top: 1px solid #ddd;
+      background: #fff;
+    }
+
+    .input-form input {
+      flex: 1;
+      padding: 12px 15px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 25px;
+      outline: none;
+      margin-right: 10px;
+    }
+
+    .input-form button {
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .input-form button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧠 AI SQL Chat Assistant</h1>
+      <p>Ask natural questions about your data. Get SQL-powered answers.</p>
+    </div>
+
+    <div class="features">
+      ✅ In-browser memory only · ✅ Context-aware AI · ✅ No persistent storage · ✅ Fast responses
+    </div>
+
+    <div class="chat-container">
+      <div id="messages" class="messages"></div>
+      <form id="chat-form" class="input-form">
+        <input type="text" id="userInput" autocomplete="off" placeholder="Ask something..." required />
+        <button id="sendButton" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("userInput");
+    const messages = document.getElementById("messages");
+    const sendButton = document.getElementById("sendButton");
+
+    let conversationHistory = [];
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const question = input.value.trim();
+      if (!question) return;
+
+      // Append user message
+      appendMessage("user", question);
+      input.value = "";
+
+      sendButton.disabled = true;
+
+      // Add user input to history
+      conversationHistory.push({
+        role: "user",
+        content: question
+      });
+
+      // Show assistant typing message
+      const loaderId = appendMessage("assistant", "💬 Typing...");
+
+      try {
+        const res = await fetch("/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question,
+            conversation_history: conversationHistory
+          })
+        });
+
+        const data = await res.json();
+
+        // Remove loading message
+        removeMessage(loaderId);
+
+        if (res.ok && data.answer) {
+          appendMessage("assistant", data.answer);
+          conversationHistory.push({
+            role: "assistant",
+            content: data.answer
+          });
+        } else {
+          appendMessage("assistant", `⚠️ Error: ${data.error || 'Unexpected issue'}`);
+        }
+
+      } catch (error) {
+        console.error("Fetch error:", error);
+        removeMessage(loaderId);
+        appendMessage("assistant", "⚠️ Server unreachable or timed out.");
+      } finally {
+        sendButton.disabled = false;
+      }
+    });
+
+    function appendMessage(role, content) {
+      const messageId = `msg-${Date.now()}`;
+      const messageEl = document.createElement("div");
+      messageEl.classList.add("message", role);
+      messageEl.id = messageId;
+
+      const contentEl = document.createElement("div");
+      contentEl.classList.add("content");
+      contentEl.textContent = content;
+
+      messageEl.appendChild(contentEl);
+      messages.appendChild(messageEl);
+      messages.scrollTop = messages.scrollHeight;
+
+      return messageId;
+    }
+
+    function removeMessage(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+  </script>
+</body>
+</html>

@@ -1,172 +1,471 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>AI SQL Assistant</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI SQL Chat Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #eef1f5;
-      margin: 0;
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-    #container {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      max-width: 700px;
-      width: 100%;
-    }
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      color: #333;
-    }
+        .chat-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+        }
 
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 0.5rem;
-      color: #444;
-    }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-    textarea {
-      width: 100%;
-      min-height: 100px;
-      padding: 1rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: vertical;
-    }
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            animation: fadeIn 0.3s ease-in;
+        }
 
-    button {
-      margin-top: 1rem;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      font-weight: bold;
-      color: #fff;
-      background-color: #007bff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
+        .message.user {
+            flex-direction: row-reverse;
+        }
 
-    button:hover {
-      background-color: #0056b3;
-    }
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
 
-    button:disabled {
-      background-color: #999;
-      cursor: not-allowed;
-    }
+        .user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
 
-    #response {
-      margin-top: 2rem;
-      background: #f7f7f7;
-      padding: 1.5rem;
-      border-radius: 10px;
-      white-space: pre-wrap;
-      line-height: 1.5;
-      font-size: 0.95rem;
-      color: #222;
-    }
+        .ai .message-avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
 
-    .error {
-      color: crimson;
-      font-weight: bold;
-      margin-bottom: 1rem;
-    }
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
 
-    pre {
-      background: #f0f0f0;
-      padding: 1rem;
-      border-radius: 6px;
-      overflow-x: auto;
-      margin-top: 0.5rem;
-    }
+        .user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
 
-    .debug {
-      font-size: 0.9rem;
-      color: #555;
-      margin-top: 1.2rem;
-      border-top: 1px solid #ccc;
-      padding-top: 1rem;
-    }
-  </style>
+        .ai .message-content {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-content pre {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            overflow-x: auto;
+            border: none;
+        }
+
+        .message-content code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .loading-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4facfe;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .clear-button {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .clear-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
 </head>
 <body>
-  <div id="container">
-    <h2>🧠 Ask AI About Your Database</h2>
-    <form id="queryForm">
-      <label for="question">Your question:</label>
-      <textarea id="question" placeholder="e.g. List all users registered this month" required></textarea>
-      <button type="submit" id="submitBtn">Ask AI</button>
-    </form>
-    <div id="response"></div>
-  </div>
-
-  <script>
-    document.getElementById('queryForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      const question = document.getElementById('question').value.trim();
-      const responseDiv = document.getElementById('response');
-      const submitBtn = document.getElementById('submitBtn');
-
-      responseDiv.innerHTML = '';
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Asking...';
-
-      try {
-        const res = await fetch('/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question })
-        });
-
-        const data = await res.json();
-
-        if (data.error) {
-          responseDiv.innerHTML = `
-            <div class="error">⚠️ ${data.error}</div>
-            <div class="debug">
-              <b>SQL:</b><pre>${data.generated_sql || data.sql || ''}</pre>
-              <b>Corrections:</b> ${data.applied_corrections?.join(', ') || 'None'}<br>
-              <b>Validation Issues:</b> ${data.validation_issues?.join(', ') || 'None'}<br>
-              <b>Suggestions:</b> ${data.suggestions?.join(', ') || 'None'}
+    <div class="chat-container">
+        <div class="chat-header">
+            💬 AI SQL Chat Assistant
+            <button class="clear-button" onclick="clearChat()">Clear Chat</button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+                <div class="message-avatar">AI</div>
+                <div class="message-content">
+                    Hi! I'm your AI SQL assistant. I can help you with SQL queries, database design, and answer questions about databases. What would you like to know?
+                </div>
             </div>
-          `;
-        } else {
-          responseDiv.innerHTML = `
-            <b>✅ AI Answer:</b><br>${(data.answer || '').replace(/\n/g, '<br>')}<br><br>
-            <div class="debug">
-              <b>SQL Query Used:</b><pre>${data.sql || ''}</pre>
-              <b>Row Count:</b> ${data.row_count}<br>
-              <b>Columns:</b> ${data.columns?.join(', ') || 'None'}<br>
-              <b>Preview:</b><pre>${JSON.stringify(data.data_preview, null, 2)}</pre>
-            </div>
-          `;
+        </div>
+        
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything about SQL or databases..." onkeypress="handleKeyPress(event)">
+            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                <span>Send</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Store conversation history
+        let conversationHistory = [];
+        
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = isUser ? 'You' : 'AI';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (isUser) {
+                messageContent.textContent = content;
+            } else {
+                // For AI messages, handle code blocks and formatting
+                if (content.includes('```')) {
+                    const parts = content.split('```');
+                    let formattedContent = '';
+                    
+                    parts.forEach((part, index) => {
+                        if (index % 2 === 0) {
+                            // Regular text
+                            formattedContent += part.replace(/\n/g, '<br>');
+                        } else {
+                            // Code block
+                            const lines = part.split('\n');
+                            const language = lines[0].trim();
+                            const code = lines.slice(1).join('\n');
+                            formattedContent += `<pre><code class="language-${language}">${code}</code></pre>`;
+                        }
+                    });
+                    
+                    messageContent.innerHTML = formattedContent;
+                } else {
+                    messageContent.innerHTML = content.replace(/\n/g, '<br>');
+                }
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Highlight code if present
+            if (!isUser) {
+                Prism.highlightAllUnder(messageDiv);
+            }
         }
-      } catch (err) {
-        responseDiv.innerHTML = `<div class="error">❌ Request failed: ${err}</div>`;
-      }
 
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Ask AI';
-    });
-  </script>
+        function addLoadingMessage() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai';
+            messageDiv.id = 'loadingMessage';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = 'AI';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content loading';
+            messageContent.innerHTML = `
+                <span>Thinking</span>
+                <div class="loading-dots">
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                    <div class="loading-dot"></div>
+                </div>
+            `;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            chatMessages.appendChild(errorDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, true);
+            
+            // Add user message to conversation history
+            conversationHistory.push({ role: "user", content: message });
+            
+            // Clear input and disable send button
+            chatInput.value = '';
+            sendButton.disabled = true;
+            
+            // Show loading message
+            addLoadingMessage();
+
+            try {
+                // Prepare the chat request payload
+                const payload = {
+                    model: "dolphin3:latest",
+                    messages: conversationHistory,
+                    stream: false
+                };
+
+                const response = await fetch('http://localhost:11434/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Remove loading message
+                removeLoadingMessage();
+                
+                // Add AI response to chat
+                const aiResponse = data.message.content;
+                addMessage(aiResponse);
+                
+                // Add AI response to conversation history
+                conversationHistory.push({ role: "assistant", content: aiResponse });
+                
+            } catch (error) {
+                console.error('Error:', error);
+                removeLoadingMessage();
+                showError('Sorry, I encountered an error. Please try again.');
+            } finally {
+                sendButton.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function clearChat() {
+            // Keep only the initial AI message
+            chatMessages.innerHTML = `
+                <div class="message ai">
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content">
+                        Hi! I'm your AI SQL assistant. I can help you with SQL queries, database design, and answer questions about databases. What would you like to know?
+                    </div>
+                </div>
+            `;
+            
+            // Clear conversation history
+            conversationHistory = [];
+            
+            // Focus on input
+            chatInput.focus();
+        }
+
+        // Focus on input when page loads
+        window.addEventListener('load', () => {
+            chatInput.focus();
+        });
+    </script>
 </body>
 </html>
