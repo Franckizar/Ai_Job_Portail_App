@@ -1,14 +1,13 @@
 package com.example.security.auth;
 
+import com.example.security.auth.Authentication.AuthenticationService;
+import com.example.security.user.User;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.security.user.User;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -17,44 +16,41 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(
-        @RequestBody RegisterRequest request
-    ) {
-        System.out.println("[AuthenticationController] Received registration request for: " + request.getEmail());
-        try {
-            ResponseEntity<AuthenticationResponse> response = ResponseEntity.ok(
-                authenticationService.register(request)
-            );
-            System.out.println("[AuthenticationController] Registration successful for: " + request.getEmail());
-            return response;
-        } catch (Exception e) {
-            System.out.println("[AuthenticationController] Registration failed for " + request.getEmail() + ": " + e.getMessage());
-            throw e;
-        }
+@PostMapping("/register")
+public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    System.out.println("[AuthenticationController] Registration attempt for: " + request.getEmail());
+    try {
+        AuthenticationResponse response = authenticationService.register(request);
+        System.out.println("[AuthenticationController] Registration successful for: " + request.getEmail());
+        return ResponseEntity.ok(response);
+    } catch (IllegalStateException e) {
+        System.out.println("[AuthenticationController] Admin registration blocked: " + e.getMessage());
+        return ResponseEntity.status(403).body(e.getMessage());
+    } catch (Exception e) {
+        System.out.println("[AuthenticationController] Registration failed: " + e.getMessage());
+        return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
     }
+}
+
+
 
     @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(
-        @RequestBody AuthenticationRequest request
-    ) {
+    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
         System.out.println("[AuthenticationController] Received authentication request for: " + request.getEmail());
         try {
-            ResponseEntity<AuthenticationResponse> response = ResponseEntity.ok(
-                authenticationService.authenticate(request)
-            );
+            AuthenticationResponse response = authenticationService.authenticate(request);
             System.out.println("[AuthenticationController] Authentication successful for: " + request.getEmail());
-            return response;
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.out.println("[AuthenticationController] Authentication failed for " + request.getEmail() + ": " + e.getMessage());
-            throw e;
+            return ResponseEntity.status(401).build();
         }
     }
 
     @GetMapping("/demo")
     public ResponseEntity<String> sayHello() {
         System.out.println("[AuthenticationController] Accessing demo endpoint");
-        return ResponseEntity.ok("hello from unsecure endpoint");
+        return ResponseEntity.ok("Hello from unsecured endpoint");
     }
 
     @PostMapping("/forgot-password")
@@ -62,53 +58,45 @@ public class AuthenticationController {
         System.out.println("[AuthenticationController] Received password reset request for: " + email);
         try {
             String result = authenticationService.initiatePasswordReset(email);
-            System.out.println("[AuthenticationController] Password reset initiated successfully for: " + email);
+            System.out.println("[AuthenticationController] Password reset initiated for: " + email);
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
-            System.out.println("[AuthenticationController] Password reset failed (client error) for " + email + ": " + e.getMessage());
+            System.out.println("[AuthenticationController] Password reset failed for " + email + ": " + e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            System.out.println("[AuthenticationController] Password reset failed (server error) for " + email + ": " + e.getMessage());
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.internalServerError().body("An error occurred while processing your request.");
         }
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(
-        @RequestParam String token,
-        @RequestParam String newPassword
-    ) {
+    public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
         System.out.println("[AuthenticationController] Received password reset confirmation for token: " + token);
         try {
             String result = authenticationService.finalizePasswordReset(token, newPassword);
-            System.out.println("[AuthenticationController] Password reset completed successfully for token: " + token);
+            System.out.println("[AuthenticationController] Password reset completed for token: " + token);
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
-            System.out.println("[AuthenticationController] Password reset confirmation failed for token " + token + ": " + e.getMessage());
+            System.out.println("[AuthenticationController] Password reset failed for token " + token + ": " + e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // AuthenticationController.java
-@PostMapping("/logout")
-public ResponseEntity<?> logout(Authentication authentication) {
-    System.out.println("[AuthenticationController] Received logout request");
-    
-    try {
-        String email = authentication.getName();
-        System.out.println("[AuthenticationController] Logging out user: " + email);
-        
-        authenticationService.logout(email);
-        return ResponseEntity.ok("Logged out successfully");
-    } catch (Exception e) {
-        System.out.println("[AuthenticationController] Logout failed: " + e.getMessage());
-        return ResponseEntity.status(401).body("Logout failed");
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            System.out.println("[AuthenticationController] Logging out: " + email);
+            authenticationService.logout(email);
+            return ResponseEntity.ok("Logged out successfully");
+        } catch (Exception e) {
+            System.out.println("[AuthenticationController] Logout failed: " + e.getMessage());
+            return ResponseEntity.status(401).body("Logout failed: " + e.getMessage());
+        }
     }
-}
 
-@GetMapping("/users/unknown")
-public List<User> getUsersWithUnknownRole() {
-    return authenticationService.getAllUnknownUsers();
-}
-
+    @GetMapping("/users/unknown")
+    public ResponseEntity<List<User>> getUsersWithUnknownRole() {
+        List<User> users = authenticationService.getAllUnknownUsers();
+        return ResponseEntity.ok(users);
+    }
 }

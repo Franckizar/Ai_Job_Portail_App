@@ -1,7 +1,9 @@
 package com.example.security.user;
 
 public enum Role {
-
-    USER, ADMIN,NURSE, DOCTOR,PATIENT,UNKNOWN;
-   
+    ADMIN,
+    TECHNICIAN,
+    JOB_SEEKER,
+    ENTERPRISE,
+    UNKNOWN
 }

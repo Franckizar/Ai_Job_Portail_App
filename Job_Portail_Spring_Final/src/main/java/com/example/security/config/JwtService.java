@@ -1,9 +1,7 @@
 package com.example.security.config;
 
 import com.example.security.user.User;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +23,8 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long JWT_EXPIRATION;
 
+    // ================== Extract Basic Claims ===================
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -40,7 +40,9 @@ public class JwtService {
     public String extractFullname(String token) {
         String firstname = extractFirstname(token);
         String lastname = extractLastname(token);
-        return (firstname != null && lastname != null) ? firstname + " " + lastname : extractUsername(token);
+        return (firstname != null && lastname != null)
+                ? firstname + " " + lastname
+                : extractUsername(token);
     }
 
     public Integer extractTokenVersion(String token) {
@@ -51,21 +53,25 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("userId", Integer.class));
     }
 
-    public Integer extractDoctorId(String token) {
-        return extractClaim(token, claims -> claims.get("doctorId", Integer.class));
+    // ============ Extract Profile-Specific IDs ============
+
+    public Integer extractJobSeekerId(String token) {
+        return extractClaim(token, claims -> claims.get("jobSeekerId", Integer.class));
     }
 
-    public Integer extractPatientId(String token) {
-        return extractClaim(token, claims -> claims.get("patientId", Integer.class));
-    }
-
-    public Integer extractNurseId(String token) {
-        return extractClaim(token, claims -> claims.get("nurseId", Integer.class));
+    public Integer extractTechnicianId(String token) {
+        return extractClaim(token, claims -> claims.get("technicianId", Integer.class));
     }
 
     public Integer extractAdminId(String token) {
         return extractClaim(token, claims -> claims.get("adminId", Integer.class));
     }
+
+    public Integer extractEnterpriseId(String token) {
+        return extractClaim(token, claims -> claims.get("enterpriseId", Integer.class));
+    }
+
+    // ============ Extract Roles ============
 
     public List<String> extractRoles(String token) {
         Claims claims = extractAllClaims(token);
@@ -78,10 +84,14 @@ public class JwtService {
         }
     }
 
+    // ============ Generic Claim ============
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
+
+    // ============ Generate Token ============
 
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
@@ -89,31 +99,29 @@ public class JwtService {
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         if (userDetails instanceof User user) {
-            // Basic user information
             extraClaims.put("token_version", user.getTokenVersion());
             extraClaims.put("userId", user.getId());
             extraClaims.put("firstname", user.getFirstname());
             extraClaims.put("lastname", user.getLastname());
 
-            // Profile-specific IDs
-            if (user.getDoctor() != null) {
-                extraClaims.put("doctorId", user.getDoctor().getId());
+            if (user.getJobSeekerProfile() != null) {
+                extraClaims.put("jobSeekerId", user.getJobSeekerProfile().getId());
             }
-            if (user.getPatient() != null) {
-                extraClaims.put("patientId", user.getPatient().getId());
+            if (user.getTechnician() != null) {
+                extraClaims.put("technicianId", user.getTechnician().getId());
             }
-            if (user.getNurse() != null) {
-                extraClaims.put("nurseId", user.getNurse().getId());
+            if (user.getAdminProfile() != null) {
+                extraClaims.put("adminId", user.getAdminProfile().getId());
             }
-            if (user.getAdmin() != null) {
-                extraClaims.put("adminId", user.getAdmin().getId());
+            if (user.getEnterpriseProfile() != null) {
+                extraClaims.put("enterpriseId", user.getEnterpriseProfile().getId());
             }
 
-            // Roles
             List<String> roles = user.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .map(role -> role.replace("ROLE_", ""))
                     .collect(Collectors.toList());
+
             extraClaims.put("roles", roles);
         }
 
@@ -127,18 +135,18 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        if (!(userDetails instanceof User user)) {
-            return false;
-        }
+        if (!(userDetails instanceof User user)) return false;
 
-        final String username = extractUsername(token);
+        final String email = extractUsername(token);
         final Integer tokenVersion = extractTokenVersion(token);
 
-        return username.equals(user.getUsername())
-                && tokenVersion != null
-                && tokenVersion.equals(user.getTokenVersion())
-                && !isTokenExpired(token);
+        return email.equals(user.getUsername()) &&
+                tokenVersion != null &&
+                tokenVersion.equals(user.getTokenVersion()) &&
+                !isTokenExpired(token);
     }
+
+    // ============ Token Expiration ============
 
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
@@ -148,7 +156,9 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public Claims extractAllClaims(String token) {
+    // ============ Internal: Decode ============
+
+    private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()

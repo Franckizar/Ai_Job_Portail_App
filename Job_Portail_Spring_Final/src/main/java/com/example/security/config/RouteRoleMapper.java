@@ -15,9 +15,11 @@ public class RouteRoleMapper {
     // ROLES WITHOUT PREFIX
     private final Map<String, Set<String>> roleMappings = Map.of(
         "/api/v1/admin/**", Set.of("ADMIN"),
-        "/api/v1/user/**", Set.of("USER"),
-        "/api/v1/editor/**", Set.of("EDITOR"),
-        "/api/v1/shared/**", Set.of("USER", "ADMIN")
+        // "/api/v1/user/**", Set.of("USER"),
+        "/api/v1/TECHNICIAN/**", Set.of("TECHNICIAN"),
+        "/api/v1/JOB_SEEKER/**", Set.of("JOB_SEEKER"),
+        "/api/v1/ENTERPRISE/**", Set.of("ENTERPRISE"),
+        "/api/v1/shared/**", Set.of("TECHNICIAN", "ENTERPRISE")
     );
 
     public boolean isAuthorized(String requestURI, Collection<? extends GrantedAuthority> authorities) {

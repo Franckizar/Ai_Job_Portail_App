@@ -22,22 +22,30 @@ DB_CONFIG = {
     "host": "localhost",
     "user": "root",
     "password": "",
-    "database": "security"
+    "database": "security"  # Changed to Job_Portail
 }
 
 # AI model configuration
 AI_CONFIG = {
     "url": "http://localhost:11434/api/generate",
-    "model": "dolphin3:latest"
+    # "model": "dolphin3:latest"
+    "model": "dentalclinic"
 }
 
 @contextmanager
 def get_db_connection():
-    """Context manager for database connections"""
+    """Context manager for database connections with proper cleanup"""
     conn = None
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        yield conn
+        conn = mysql.connector.connect(
+            **DB_CONFIG,
+            buffered=True,  # Add buffered=True to avoid unread results
+            autocommit=True  # Enable autocommit for better transaction handling
+        )
+        if conn.is_connected():
+            yield conn
+        else:
+            raise Error("Failed to establish database connection")
     except Error as e:
         logger.error(f"Database connection error: {e}")
         raise
@@ -46,32 +54,42 @@ def get_db_connection():
             conn.close()
 
 def load_actual_schema():
-    """Load the REAL schema from the database - no assumptions!"""
+    """Load the REAL schema from the database with proper cursor management"""
     global ACTUAL_SCHEMA
     
     try:
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Get all tables
+            # Get all tables first
+            cursor = conn.cursor(buffered=True)
             cursor.execute("SHOW TABLES")
             tables = [row[0] for row in cursor.fetchall()]
+            cursor.close()  # Close cursor after use
             
             # Get actual columns for each table
             schema = {}
             for table in tables:
-                cursor.execute(f"DESCRIBE {table}")
-                columns = [row[0] for row in cursor.fetchall()]
-                
-                # Get primary key
-                cursor.execute(f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'")
-                primary_key_result = cursor.fetchone()
-                primary_key = primary_key_result[4] if primary_key_result else None
-                
-                schema[table] = {
-                    "columns": columns,
-                    "primary_key": primary_key
-                }
+                try:
+                    # Use a new cursor for each table query
+                    cursor = conn.cursor(buffered=True)
+                    cursor.execute(f"DESCRIBE {table}")
+                    columns = [row[0] for row in cursor.fetchall()]
+                    cursor.close()
+                    
+                    # Get primary key with another new cursor
+                    cursor = conn.cursor(buffered=True)
+                    cursor.execute(f"SHOW KEYS FROM {table} WHERE Key_name = 'PRIMARY'")
+                    primary_key_result = cursor.fetchone()
+                    primary_key = primary_key_result[4] if primary_key_result else None
+                    cursor.close()
+                    
+                    schema[table] = {
+                        "columns": columns,
+                        "primary_key": primary_key
+                    }
+                    
+                except Error as e:
+                    logger.error(f"Error loading schema for table {table}: {e}")
+                    continue
             
             ACTUAL_SCHEMA = schema
             logger.info(f"✅ Loaded ACTUAL schema for {len(ACTUAL_SCHEMA)} tables")
@@ -235,12 +253,13 @@ def validate_and_auto_fix(query: str) -> Tuple[List[str], List[str]]:
     return issues, suggestions
 
 def get_table_schema(table_name: str) -> List[str]:
-    """Get actual column names from database"""
+    """Get actual column names from database with proper cursor management"""
     try:
         with get_db_connection() as conn:
-            cursor = conn.cursor()
+            cursor = conn.cursor(buffered=True)
             cursor.execute(f"DESCRIBE {table_name}")
             columns = [row[0] for row in cursor.fetchall()]
+            cursor.close()
             return columns
     except Exception as e:
         logger.error(f"Error getting schema for table {table_name}: {e}")
@@ -252,7 +271,7 @@ def execute_sql_with_retry(query: str, max_retries: int = 3) -> Tuple[Optional[L
     for attempt in range(max_retries + 1):
         try:
             with get_db_connection() as conn:
-                cursor = conn.cursor()
+                cursor = conn.cursor(buffered=True)
                 cursor.execute(query)
                 
                 # Get column names
@@ -263,7 +282,8 @@ def execute_sql_with_retry(query: str, max_retries: int = 3) -> Tuple[Optional[L
                     rows = cursor.fetchall()
                 else:
                     rows = []
-                    
+                
+                cursor.close()
                 return columns, rows, None
                 
         except Error as err:
@@ -275,8 +295,9 @@ def execute_sql_with_retry(query: str, max_retries: int = 3) -> Tuple[Optional[L
             
             # Try to auto-fix common errors
             if "Unknown column" in error_msg:
-                query = auto_fix_column_error(query, error_msg)
-                if query:  # If we made a fix, try again
+                fixed_query = auto_fix_column_error(query, error_msg)
+                if fixed_query:  # If we made a fix, try again
+                    query = fixed_query
                     continue
             
             # If we can't auto-fix, return the error
@@ -358,10 +379,29 @@ def call_ai_model(prompt: str) -> Optional[str]:
         return None
 
 def clean_sql_response(sql: str) -> str:
-    """Clean up SQL response from AI model"""
-    # Remove code block markers
-    sql = re.sub(r'^```sql\s*', '', sql, flags=re.MULTILINE)
-    sql = re.sub(r'```\s*$', '', sql, flags=re.MULTILINE)
+    """
+    Extract just the SQL query portion, stripping away any natural language or explanations.
+    """
+    if not sql:
+        return ""
+
+    # Remove code block markers like ```sql and ```
+    sql = re.sub(r"```(?:sql)?", "", sql)
+    sql = sql.replace("```", "")
+
+    # Remove all non-breaking spaces (U+00A0)
+    sql = sql.replace('\u00a0', ' ')
+
+    # Extract the first actual SQL query (SELECT, INSERT, etc.)
+    sql_match = re.search(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|DESCRIBE)\b[\s\S]+?;", sql, flags=re.IGNORECASE)
+    if sql_match:
+        return sql_match.group(0).strip()
+
+    # Fallback: grab the first line that looks like SQL
+    for line in sql.splitlines():
+        if re.match(r"^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|DESCRIBE)\b", line, re.IGNORECASE):
+            return line.strip()
+
     return sql.strip()
 
 # Load the actual schema when the module starts
@@ -457,33 +497,45 @@ def generate_data_summary(rows, columns):
     return data_summary
 
 def generate_natural_response(user_question: str, data_summary: str) -> str:
-    """Generate natural language response"""
+    """Generate a *human-style* natural response with empathy and clarity"""
+    
     prompt_answer = f"""
-The user asked: "{user_question}"
+You are a friendly and professional assistant at a modern dental clinic. Speak like a caring dental coordinator, not a machine or SQL tool.
 
-Query Results:
+💬 Task:
+- The user asked: "{user_question}"
+- Here are the details of available services (or other results): 
 {data_summary}
 
-Provide a natural, helpful response about what you found. Be specific about the actual data, names, and numbers you can see. Make it conversational and informative.
-"""
+🎯 What to do:
+- Instead of technical explanations, write a warm and professional explanation of the services.
+- Break down the services (name, duration, purpose).
+- Ask follow-up questions (e.g., "Are you feeling any pain?", "Is whitening something you'd like?").
+- Do NOT mention SQL, database, or queries at all.
+- Respond with natural, human language like a receptionist or dental nurse talking to a patient.
 
+Now write that response:
+"""
+    
     response = call_ai_model(prompt_answer)
-    return response if response else f"Query executed successfully. {data_summary}"
+    return response if response else "We’ve found helpful information—let me guide you through it!"
+
 
 @app.route('/discover-schema', methods=['GET'])
 def discover_schema():
     """Discover actual schema from database"""
     try:
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
             # Get all tables
+            cursor = conn.cursor(buffered=True)
             cursor.execute("SHOW TABLES")
             tables = [row[0] for row in cursor.fetchall()]
+            cursor.close()
             
             # Get columns for each table
             discovered_schema = {}
             for table in tables:
+                cursor = conn.cursor(buffered=True)
                 cursor.execute(f"DESCRIBE {table}")
                 columns = []
                 for row in cursor.fetchall():
@@ -495,6 +547,7 @@ def discover_schema():
                         "default": row[4],
                         "extra": row[5]
                     })
+                cursor.close()
                 discovered_schema[table] = columns
             
             return jsonify({
@@ -512,6 +565,7 @@ def get_schema():
     return jsonify({
         "actual_schema": ACTUAL_SCHEMA,
         "schema_source": "Loaded directly from database",
+        "database_name": DB_CONFIG["database"],
         "common_mistakes": {
             "wrong": ["Assuming column names", "Using hardcoded schema", "Not checking actual database structure"],
             "correct": ["Use only columns from actual_schema", "Check /discover-schema", "Verify column existence"]
@@ -526,6 +580,7 @@ def refresh_schema():
         load_actual_schema()
         return jsonify({
             "message": "Schema refreshed successfully",
+            "database_name": DB_CONFIG["database"],
             "loaded_tables": list(ACTUAL_SCHEMA.keys()),
             "table_details": {
                 table: {
@@ -544,6 +599,7 @@ def test_endpoint():
     """Test endpoint with working queries"""
     return jsonify({
         "message": "Enhanced AI SQL Server is running!",
+        "database": DB_CONFIG["database"],
         "features": [
             "Automatic schema correction",
             "Intelligent error handling", 
@@ -553,10 +609,10 @@ def test_endpoint():
         ],
         "test_queries": [
             "Show me all users",
-            "How many doctors do we have?",
-            "List all appointments today",
-            "Show me patient profiles",
-            "Count users by role"
+            "How many records are in the database?",
+            "List all tables",
+            "Show me the structure of users table",
+            "Count records by table"
         ]
     })
 
@@ -571,8 +627,10 @@ def health_check():
     try:
         # Test database connection
         with get_db_connection() as conn:
-            cursor = conn.cursor()
+            cursor = conn.cursor(buffered=True)
             cursor.execute("SELECT 1")
+            cursor.fetchone()
+            cursor.close()
             db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
@@ -587,13 +645,16 @@ def health_check():
     return jsonify({
         "status": "running",
         "database": db_status,
+        "database_name": DB_CONFIG["database"],
         "ai_model": ai_status,
         "schema_loaded": len(ACTUAL_SCHEMA) > 0,
-        "tables_count": len(ACTUAL_SCHEMA)
+        "tables_count": len(ACTUAL_SCHEMA),
+        "available_tables": list(ACTUAL_SCHEMA.keys())
     })
 
 if __name__ == '__main__':
     print("🚀 Enhanced AI SQL Server with REAL schema validation")
+    print(f"📊 Database: {DB_CONFIG['database']}")
     print("🔗 Main endpoint: http://localhost:5000/ai")
     print("📊 Schema info: http://localhost:5000/schema")
     print("🔍 Discover schema: http://localhost:5000/discover-schema")
