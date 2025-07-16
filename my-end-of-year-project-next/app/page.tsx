@@ -18,7 +18,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const response = await fetch("https://wambs-clinic.onrender.com/api/v1/auth/authenticate", {
+      const response = await fetch("http://localhost:8088/api/v1/auth/authenticate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

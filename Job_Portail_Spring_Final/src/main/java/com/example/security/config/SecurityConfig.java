@@ -58,21 +58,42 @@ public class SecurityConfig {
     }
 
     // ✅ Add CORS configuration bean
-    @Bean
+//     @Bean
+// public CorsConfigurationSource corsConfigurationSource() {
+//     CorsConfiguration configuration = new CorsConfiguration();
+//     configuration.setAllowedOrigins(Arrays.asList(
+//         "http://localhost:3000",
+//         "http://localhost:3001",
+//         "http://127.0.0.1:3000",
+//         "https://wambs-f.vercel.app"
+//     ));
+//     configuration.setAllowedMethods(Arrays.asList(
+//         "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+//     ));
+//     configuration.setAllowedHeaders(Arrays.asList("*"));
+//     configuration.setAllowCredentials(true);
+//     configuration.setMaxAge(3600L);
+//     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//     source.registerCorsConfiguration("/**", configuration);
+//     return source;
+// }
+@Bean
 public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList(
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "https://wambs-f.vercel.app"
-    ));
+    
+    // Allow ALL origins (everybody)
+    configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+    
     configuration.setAllowedMethods(Arrays.asList(
         "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
     ));
     configuration.setAllowedHeaders(Arrays.asList("*"));
-    configuration.setAllowCredentials(true);
+    
+    // MUST be false when using "*" for origins
+    configuration.setAllowCredentials(false);
+    
     configuration.setMaxAge(3600L);
+    
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;

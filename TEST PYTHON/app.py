@@ -29,7 +29,8 @@ DB_CONFIG = {
 AI_CONFIG = {
     "url": "http://localhost:11434/api/generate",
     # "model": "dolphin3:latest"
-    "model": "dentalclinic"
+    "model": "Models"
+    # "model": "dentalclinic"
 }
 
 @contextmanager

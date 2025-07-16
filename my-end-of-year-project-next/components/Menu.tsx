@@ -77,6 +77,12 @@ const Menu = () => {
           href: "/list/BookAppointmentForm",
           visible: ["patient"],
         },
+         {
+          icon: <Calendar className="w-5 h-5" />,
+          label: "Map",
+          href: "/list/Map",
+           visible: ["admin", "doctor", "nurse"],
+        },
         {
           icon: <Calendar className="w-5 h-5" />,
           label: "Medical Record",
