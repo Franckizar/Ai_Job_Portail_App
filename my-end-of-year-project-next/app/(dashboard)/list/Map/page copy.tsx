@@ -14,7 +14,7 @@ const containerStyle = {
 
 const libraries = ['places', 'geometry']
 // Note: You should use your own API key and keep it secure
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDCQUDD0UIpiWxl_KUm5FRRv71IJ2fY3jo';
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 const MapWithCount = () => {
   const [position, setPosition] = useState(null)
