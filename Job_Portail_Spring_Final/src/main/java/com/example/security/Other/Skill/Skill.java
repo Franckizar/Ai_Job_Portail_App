@@ -1,13 +1,7 @@
-// 5. Skill.java
 package com.example.security.Other.Skill;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.List;
-
-import com.example.security.Other.JobSkill.JobSkill;
-import com.example.security.Other.UserSkill.UserSkill;
 
 @Data
 @Builder
@@ -22,13 +16,6 @@ public class Skill {
     @Column(name = "skill_id")
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
-
-    // Relationships
-    @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<UserSkill> userSkills;
-
-    @OneToMany(mappedBy = "skill", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<JobSkill> jobSkills;
 }

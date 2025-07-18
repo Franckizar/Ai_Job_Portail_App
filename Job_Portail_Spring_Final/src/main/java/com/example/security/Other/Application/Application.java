@@ -3,7 +3,7 @@ package com.example.security.Other.Application;
 
 
 import com.example.security.user.User;
-import com.example.security.Other.Job.Job;
+// import com.example.security.Other.Job.Job;
 import com.example.security.Other.Payment.Payment;
 
 import jakarta.persistence.*;
@@ -11,6 +11,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.example.security.Other.Job.Job;;
 
 @Data
 @Builder

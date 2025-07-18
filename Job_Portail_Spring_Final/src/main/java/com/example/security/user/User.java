@@ -8,7 +8,8 @@ import com.example.security.Other.Notification.Notification;
 import com.example.security.Other.Payment.Payment;
 import com.example.security.Other.Subscription.Subscription;
 import com.example.security.Other.UserImage.UserImage;
-import com.example.security.Other.UserSkill.UserSkill;
+// import com.example.security.Other.UserSkillId.UserSkill;
+// import com.example.security.Other.UserSkill.UserSkill;
 import com.example.security.user.Admin.Admin;
 import com.example.security.user.Enterprise.Enterprise;
 import com.example.security.user.JobSeeker.JobSeeker;
@@ -81,8 +82,8 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<AiJobMatch> aiJobMatches;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<UserSkill> userSkills;
+    // @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<UserSkill> userSkills;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Subscription> subscriptions;

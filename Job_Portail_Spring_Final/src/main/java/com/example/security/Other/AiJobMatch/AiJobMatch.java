@@ -3,13 +3,14 @@ package com.example.security.Other.AiJobMatch;
 // package com.example.security.ai;
 
 import com.example.security.user.User;
-import com.example.security.Other.Job.Job;
+// import com.example.security.Other.Job.Job;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.security.Other.Job.Job;;
 @Data
 @Builder
 @NoArgsConstructor

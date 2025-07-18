@@ -1,21 +1,23 @@
-// 2. Job.java
 package com.example.security.Other.Job;
 
-import com.example.security.Other.AiJobMatch.AiJobMatch;
 import com.example.security.Other.Application.Application;
 import com.example.security.Other.JobSkill.JobSkill;
+import com.example.security.Other.AiJobMatch.AiJobMatch;
+// import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.user.Enterprise.Enterprise;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+// @Entity
 @Entity
 @Table(name = "jobs")
 public class Job {
@@ -30,6 +32,8 @@ public class Job {
     private Enterprise enterprise;
 
     private String title;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -48,12 +52,11 @@ public class Job {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-   @Column(precision = 10, scale = 7)
+    @Column(precision = 10, scale = 7)
     private BigDecimal latitude;
 
     @Column(precision = 10, scale = 7)
     private BigDecimal longitude;
-
 
     @Column(name = "address_line1")
     private String addressLine1;
@@ -62,6 +65,7 @@ public class Job {
     private String addressLine2;
 
     private String city;
+
     private String state;
 
     @Column(name = "postal_code")
@@ -70,48 +74,29 @@ public class Job {
     private String country;
 
     // Relationships
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Application> applications;
 
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<AiJobMatch> aiJobMatches;
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Application> applications = new ArrayList<>();
 
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<JobSkill> jobSkills;
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<AiJobMatch> aiJobMatches = new ArrayList<>();
+
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<JobSkill> jobSkills = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
     public enum JobType {
-        FULL_TIME("full-time"),
-        PART_TIME("part-time"),
-        INTERNSHIP("internship");
-
-        private final String value;
-
-        JobType(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
+        FULL_TIME, PART_TIME, INTERNSHIP
     }
 
     public enum JobStatus {
-        ACTIVE("active"),
-        CLOSED("closed");
-
-        private final String value;
-
-        JobStatus(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
+        ACTIVE, CLOSED
     }
 }

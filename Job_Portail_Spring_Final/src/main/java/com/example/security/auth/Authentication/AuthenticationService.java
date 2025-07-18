@@ -88,7 +88,7 @@ public class AuthenticationService {
                         .resumeUrl(request.getResumeUrl())
                         .profileImageUrl(request.getProfileImageUrl())
                         .build();
-                jobSeekerService.create(user, jobSeekerRequest);
+                // jobSeekerService.create(user, jobSeekerRequest);
             }
 
             // case TECHNICIAN -> technicianService.createDefault(user);
