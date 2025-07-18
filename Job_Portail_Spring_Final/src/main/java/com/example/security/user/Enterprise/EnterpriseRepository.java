@@ -1,11 +1,17 @@
 package com.example.security.user.Enterprise;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
-public interface EnterpriseRepository extends JpaRepository<Enterprise, Long> {
+@Repository
+public interface EnterpriseRepository extends JpaRepository<Enterprise, Integer> {
+
     Optional<Enterprise> findByUserId(Integer userId);
-    List<Enterprise> findByIndustryContainingIgnoreCase(String industry);
+
+    boolean existsByUserId(Integer userId);
+
+    Optional<Enterprise> findByName(String name);
+
 }

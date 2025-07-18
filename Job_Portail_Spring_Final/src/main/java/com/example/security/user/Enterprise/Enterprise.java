@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.example.security.Other.Job.Job;
 import com.example.security.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,7 +19,7 @@ public class Enterprise {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     private String name;
     private String industry;
@@ -40,6 +42,7 @@ public class Enterprise {
 
 
     @OneToOne
+    @JsonIgnore
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user;
 }

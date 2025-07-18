@@ -1,73 +1,90 @@
 package com.example.security.user.Enterprise;
-// package com.example.security.user.Doctor;
 
-// import lombok.RequiredArgsConstructor;
-// import org.springframework.http.ResponseEntity;
-// import org.springframework.web.bind.annotation.*;
-// import java.util.List;
+import com.example.security.user.User;
+import com.example.security.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-// @RestController
-// @RequestMapping("/api/v1/auth/doctor")
-// @RequiredArgsConstructor
-// public class DoctorProfileController {
+import java.util.List;
 
-//     private final DoctorProfileService doctorProfileService;
+@RestController
+@RequestMapping("/api/v1/auth/enterprise")
+@RequiredArgsConstructor
+public class EnterpriseController {
 
-//     // CREATE/UPDATE: Register or update a doctor profile for a user
-//     @PostMapping("/register-or-update/{userId}")
-//     public ResponseEntity<DoctorProfile> registerOrUpdateDoctorProfile(
-//             @PathVariable Integer userId,
-//             @RequestBody DoctorProfileRequest request) {
-//         DoctorProfile profile = doctorProfileService.registerOrUpdateDoctorProfile(userId, request);
-//         return ResponseEntity.ok(profile);
-//     }
+    private final EnterpriseService enterpriseService;
+    private final UserRepository userRepository;
 
-//     // READ: Get a doctor profile by its ID
-//     @GetMapping("/{id}")
-//     public ResponseEntity<DoctorProfile> getDoctorProfileById(@PathVariable Integer id) {
-//         DoctorProfile profile = doctorProfileService.getDoctorProfileById(id);
-//         return ResponseEntity.ok(profile);
-//     }
+    /**
+     * Create a new Enterprise profile for specified userId.
+     * Note: userId comes as a path variable for association.
+     */
+    @PostMapping("/create/{userId}")
+    public ResponseEntity<?> createEnterprise(
+            @PathVariable Integer userId,
+            @RequestBody EnterpriseRequest request) {
 
-//     // READ: Get a doctor profile by user ID
-//     @GetMapping("/user/{userId}")
-//     public ResponseEntity<DoctorProfile> getDoctorProfileByUserId(@PathVariable Integer userId) {
-//         DoctorProfile profile = doctorProfileService.getDoctorProfileByUserId(userId);
-//         return ResponseEntity.ok(profile);
-//     }
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+            Enterprise created = enterpriseService.create(user, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-//     // READ: Get a doctor profile by email
-//     @GetMapping("/email/{email}")
-//     public ResponseEntity<DoctorProfile> getDoctorProfileByEmail(@PathVariable String email) {
-//         DoctorProfile profile = doctorProfileService.getDoctorProfileByEmail(email);
-//         return ResponseEntity.ok(profile);
-//     }
+    /**
+     * Get Enterprise profile by enterprise id.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getEnterpriseById(@PathVariable Integer id) {
+        try {
+            Enterprise enterprise = enterpriseService.getById(id);
+            return ResponseEntity.ok(enterprise);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
 
-//     // READ: Get a doctor profile by license number
-//     @GetMapping("/license/{licenseNumber}")
-//     public ResponseEntity<DoctorProfile> getDoctorProfileByLicense(@PathVariable String licenseNumber) {
-//         DoctorProfile profile = doctorProfileService.getDoctorProfileByLicense(licenseNumber);
-//         return ResponseEntity.ok(profile);
-//     }
+    /**
+     * Get all Enterprise profiles.
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<Enterprise>> getAllEnterprises() {
+        return ResponseEntity.ok(enterpriseService.getAll());
+    }
 
-//     // READ: Get all doctor profiles
-//     @GetMapping("/all")
-//     public ResponseEntity<List<DoctorProfile>> getAllDoctorProfiles() {
-//         List<DoctorProfile> profiles = doctorProfileService.getAllDoctorProfiles();
-//         return ResponseEntity.ok(profiles);
-//     }
+    /**
+     * Update Enterprise profile by enterprise id.
+     */
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateEnterprise(
+            @PathVariable Integer id,
+            @RequestBody EnterpriseRequest request) {
 
-//     // READ: Get all doctor profiles by active status
-//     @GetMapping("/active/{active}")
-//     public ResponseEntity<List<DoctorProfile>> getDoctorProfilesByActive(@PathVariable Boolean active) {
-//         List<DoctorProfile> profiles = doctorProfileService.getDoctorProfilesByActive(active);
-//         return ResponseEntity.ok(profiles);
-//     }
+        try {
+            Enterprise updated = enterpriseService.update(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-//     // DELETE: Delete a doctor profile by its ID
-//     @DeleteMapping("/{id}")
-//     public ResponseEntity<Void> deleteDoctorProfile(@PathVariable Integer id) {
-//         doctorProfileService.deleteDoctorProfile(id);
-//         return ResponseEntity.noContent().build();
-//     }
-// }
+    /**
+     * Delete Enterprise profile by id.
+     */
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteEnterprise(@PathVariable Integer id) {
+        try {
+            enterpriseService.deleteById(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+}

@@ -3,51 +3,25 @@ package com.example.security.user.Technicien;
 import com.example.security.UserRepository;
 import com.example.security.user.Role;
 import com.example.security.user.User;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class TechnicianService {
 
     private final TechnicianRepository technicianRepository;
     private final UserRepository userRepository;
 
-    public TechnicianService(TechnicianRepository technicianRepository, UserRepository userRepository) {
-        this.technicianRepository = technicianRepository;
-        this.userRepository = userRepository;
-    }
-
-    // ✅ Create technician with default basic values
     @Transactional
-    public Technician createDefault(User user) {
-        user.getRoles().clear();
-        user.addRole(Role.TECHNICIAN);
-        userRepository.save(user);
-
-        Technician technician = Technician.builder()
-                .user(user)
-                .department("General")
-                .licenseNumber("LIC-0000")
-                .shift("Day")
-                .contactNumber("N/A")
-                .professionalEmail(user.getEmail()) // default to user email
-                .photoUrl("default.png")
-                .officeNumber("N/A")
-                .yearsOfExperience(0)
-                .bio("Default technician bio")
-                .languagesSpoken("English")
-                .active(true)
-                .build();
-
-        return technicianRepository.save(technician);
-    }
-
-    // ✅ Create technician from request
-    @Transactional
-    public Technician create(User user, TechnicianRequest request) {
+    public Technician create(Integer userId, TechnicianRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (technicianRepository.findByUserId(userId).isPresent()) {
+            throw new IllegalArgumentException("Technician profile already exists");
+        }
         user.getRoles().clear();
         user.addRole(Role.TECHNICIAN);
         userRepository.save(user);
@@ -65,17 +39,16 @@ public class TechnicianService {
                 .bio(request.getBio())
                 .languagesSpoken(request.getLanguagesSpoken())
                 .active(request.getActive() != null ? request.getActive() : true)
+                .technicianLevel(request.getTechnicianLevel())
+                .certifications(request.getCertifications())
                 .build();
-
         return technicianRepository.save(technician);
     }
 
-    // ✅ Update technician by user
     @Transactional
-    public Technician update(User user, TechnicianRequest request) {
-        Technician technician = technicianRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Technician not found for user ID " + user.getId()));
-
+    public Technician update(Integer userId, TechnicianRequest request) {
+        Technician technician = technicianRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Technician not found for user ID " + userId));
         technician.setDepartment(request.getDepartment());
         technician.setLicenseNumber(request.getLicenseNumber());
         technician.setShift(request.getShift());
@@ -87,25 +60,27 @@ public class TechnicianService {
         technician.setBio(request.getBio());
         technician.setLanguagesSpoken(request.getLanguagesSpoken());
         technician.setActive(request.getActive() != null ? request.getActive() : technician.getActive());
-
+        technician.setTechnicianLevel(request.getTechnicianLevel());
+        technician.setCertifications(request.getCertifications());
         return technicianRepository.save(technician);
+    }
+
+    public Technician getById(Integer id) {
+        return technicianRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Technician profile not found"));
     }
 
     public Technician getByUserId(Integer userId) {
         return technicianRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Technician not found for user ID " + userId));
+                .orElseThrow(() -> new IllegalArgumentException("Technician profile not found"));
     }
 
     public List<Technician> getAll() {
         return technicianRepository.findAll();
     }
 
-    public Optional<Technician> getById(Long id) {
-        return technicianRepository.findById(id);
-    }
-
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Integer id) {
         technicianRepository.deleteById(id);
     }
 }

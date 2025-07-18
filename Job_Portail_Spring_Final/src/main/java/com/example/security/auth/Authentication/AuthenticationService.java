@@ -91,7 +91,7 @@ public class AuthenticationService {
                 jobSeekerService.create(user, jobSeekerRequest);
             }
 
-            case TECHNICIAN -> technicianService.createDefault(user);
+            // case TECHNICIAN -> technicianService.createDefault(user);
 
             case ENTERPRISE -> {
                 EnterpriseRequest enterpriseRequest = EnterpriseRequest.builder()

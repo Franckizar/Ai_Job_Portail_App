@@ -2,7 +2,6 @@ package com.example.security.user.Technicien;
 
 import com.example.security.user.User;
 import jakarta.persistence.*;
-
 import lombok.*;
 
 @Data
@@ -10,7 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "technician_profiles") // 🔧 Better table naming convention
+@Table(name = "technician_profiles")
 public class Technician {
 
     @Id
@@ -29,17 +28,16 @@ public class Technician {
     private String photoUrl;
     private String officeNumber;
     private Integer yearsOfExperience;
-
     @Column(columnDefinition = "TEXT")
     private String bio;
-
     private String languagesSpoken;
-
     @Column(nullable = false)
     private Boolean active;
 
-    // --- Convenience methods ---
-    
+    // example extra fields for TechnicianResponse
+    private String technicianLevel;
+    private String certifications;
+
     public String getFullName() {
         return user != null ? user.getFirstname() + " " + user.getLastname() : null;
     }

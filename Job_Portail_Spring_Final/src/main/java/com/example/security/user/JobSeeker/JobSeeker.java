@@ -14,16 +14,15 @@ public class JobSeeker {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     private String fullName;
     private String bio;
     private String resumeUrl;
-    private String profileImageUrl; 
+    private String profileImageUrl;
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user;
 
-  
 }

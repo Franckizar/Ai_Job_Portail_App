@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class JobSeekerResponse {
-    private Long id;
+    private Integer id; 
     private Integer userId;
     private String fullName;
     private String bio;

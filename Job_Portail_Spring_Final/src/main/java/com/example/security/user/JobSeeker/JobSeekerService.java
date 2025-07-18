@@ -17,7 +17,15 @@ public class JobSeekerService {
     private final UserRepository userRepository;
 
     @Transactional
-    public JobSeeker create(User user, JobSeekerRequest request) {
+    public JobSeeker create(Integer userId, JobSeekerRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (jobSeekerRepository.findByUserId(userId).isPresent()) {
+            throw new IllegalStateException("Job seeker profile already exists for this user");
+        }
+
+        // Assign role JOB_SEEKER to user
         user.getRoles().clear();
         user.addRole(Role.JOB_SEEKER);
         userRepository.save(user);
@@ -34,8 +42,8 @@ public class JobSeekerService {
     }
 
     @Transactional
-    public JobSeeker update(User user, JobSeekerRequest request) {
-        JobSeeker profile = jobSeekerRepository.findByUserId(user.getId())
+    public JobSeeker update(Integer userId, JobSeekerRequest request) {
+        JobSeeker profile = jobSeekerRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Job seeker profile not found"));
 
         profile.setFullName(request.getFullName());
@@ -44,6 +52,11 @@ public class JobSeekerService {
         profile.setProfileImageUrl(request.getProfileImageUrl());
 
         return jobSeekerRepository.save(profile);
+    }
+
+    public JobSeeker getById(Integer id) {
+        return jobSeekerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Job seeker profile not found"));
     }
 
     public JobSeeker getByUserId(Integer userId) {
@@ -55,7 +68,8 @@ public class JobSeekerService {
         return jobSeekerRepository.findAll();
     }
 
-    public void deleteById(Long id) {
+    @Transactional
+    public void deleteById(Integer id) {
         jobSeekerRepository.deleteById(id);
     }
 }
