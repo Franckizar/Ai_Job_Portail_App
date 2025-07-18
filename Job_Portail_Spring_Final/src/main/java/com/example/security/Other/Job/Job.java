@@ -1,23 +1,24 @@
 package com.example.security.Other.Job;
 
 import com.example.security.Other.Application.Application;
-import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.AiJobMatch.AiJobMatch;
-// import com.example.security.Other.JobSkill.JobSkill;
+import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.user.Enterprise.Enterprise;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-// @Entity
 @Entity
 @Table(name = "jobs")
 public class Job {
@@ -73,23 +74,35 @@ public class Job {
 
     private String country;
 
-    // Relationships
-
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+     @JsonIgnore
     private List<Application> applications = new ArrayList<>();
 
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+     @JsonIgnore
     private List<AiJobMatch> aiJobMatches = new ArrayList<>();
 
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    // @JsonIgnore
     private List<JobSkill> jobSkills = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        log.info("Job pre-persist called, createdAt set to {}", createdAt);
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        log.info("Job pre-update called for job id {}", id);
+    }
+
+    @PostLoad
+    protected void onLoad() {
+        log.info("Job loaded with id {}", id);
     }
 
     public enum JobType {

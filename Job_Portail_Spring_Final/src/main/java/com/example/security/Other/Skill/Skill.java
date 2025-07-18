@@ -1,5 +1,7 @@
 package com.example.security.Other.Skill;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,6 +16,7 @@ public class Skill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "skill_id")
+    //  @JsonIgnore
     private Long id;
 
     @Column(nullable = false, unique = true, length = 100)

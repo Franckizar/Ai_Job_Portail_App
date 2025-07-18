@@ -1,18 +1,17 @@
 package com.example.security.Other.Job;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-
 import com.example.security.Other.JobSkill.CreateJobSkillDto;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.JobSkill.JobSkillRepository;
 import com.example.security.Other.Skill.Skill;
 import com.example.security.Other.Skill.SkillRepository;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +22,8 @@ public class JobService {
     private final SkillRepository skillRepository;
     private final JobSkillRepository jobSkillRepository;
 
-    public Job createJob(CreateJobRequest request) {
-        // Build and save Job entity
+    public JobResponse createJob(CreateJobRequest request) {
+        // Step 1: Build and save the Job entity
         Job job = Job.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -42,25 +41,24 @@ public class JobService {
 
         job = jobRepository.save(job);
 
-        // Extract skill IDs
+        // Step 2: Extract skill IDs and validate
         List<Long> skillIds = request.getSkills().stream()
                 .map(CreateJobSkillDto::getSkillId)
-                .toList();
+                .collect(Collectors.toList());
 
-        // Fetch Skills and validate existence
-        List<Skill> skills = skillRepository.findAllById(skillIds);
+        List<Skill> allSkills = skillRepository.findAllById(skillIds);
 
-        if (skills.size() != skillIds.size()) {
-            throw new IllegalArgumentException("Some skill IDs are invalid");
+        if (allSkills.size() != skillIds.size()) {
+            throw new IllegalArgumentException("One or more skill IDs are invalid");
         }
 
-        // Create JobSkill links
+        // Step 3: Create JobSkill links
         List<JobSkill> jobSkills = new ArrayList<>();
         for (CreateJobSkillDto skillDto : request.getSkills()) {
-            Skill skill = skills.stream()
+            Skill skill = allSkills.stream()
                     .filter(s -> s.getId().equals(skillDto.getSkillId()))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Skill ID not found: " + skillDto.getSkillId()));
+                    .orElseThrow(() -> new IllegalArgumentException("Skill not found: " + skillDto.getSkillId()));
 
             JobSkill jobSkill = JobSkill.builder()
                     .job(job)
@@ -73,8 +71,26 @@ public class JobService {
 
         jobSkillRepository.saveAll(jobSkills);
 
-        job.setJobSkills(jobSkills);
+        // Step 4: Build clean DTO response
+        JobResponse response = new JobResponse();
+        response.setId(job.getId());
+        response.setTitle(job.getTitle());
+        response.setDescription(job.getDescription());
+        // response.setType(job.getType());
+        // response.setSalaryMin(job.getSalaryMin());
+        // response.setSalaryMax(job.getSalaryMax());
+        response.setCity(job.getCity());
+        response.setCountry(job.getCountry());
 
-        return job;
+        List<JobResponse.JobSkillDto> skillDtos = jobSkills.stream().map(js -> {
+            JobResponse.JobSkillDto dto = new JobResponse.JobSkillDto();
+            dto.setSkillId(js.getSkill().getId());
+            dto.setSkillName(js.getSkill().getName());
+            dto.setRequired(js.getRequired());
+            return dto;
+        }).collect(Collectors.toList());
+
+        response.setSkills(skillDtos);
+        return response;
     }
 }
