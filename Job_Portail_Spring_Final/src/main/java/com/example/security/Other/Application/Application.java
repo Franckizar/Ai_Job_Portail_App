@@ -3,10 +3,14 @@ package com.example.security.Other.Application;
 import com.example.security.Other.Job.Job;
 import com.example.security.user.JobSeeker.JobSeeker;
 import com.example.security.user.Technicien.Technician;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,10 +26,12 @@ public class Application {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
+    // @JsonIgnore
     private Job job;  // Job now Puses Integer id
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_seeker_id")
+    @JsonIgnore
     private JobSeeker jobSeeker;
 
     @ManyToOne(fetch = FetchType.LAZY)

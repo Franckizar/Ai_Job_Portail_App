@@ -63,4 +63,12 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getApplicationsByTechnicianId(technicianId));
     }
 
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Application>> getAllApplications() {
+        List<Application> applications = applicationService.findAll();
+        return ResponseEntity.ok(applications);
+    }
+
+
 }

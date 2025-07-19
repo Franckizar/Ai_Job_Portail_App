@@ -1,6 +1,8 @@
 package com.example.security.user.JobSeeker;
 
 import com.example.security.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +24,7 @@ public class JobSeeker {
     private String profileImageUrl;
 
     @OneToOne
+    @JsonIgnore
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user;
 

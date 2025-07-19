@@ -104,4 +104,9 @@ public Application createApplication(ApplicationRequest request) {
         }
         applicationRepository.deleteById(id);
     }
+
+    public List<Application> findAll() {
+    return applicationRepository.findAll();
+}
+
 }

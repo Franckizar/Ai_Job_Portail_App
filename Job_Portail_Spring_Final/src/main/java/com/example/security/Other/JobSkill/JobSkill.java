@@ -2,8 +2,10 @@ package com.example.security.Other.JobSkill;
 
 import com.example.security.Other.Job.Job;
 import com.example.security.Other.Skill.Skill;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 // import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.example.security.Other.JobSkillId.JobSkillId;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,16 +17,19 @@ import lombok.*;
 @Entity
 @Table(name = "job_skills")
 @IdClass(JobSkillId.class)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+// @Entity
 public class JobSkill {
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     // @JsonBackReference
-    // @JsonIgnore
+    @JsonIgnore
     @JoinColumn(name = "job_id", referencedColumnName = "job_id")
     private Job job;
 
     @Id
+    // @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     // @JsonIgnore
     @JoinColumn(name = "skill_id", referencedColumnName = "skill_id")
