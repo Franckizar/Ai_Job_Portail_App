@@ -36,6 +36,7 @@ public class Application {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "technician_id")
+    @JsonIgnore
     private Technician technician;
 
     @Column(name = "resume_url")
