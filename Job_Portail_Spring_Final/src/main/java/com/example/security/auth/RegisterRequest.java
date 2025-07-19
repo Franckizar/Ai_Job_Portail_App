@@ -42,4 +42,18 @@ public class RegisterRequest {
     private String country;
     private Double latitude;
     private Double longitude;
+
+    private String department;
+    private String licenseNumber;
+    private String shift;
+    private String contactNumber;
+    private String professionalEmail;
+    private String photoUrl;
+    private String officeNumber;
+    private Integer yearsOfExperience;
+    // private String bio;
+    private String languagesSpoken;
+    private Boolean active;
+    private String technicianLevel;
+    private String certifications;
 }

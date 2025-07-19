@@ -15,35 +15,44 @@ public class TechnicianService {
     private final TechnicianRepository technicianRepository;
     private final UserRepository userRepository;
 
-    @Transactional
-    public Technician create(Integer userId, TechnicianRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (technicianRepository.findByUserId(userId).isPresent()) {
-            throw new IllegalArgumentException("Technician profile already exists");
-        }
-        user.getRoles().clear();
-        user.addRole(Role.TECHNICIAN);
-        userRepository.save(user);
+ @Transactional
+public Technician create(Integer userId, TechnicianRequest request) {
+    // ✅ Step 1: Find the user by ID or throw an error
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
-        Technician technician = Technician.builder()
-                .user(user)
-                .department(request.getDepartment())
-                .licenseNumber(request.getLicenseNumber())
-                .shift(request.getShift())
-                .contactNumber(request.getContactNumber())
-                .professionalEmail(request.getProfessionalEmail())
-                .photoUrl(request.getPhotoUrl())
-                .officeNumber(request.getOfficeNumber())
-                .yearsOfExperience(request.getYearsOfExperience())
-                .bio(request.getBio())
-                .languagesSpoken(request.getLanguagesSpoken())
-                .active(request.getActive() != null ? request.getActive() : true)
-                .technicianLevel(request.getTechnicianLevel())
-                .certifications(request.getCertifications())
-                .build();
-        return technicianRepository.save(technician);
+    // ✅ Step 2: Check if the user already has a technician profile
+    if (technicianRepository.findByUserId(userId).isPresent()) {
+        throw new IllegalArgumentException("Technician profile already exists for this user");
     }
+
+    // ✅ Step 3: Clear existing roles and assign only TECHNICIAN role
+    user.getRoles().clear();
+    user.addRole(Role.TECHNICIAN);
+    userRepository.save(user); // Persist updated roles
+
+    // ✅ Step 4: Create the Technician entity with provided data
+    Technician technician = Technician.builder()
+            .user(user)
+            .department(request.getDepartment())
+            .licenseNumber(request.getLicenseNumber())
+            .shift(request.getShift())
+            .contactNumber(request.getContactNumber())
+            .professionalEmail(request.getProfessionalEmail())
+            .photoUrl(request.getPhotoUrl())
+            .officeNumber(request.getOfficeNumber())
+            .yearsOfExperience(request.getYearsOfExperience())
+            .bio(request.getBio())
+            .languagesSpoken(request.getLanguagesSpoken())
+            .active(request.getActive() != null ? request.getActive() : true) // default true
+            .technicianLevel(request.getTechnicianLevel())
+            .certifications(request.getCertifications())
+            .build();
+
+    // ✅ Step 5: Save and return the technician
+    return technicianRepository.save(technician);
+}
+
 
     @Transactional
     public Technician update(Integer userId, TechnicianRequest request) {

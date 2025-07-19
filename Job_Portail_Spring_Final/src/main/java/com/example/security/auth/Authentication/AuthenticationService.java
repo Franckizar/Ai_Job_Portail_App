@@ -14,6 +14,7 @@ import com.example.security.user.Enterprise.EnterpriseRequest;
 import com.example.security.user.Enterprise.EnterpriseService;
 import com.example.security.user.JobSeeker.JobSeekerRequest;
 import com.example.security.user.JobSeeker.JobSeekerService;
+import com.example.security.user.Technicien.TechnicianRequest;
 import com.example.security.user.Technicien.TechnicianService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -88,10 +89,31 @@ public class AuthenticationService {
                         .resumeUrl(request.getResumeUrl())
                         .profileImageUrl(request.getProfileImageUrl())
                         .build();
-                // jobSeekerService.create(user, jobSeekerRequest);
+                jobSeekerService.create(user.getId(), jobSeekerRequest); 
             }
 
+        
+
             // case TECHNICIAN -> technicianService.createDefault(user);
+
+              case TECHNICIAN -> {
+            TechnicianRequest technicianRequest = TechnicianRequest.builder()
+                    .department(request.getDepartment())
+                    .licenseNumber(request.getLicenseNumber())
+                    .shift(request.getShift())
+                    .contactNumber(request.getContactNumber())
+                    .professionalEmail(request.getProfessionalEmail())
+                    .photoUrl(request.getPhotoUrl())
+                    .officeNumber(request.getOfficeNumber())
+                    .yearsOfExperience(request.getYearsOfExperience())
+                    .bio(request.getBio())
+                    .languagesSpoken(request.getLanguagesSpoken())
+                    .active(request.getActive() != null ? request.getActive() : true)
+                    .technicianLevel(request.getTechnicianLevel())
+                    .certifications(request.getCertifications())
+                    .build();
+            technicianService.create(user.getId(), technicianRequest);
+        } //////
 
             case ENTERPRISE -> {
                 EnterpriseRequest enterpriseRequest = EnterpriseRequest.builder()

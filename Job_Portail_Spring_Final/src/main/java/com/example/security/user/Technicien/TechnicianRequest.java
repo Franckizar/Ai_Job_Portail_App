@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TechnicianRequest {
-    private String department;
+private String department;
     private String licenseNumber;
     private String shift;
     private String contactNumber;
