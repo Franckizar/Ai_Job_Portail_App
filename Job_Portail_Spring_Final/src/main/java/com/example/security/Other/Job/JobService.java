@@ -9,8 +9,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,8 +22,60 @@ public class JobService {
     private final JobSkillRepository jobSkillRepository;
 
     public JobResponse createJob(CreateJobRequest request) {
-        // Step 1: Build and save the Job entity
-        Job job = Job.builder()
+        Job job = buildJobFromRequest(request);
+        job = jobRepository.save(job);
+        List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
+        return buildResponse(job, jobSkills);
+    }
+
+    public List<JobResponse> getAllJobs() {
+        List<Job> jobs = jobRepository.findAll();
+        return jobs.stream().map(this::buildResponseFromJob).collect(Collectors.toList());
+    }
+
+    public JobResponse getJobById(Long id) {
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Job not found"));
+        return buildResponseFromJob(job);
+    }
+
+    public JobResponse updateJob(Long jobId, CreateJobRequest request) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new NoSuchElementException("Job not found"));
+
+        // Update job fields
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setType(request.getType());
+        job.setSalaryMin(request.getSalaryMin());
+        job.setSalaryMax(request.getSalaryMax());
+        job.setAddressLine1(request.getAddressLine1());
+        job.setAddressLine2(request.getAddressLine2());
+        job.setCity(request.getCity());
+        job.setState(request.getState());
+        job.setPostalCode(request.getPostalCode());
+        job.setCountry(request.getCountry());
+
+        // Remove old jobSkills
+        jobSkillRepository.deleteAll(job.getJobSkills());
+
+        // Save new jobSkills
+        List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
+        job.setJobSkills(jobSkills);
+
+        return buildResponse(job, jobSkills);
+    }
+
+    public void deleteJob(Long id) {
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Job not found"));
+        jobRepository.delete(job);
+    }
+
+    // --------- Private helpers -----------
+
+    private Job buildJobFromRequest(CreateJobRequest request) {
+        return Job.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .type(request.getType())
@@ -38,40 +89,38 @@ public class JobService {
                 .country(request.getCountry())
                 .status(Job.JobStatus.ACTIVE)
                 .build();
+    }
 
-        job = jobRepository.save(job);
-
-        // Step 2: Extract skill IDs and validate
-        List<Long> skillIds = request.getSkills().stream()
+    private List<JobSkill> saveJobSkills(Job job, List<CreateJobSkillDto> skillDtos) {
+        List<Long> skillIds = skillDtos.stream()
                 .map(CreateJobSkillDto::getSkillId)
                 .collect(Collectors.toList());
 
-        List<Skill> allSkills = skillRepository.findAllById(skillIds);
-
-        if (allSkills.size() != skillIds.size()) {
-            throw new IllegalArgumentException("One or more skill IDs are invalid");
+        List<Skill> skills = skillRepository.findAllById(skillIds);
+        if (skills.size() != skillDtos.size()) {
+            throw new IllegalArgumentException("Invalid skill ID in request");
         }
 
-        // Step 3: Create JobSkill links
         List<JobSkill> jobSkills = new ArrayList<>();
-        for (CreateJobSkillDto skillDto : request.getSkills()) {
-            Skill skill = allSkills.stream()
-                    .filter(s -> s.getId().equals(skillDto.getSkillId()))
+        for (CreateJobSkillDto dto : skillDtos) {
+            Skill skill = skills.stream()
+                    .filter(s -> s.getId().equals(dto.getSkillId()))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Skill not found: " + skillDto.getSkillId()));
+                    .orElseThrow();
 
             JobSkill jobSkill = JobSkill.builder()
                     .job(job)
                     .skill(skill)
-                    .required(skillDto.getRequired() != null ? skillDto.getRequired() : true)
+                    .required(dto.getRequired() != null ? dto.getRequired() : true)
                     .build();
 
             jobSkills.add(jobSkill);
         }
 
-        jobSkillRepository.saveAll(jobSkills);
+        return jobSkillRepository.saveAll(jobSkills);
+    }
 
-        // Step 4: Build clean DTO response
+    private JobResponse buildResponse(Job job, List<JobSkill> jobSkills) {
         JobResponse response = new JobResponse();
         response.setId(job.getId());
         response.setTitle(job.getTitle());
@@ -92,5 +141,9 @@ public class JobService {
 
         response.setSkills(skillDtos);
         return response;
+    }
+
+    private JobResponse buildResponseFromJob(Job job) {
+        return buildResponse(job, job.getJobSkills());
     }
 }
