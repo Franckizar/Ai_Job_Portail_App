@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 // DTO to receive skill info (id + required flag)
 public class CreateJobSkillDto {
-    private Long skillId;
+    private Integer skillId;
     private Boolean required;
     // getters/setters
 }

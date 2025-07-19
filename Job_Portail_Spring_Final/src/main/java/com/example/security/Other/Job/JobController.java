@@ -29,7 +29,7 @@ public class JobController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobResponse> getJob(@PathVariable Long id) {
+    public ResponseEntity<JobResponse> getJob(@PathVariable Integer id) {
         try {
             return ResponseEntity.ok(jobService.getJobById(id));
         } catch (NoSuchElementException e) {
@@ -38,7 +38,7 @@ public class JobController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobResponse> updateJob(@PathVariable Long id, @RequestBody CreateJobRequest request) {
+    public ResponseEntity<JobResponse> updateJob(@PathVariable Integer id, @RequestBody CreateJobRequest request) {
         try {
             return ResponseEntity.ok(jobService.updateJob(id, request));
         } catch (NoSuchElementException e) {
@@ -49,7 +49,7 @@ public class JobController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteJob(@PathVariable Integer id) {
         try {
             jobService.deleteJob(id);
             return ResponseEntity.noContent().build();

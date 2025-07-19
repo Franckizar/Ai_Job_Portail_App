@@ -33,13 +33,13 @@ public class JobService {
         return jobs.stream().map(this::buildResponseFromJob).collect(Collectors.toList());
     }
 
-    public JobResponse getJobById(Long id) {
+    public JobResponse getJobById(Integer id) {
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Job not found"));
         return buildResponseFromJob(job);
     }
 
-    public JobResponse updateJob(Long jobId, CreateJobRequest request) {
+    public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new NoSuchElementException("Job not found"));
 
@@ -66,7 +66,7 @@ public class JobService {
         return buildResponse(job, jobSkills);
     }
 
-    public void deleteJob(Long id) {
+    public void deleteJob(Integer id) {
         Job job = jobRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Job not found"));
         jobRepository.delete(job);
@@ -92,7 +92,7 @@ public class JobService {
     }
 
     private List<JobSkill> saveJobSkills(Job job, List<CreateJobSkillDto> skillDtos) {
-        List<Long> skillIds = skillDtos.stream()
+        List<Integer> skillIds = skillDtos.stream()
                 .map(CreateJobSkillDto::getSkillId)
                 .collect(Collectors.toList());
 
@@ -133,7 +133,7 @@ public class JobService {
 
         List<JobResponse.JobSkillDto> skillDtos = jobSkills.stream().map(js -> {
             JobResponse.JobSkillDto dto = new JobResponse.JobSkillDto();
-            dto.setSkillId(js.getSkill().getId());
+            // dto.setSkillId(js.getSkill().getId());
             dto.setSkillName(js.getSkill().getName());
             dto.setRequired(js.getRequired());
             return dto;

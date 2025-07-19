@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class JobResponse {
-    private Long id;
+    private Integer id;
     private String title;
     private String description;
     private String type;
@@ -18,7 +18,7 @@ public class JobResponse {
 
     @Data
     public static class JobSkillDto {
-        private Long skillId;
+        private Integer skillId;
         private String skillName;
         private Boolean required;
     }

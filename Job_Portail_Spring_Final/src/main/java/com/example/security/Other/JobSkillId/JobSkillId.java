@@ -12,6 +12,6 @@ import java.io.Serializable;
 @Builder
 
 public class JobSkillId implements Serializable {
-    private Long job;
-    private Long skill;
+    private Integer job;
+    private Integer skill;
 }

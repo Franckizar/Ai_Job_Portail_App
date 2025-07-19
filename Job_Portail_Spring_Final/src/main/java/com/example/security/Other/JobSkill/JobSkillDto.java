@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
     @NoArgsConstructor
     @AllArgsConstructor
     public class JobSkillDto {
-        private Long skillId;
+        private Integer skillId;
         private String skillName;
         private Boolean required;
     }

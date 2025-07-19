@@ -17,7 +17,7 @@ public class Skill {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "skill_id")
     //  @JsonIgnore
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
