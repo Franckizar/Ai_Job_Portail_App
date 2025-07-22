@@ -109,4 +109,18 @@ public Application createApplication(ApplicationRequest request) {
     return applicationRepository.findAll();
 }
 
+
+
+ public List<Application> getApplicationsByStatus(Application.ApplicationStatus status) {
+        return applicationRepository.findByStatus(status);
+    }
+
+
+        public Application updateApplicationStatus(Integer id, Application.ApplicationStatus newStatus) {
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Application not found with ID: " + id));
+        application.setStatus(newStatus);
+        return applicationRepository.save(application);
+    }
+
 }

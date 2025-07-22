@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth/applications")
@@ -69,6 +70,48 @@ public class ApplicationController {
         List<Application> applications = applicationService.findAll();
         return ResponseEntity.ok(applications);
     }
+
+
+
+    @GetMapping("/by-status/{status}")
+    public ResponseEntity<List<Application>> getByStatus(@PathVariable String status) {
+        Application.ApplicationStatus applicationStatus;
+
+        try {
+            applicationStatus = Application.ApplicationStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build(); // Invalid status provided
+        }
+
+        List<Application> applications = applicationService.getApplicationsByStatus(applicationStatus);
+        return ResponseEntity.ok(applications);
+    }
+     @PatchMapping("/{id}/status")
+    public ResponseEntity<Application> updateApplicationStatus(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> statusUpdate) {
+
+        String statusStr = statusUpdate.get("status");
+        if (statusStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Application.ApplicationStatus newStatus;
+        try {
+            newStatus = Application.ApplicationStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            Application updated = applicationService.updateApplicationStatus(id, newStatus);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    
+}
+
 
 
 }

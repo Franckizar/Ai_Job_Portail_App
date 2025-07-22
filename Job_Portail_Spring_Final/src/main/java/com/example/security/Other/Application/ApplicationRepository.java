@@ -15,4 +15,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Intege
     List<Application> findByJobSeeker_Id(Integer jobSeekerId);
 
     List<Application> findByTechnician_Id(Integer technicianId);
+
+     List<Application> findByStatus(Application.ApplicationStatus status);
+    //    List<Application> findByStatus(Application.ApplicationStatus status);
 }
