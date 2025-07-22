@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AuthenticationService {
+public class AuthenticationService_copy {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

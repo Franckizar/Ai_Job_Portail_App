@@ -5,6 +5,11 @@ import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.JobSkill.JobSkillRepository;
 import com.example.security.Other.Skill.Skill;
 import com.example.security.Other.Skill.SkillRepository;
+import com.example.security.user.Enterprise.Enterprise;
+import com.example.security.user.Enterprise.EnterpriseRepository;
+import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
+import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfileRepository;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,13 +25,33 @@ public class JobService {
     private final JobRepository jobRepository;
     private final SkillRepository skillRepository;
     private final JobSkillRepository jobSkillRepository;
+    private final EnterpriseRepository enterpriseRepository;
+    private final PersonalEmployerProfileRepository personalEmployerProfileRepository;
 
-    public JobResponse createJob(CreateJobRequest request) {
-        Job job = buildJobFromRequest(request);
-        job = jobRepository.save(job);
-        List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
-        return buildResponse(job, jobSkills);
+  public JobResponse createJob(CreateJobRequest request) {
+    Job job = buildJobFromRequest(request);
+
+    // Associate Enterprise or PersonalEmployer
+    if (request.getEnterpriseId() != null) {
+        Enterprise enterprise = enterpriseRepository.findById(request.getEnterpriseId())
+                .orElseThrow(() -> new IllegalArgumentException("Enterprise not found with id: " + request.getEnterpriseId()));
+        job.setEnterprise(enterprise);
+        job.setPersonalEmployer(null);  // clear other association
+    } else if (request.getPersonalEmployerId() != null) {
+        PersonalEmployerProfile personalEmployer = personalEmployerProfileRepository.findById(request.getPersonalEmployerId())
+                .orElseThrow(() -> new IllegalArgumentException("PersonalEmployer not found with id: " + request.getPersonalEmployerId()));
+        job.setPersonalEmployer(personalEmployer);
+        job.setEnterprise(null);  // clear other association
+    } else {
+        throw new IllegalArgumentException("Either enterpriseId or personalEmployerId must be provided.");
     }
+
+    job = jobRepository.save(job);
+    
+    List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
+    return buildResponse(job, jobSkills);
+}
+
 
     public List<JobResponse> getAllJobs() {
         List<Job> jobs = jobRepository.findAll();
@@ -39,32 +64,47 @@ public class JobService {
         return buildResponseFromJob(job);
     }
 
-    public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new NoSuchElementException("Job not found"));
+public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
+    Job job = jobRepository.findById(jobId)
+            .orElseThrow(() -> new NoSuchElementException("Job not found"));
 
-        // Update job fields
-        job.setTitle(request.getTitle());
-        job.setDescription(request.getDescription());
-        job.setType(request.getType());
-        job.setSalaryMin(request.getSalaryMin());
-        job.setSalaryMax(request.getSalaryMax());
-        job.setAddressLine1(request.getAddressLine1());
-        job.setAddressLine2(request.getAddressLine2());
-        job.setCity(request.getCity());
-        job.setState(request.getState());
-        job.setPostalCode(request.getPostalCode());
-        job.setCountry(request.getCountry());
+    job.setTitle(request.getTitle());
+    job.setDescription(request.getDescription());
+    job.setType(request.getType());
+    job.setSalaryMin(request.getSalaryMin());
+    job.setSalaryMax(request.getSalaryMax());
+    job.setAddressLine1(request.getAddressLine1());
+    job.setAddressLine2(request.getAddressLine2());
+    job.setCity(request.getCity());
+    job.setState(request.getState());
+    job.setPostalCode(request.getPostalCode());
+    job.setCountry(request.getCountry());
 
-        // Remove old jobSkills
-        jobSkillRepository.deleteAll(job.getJobSkills());
-
-        // Save new jobSkills
-        List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
-        job.setJobSkills(jobSkills);
-
-        return buildResponse(job, jobSkills);
+    // Handle association update
+    if (request.getEnterpriseId() != null) {
+        Enterprise enterprise = enterpriseRepository.findById(request.getEnterpriseId())
+                .orElseThrow(() -> new IllegalArgumentException("Enterprise not found with id: " + request.getEnterpriseId()));
+        job.setEnterprise(enterprise);
+        job.setPersonalEmployer(null);
+    } else if (request.getPersonalEmployerId() != null) {
+        PersonalEmployerProfile personalEmployer = personalEmployerProfileRepository.findById(request.getPersonalEmployerId())
+                .orElseThrow(() -> new IllegalArgumentException("PersonalEmployer not found with id: " + request.getPersonalEmployerId()));
+        job.setPersonalEmployer(personalEmployer);
+        job.setEnterprise(null);
+    } else {
+        // Optionally, you can decide to clear both or keep existing relationship
+        // For safety, throw error or keep current associations
+        throw new IllegalArgumentException("Either enterpriseId or personalEmployerId must be provided.");
     }
+
+    // Update job skills
+    jobSkillRepository.deleteAll(job.getJobSkills());
+    List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
+    job.setJobSkills(jobSkills);
+
+    return buildResponse(job, jobSkills);
+}
+
 
     public void deleteJob(Integer id) {
         Job job = jobRepository.findById(id)

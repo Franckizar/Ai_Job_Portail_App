@@ -56,4 +56,9 @@ public class RegisterRequest {
     private Boolean active;
     private String technicianLevel;
     private String certifications;
+    ////////////////////////////////////////////////////
+       private String displayName;
+    // private String bio;
+    private String profileImageUrl;
+    
 }

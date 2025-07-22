@@ -28,5 +28,7 @@ public class CreateJobRequest {
     private String postalCode;
     private String country;
     private List<CreateJobSkillDto> skills;
+      private Integer enterpriseId;          // optional
+    private Integer personalEmployerId; 
     // getters/setters
 }

@@ -4,6 +4,7 @@ import com.example.security.Other.Application.Application;
 import com.example.security.Other.AiJobMatch.AiJobMatch;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.user.Enterprise.Enterprise;
+import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -94,6 +95,11 @@ public class Job {
     // @JsonIgnore
     @JsonIgnore
     private List<JobSkill> jobSkills = new ArrayList<>();
+
+        @ManyToOne
+    @JoinColumn(name = "personal_employer_id")
+    private PersonalEmployerProfile personalEmployer;
+
 
     @PrePersist
     protected void onCreate() {

@@ -5,5 +5,6 @@ public enum Role {
     TECHNICIAN,
     JOB_SEEKER,
     ENTERPRISE,
-    UNKNOWN
+    UNKNOWN,
+    PERSONAL_EMPLOYER
 }

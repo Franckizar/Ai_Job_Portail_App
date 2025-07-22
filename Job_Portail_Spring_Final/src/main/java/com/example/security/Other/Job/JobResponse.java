@@ -15,6 +15,8 @@ public class JobResponse {
     private String city;
     private String country;
     private List<JobSkillDto> skills;
+    private Integer enterpriseId;          // optional
+    private Integer personalEmployerId;   
 
     @Data
     public static class JobSkillDto {
