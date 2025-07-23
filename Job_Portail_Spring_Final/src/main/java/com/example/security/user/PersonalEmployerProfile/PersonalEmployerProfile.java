@@ -36,6 +36,7 @@ public class PersonalEmployerProfile {
     private Double longitude;
 
     @OneToMany(mappedBy = "personalEmployer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Job> jobs;
 
     @OneToOne

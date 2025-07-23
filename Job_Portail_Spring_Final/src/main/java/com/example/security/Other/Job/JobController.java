@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.security.Other.Job.Job.JobStatus;
+
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -77,5 +79,26 @@ public ResponseEntity<JobResponse> updateJob(@PathVariable Integer id, @RequestB
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    
+
+        @GetMapping("/filter")
+    public ResponseEntity<List<Job>> getJobs(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String skill,
+            @RequestParam(required = false) String city) {
+
+        JobStatus jobStatus = null;
+        if (status != null) {
+            try {
+                jobStatus = JobStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city);
+        return ResponseEntity.ok(filteredJobs);
     }
 }

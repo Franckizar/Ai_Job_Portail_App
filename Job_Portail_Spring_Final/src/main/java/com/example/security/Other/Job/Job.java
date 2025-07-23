@@ -35,6 +35,7 @@ public class Job {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enterprise_id", referencedColumnName = "id")
+    @JsonIgnore
     private Enterprise enterprise;
 
     private String title;
@@ -98,6 +99,7 @@ public class Job {
 
         @ManyToOne
     @JoinColumn(name = "personal_employer_id")
+    @JsonIgnore
     private PersonalEmployerProfile personalEmployer;
 
 

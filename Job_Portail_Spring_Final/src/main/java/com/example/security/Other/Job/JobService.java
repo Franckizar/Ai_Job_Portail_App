@@ -1,5 +1,6 @@
 package com.example.security.Other.Job;
 
+import com.example.security.Other.Job.Job.JobStatus;
 import com.example.security.Other.JobSkill.CreateJobSkillDto;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.JobSkill.JobSkillRepository;
@@ -12,6 +13,8 @@ import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -185,5 +188,14 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
 
     private JobResponse buildResponseFromJob(Job job) {
         return buildResponse(job, job.getJobSkills());
+    }
+
+
+
+       public List<Job> findJobsByFilters(JobStatus status, String skill, String city) {
+        Specification<Job> spec = Specification.where(JobSpecification.hasStatus(status))
+                                              .and(JobSpecification.hasSkill(skill))
+                                              .and(JobSpecification.inLocation(city));
+        return jobRepository.findAll(spec);
     }
 }

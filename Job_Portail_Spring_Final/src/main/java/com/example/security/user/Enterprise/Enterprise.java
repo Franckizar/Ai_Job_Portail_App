@@ -38,6 +38,8 @@ public class Enterprise {
     private Double longitude;
 
     @OneToMany(mappedBy = "enterprise", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    // @Builder.Default
     private List<Job> jobs;
 
 
