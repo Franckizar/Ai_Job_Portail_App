@@ -5,6 +5,7 @@ import java.util.List;
 import com.example.security.Other.Job.Job;
 import com.example.security.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,6 +46,7 @@ public class Enterprise {
 
     @OneToOne
     @JsonIgnore
+    @JsonManagedReference
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user;
 }

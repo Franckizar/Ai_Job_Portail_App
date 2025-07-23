@@ -3,6 +3,8 @@ package com.example.security.Other.AiJobMatch;
 // package com.example.security.ai;
 
 import com.example.security.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 // import com.example.security.Other.Job.Job;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,6 +27,7 @@ public class AiJobMatch {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 

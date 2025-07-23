@@ -14,8 +14,8 @@ import com.example.security.user.Admin.Admin;
 import com.example.security.user.Enterprise.Enterprise;
 import com.example.security.user.JobSeeker.JobSeeker;
 import com.example.security.user.Technicien.Technician;
-
-
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -69,6 +69,7 @@ public class User implements UserDetails {
     private JobSeeker jobSeekerProfile;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonBackReference
     private Enterprise enterpriseProfile;
 
     // ========== Business Relationships ==========
@@ -80,6 +81,7 @@ public class User implements UserDetails {
     // private List<Application> applications;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<AiJobMatch> aiJobMatches;
 
     // @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

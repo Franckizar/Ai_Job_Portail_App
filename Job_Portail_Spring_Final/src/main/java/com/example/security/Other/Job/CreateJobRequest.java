@@ -30,5 +30,6 @@ public class CreateJobRequest {
     private List<CreateJobSkillDto> skills;
       private Integer enterpriseId;          // optional
     private Integer personalEmployerId; 
+      private String employerName;  
     // getters/setters
 }
