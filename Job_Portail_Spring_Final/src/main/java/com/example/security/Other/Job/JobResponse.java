@@ -15,8 +15,11 @@ public class JobResponse {
     private String city;
     private String country;
     private List<JobSkillDto> skills;
-    private Integer enterpriseId;          // optional
-    private Integer personalEmployerId;   
+    private Integer enterpriseId;
+    private Integer personalEmployerId;
+    private String employerName;     // add this field!
+
+    // Lombok @Data provides getter/setter automatically
 
     @Data
     public static class JobSkillDto {
@@ -24,4 +27,6 @@ public class JobResponse {
         private String skillName;
         private Boolean required;
     }
+
+    // Remove or delete the unimplemented getEmployerName() method
 }

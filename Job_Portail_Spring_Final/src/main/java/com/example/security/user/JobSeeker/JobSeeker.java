@@ -1,5 +1,6 @@
 package com.example.security.user.JobSeeker;
 
+import com.example.security.Other.CV.CV;
 import com.example.security.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,5 +28,9 @@ public class JobSeeker {
     @JsonIgnore
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User user;
+
+    @OneToOne
+    @JoinColumn(name = "cv_id")
+    private CV cv;
 
 }

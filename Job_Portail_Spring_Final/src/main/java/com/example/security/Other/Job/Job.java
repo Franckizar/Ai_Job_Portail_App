@@ -5,7 +5,7 @@ import com.example.security.Other.AiJobMatch.AiJobMatch;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.user.Enterprise.Enterprise;
 import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+// import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -74,6 +74,7 @@ public class Job {
     private String city;
 
     private String state;
+    private String employerName;
 
     @Column(name = "postal_code")
     private String postalCode;

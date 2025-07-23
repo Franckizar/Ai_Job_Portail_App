@@ -1,5 +1,6 @@
     package com.example.security.user.Technicien;
 
+    import com.example.security.Other.CV.CV;
     import com.example.security.user.User;
     import jakarta.persistence.*;
     import lombok.*;
@@ -21,6 +22,9 @@
         private User user;
 
         private String department;
+       @OneToOne
+        @JoinColumn(name = "cv_id")
+        private CV cv;
         private String licenseNumber;
         private String shift;
         private String contactNumber;
