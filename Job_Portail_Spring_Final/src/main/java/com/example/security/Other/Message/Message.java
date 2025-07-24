@@ -22,21 +22,23 @@ public class Message {
     @Column(name = "message_id")
     private Integer id;
 
-
-    @Column(name = "sender_id", nullable = false)
-    private Integer senderId;
-
-    @Column(name = "receiver_id")
-    private Integer receiverId; // Optional for group chats
-
-    @Column(name = "message_text",nullable = false, columnDefinition = "TEXT")
+    @Column(name = "message_text", nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false)
-    // @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "messages", "participants"})
     @JsonIgnore
     private Conversation conversation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", nullable = false)
+    @JsonIgnore
+    private User sender;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiver_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private User receiver;
 
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
@@ -50,19 +52,6 @@ public class Message {
     @Builder.Default
     private MessageType messageType = MessageType.TEXT;
 
-    // Optional: Reference to sender user entity
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", referencedColumnName = "id", insertable = false, updatable = false)
-    // @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    @JsonIgnore
-    private User sender;
-
-    // Optional: Reference to receiver user entity
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_id", referencedColumnName = "id", insertable = false, updatable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private User receiver;
-
     @PrePersist
     protected void onCreate() {
         if (timestamp == null) {
@@ -70,21 +59,17 @@ public class Message {
         }
     }
 
-    // Enum for message types
     public enum MessageType {
-        TEXT,
-        IMAGE,
-        FILE,
-        SYSTEM // For system messages like "User joined", "User left", etc.
+        TEXT, IMAGE, FILE, SYSTEM
     }
 
     // Helper methods
     public boolean isFromUser(Integer userId) {
-        return senderId != null && senderId.equals(userId);
+        return sender != null && sender.getId().equals(userId);
     }
 
     public boolean isToUser(Integer userId) {
-        return receiverId != null && receiverId.equals(userId);
+        return receiver != null && receiver.getId().equals(userId);
     }
 
     public void markAsRead() {
