@@ -2,6 +2,7 @@ package com.example.security.Other.Message;
 
 import com.example.security.Other.Conversation.Conversation;
 import com.example.security.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,7 +34,8 @@ public class Message {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "messages", "participants"})
+    // @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "messages", "participants"})
+    @JsonIgnore
     private Conversation conversation;
 
     @Column(name = "timestamp", nullable = false)
@@ -51,7 +53,8 @@ public class Message {
     // Optional: Reference to sender user entity
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", referencedColumnName = "id", insertable = false, updatable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    // @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private User sender;
 
     // Optional: Reference to receiver user entity

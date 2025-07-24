@@ -60,12 +60,15 @@ public class User implements UserDetails {
 
     // ========== Profile Relationships ==========
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonBackReference
     private Admin adminProfile;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonBackReference
     private Technician technician;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonBackReference
     private JobSeeker jobSeekerProfile;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
@@ -97,9 +100,11 @@ public class User implements UserDetails {
     private List<Payment> paymentsReceived;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<ConversationParticipant> conversationParticipants;
 
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Message> messagesSent;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
