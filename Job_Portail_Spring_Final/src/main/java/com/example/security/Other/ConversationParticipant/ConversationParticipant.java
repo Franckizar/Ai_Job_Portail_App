@@ -2,6 +2,8 @@ package com.example.security.Other.ConversationParticipant;
 
 import com.example.security.Other.Conversation.Conversation;
 import com.example.security.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +21,7 @@ public class ConversationParticipant {
     @Id
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "conversation_id", referencedColumnName = "conversation_id", nullable = false)
+    @JsonIgnore
     private Conversation conversation;
 
     @Id
