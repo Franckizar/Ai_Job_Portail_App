@@ -26,36 +26,36 @@ public class ConversationService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
 
-    // Create a new conversation with participants
-    public Conversation createConversation(List<Integer> userIds) {
-        Conversation conversation = Conversation.builder().build();
-        conversation = conversationRepository.save(conversation);
+ public Conversation createConversation(List<Integer> userIds) {
+    // Save the conversation first
+    Conversation conversation = conversationRepository.save(Conversation.builder().build());
 
-        for (Integer userId : userIds) {
-            Optional<User> userOpt = userRepository.findById(userId);
-            if (userOpt.isEmpty()) continue; // skip invalid users
+    // Loop through user IDs and add them as participants
+    for (Integer userId : userIds) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
-            ConversationParticipant participant = ConversationParticipant.builder()
-                    .conversation(conversation)
-                    .user(userOpt.get())
-                    .build();
-            participantRepository.save(participant);
-            conversation.addParticipant(participant);
-        }
+        ConversationParticipant participant = ConversationParticipant.builder()
+                .conversation(conversation)
+                .user(user)
+                .build();
 
-        return conversation;
+        participantRepository.save(participant);
+        conversation.addParticipant(participant);
     }
 
-    // Add a participant to existing conversation
+    return conversation;
+}
+
+
+    // Add participant to existing conversation
     public ConversationParticipant addParticipant(Integer conversationId, Integer userId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Check if already participant
-        boolean exists = participantRepository.existsById(
-                new ConversationParticipantId(conversationId, userId));
+        boolean exists = participantRepository.existsById(new ConversationParticipantId(conversationId, userId));
         if (exists) {
             throw new IllegalStateException("User already participant");
         }
@@ -64,27 +64,24 @@ public class ConversationService {
                 .conversation(conversation)
                 .user(user)
                 .build();
+
         return participantRepository.save(participant);
     }
 
-    // Send a message in conversation (FIXED VERSION)
+    // Send a message in existing conversation
     public Message sendMessage(Integer conversationId, Integer senderId, String content) {
-        // Get the conversation
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
 
-        // Verify sender is a participant
         boolean senderIsParticipant = participantRepository.existsById(
                 new ConversationParticipantId(conversationId, senderId));
         if (!senderIsParticipant) {
             throw new IllegalArgumentException("Sender is not a participant in this conversation");
         }
 
-        // Get sender user
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
 
-        // Create and save the message
         Message message = Message.builder()
                 .senderId(senderId)
                 .content(content)
@@ -95,43 +92,43 @@ public class ConversationService {
         return messageRepository.save(message);
     }
 
-    // Alternative: Send message between TWO users (creates conversation if needed)
+    // Send direct message between two users (create conversation if needed)
     public Message sendDirectMessage(Integer senderId, Integer receiverId, String content) {
-        // Check if conversation exists between sender and receiver
-        Optional<Conversation> existingConversation = findConversationBetweenUsers(senderId, receiverId);
+        Optional<Conversation> existingConversationOpt = findConversationBetweenUsers(senderId, receiverId);
 
         Conversation conversation;
-        
-        if (existingConversation.isPresent()) {
-            conversation = existingConversation.get();
+
+        if (existingConversationOpt.isPresent()) {
+            conversation = existingConversationOpt.get();
         } else {
-            // Create new conversation if not exists
+            // Create new conversation
+            conversation = Conversation.builder().build();
+
+            // Fetch users once
             User sender = userRepository.findById(senderId)
                     .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
             User receiver = userRepository.findById(receiverId)
                     .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
 
-            // Create conversation
-            conversation = Conversation.builder().build();
-            conversation = conversationRepository.save(conversation);
-
-            // Add both participants
+            // Add participants before saving conversation to avoid duplicate session issues
             ConversationParticipant senderParticipant = ConversationParticipant.builder()
                     .conversation(conversation)
                     .user(sender)
                     .build();
-            participantRepository.save(senderParticipant);
-            conversation.addParticipant(senderParticipant);
 
             ConversationParticipant receiverParticipant = ConversationParticipant.builder()
                     .conversation(conversation)
                     .user(receiver)
                     .build();
-            participantRepository.save(receiverParticipant);
-            conversation.addParticipant(receiverParticipant);
+
+            conversation.getParticipants().add(senderParticipant);
+            conversation.getParticipants().add(receiverParticipant);
+
+            // Save conversation + participants via cascade
+            conversation = conversationRepository.save(conversation);
         }
 
-        // Create and save the message
+        // Create and save message linked to conversation
         Message message = Message.builder()
                 .senderId(senderId)
                 .receiverId(receiverId)
@@ -143,19 +140,17 @@ public class ConversationService {
         return messageRepository.save(message);
     }
 
-    // Helper method to find conversation between two users
+    // Find conversation between two users
     private Optional<Conversation> findConversationBetweenUsers(Integer user1Id, Integer user2Id) {
-        // This assumes you have a custom query in your repository
-        // You'll need to implement this in ConversationRepository
         return conversationRepository.findConversationBetweenTwoUsers(user1Id, user2Id);
     }
 
-    // Get all messages for conversation
+    // Get all messages for a conversation
     public List<Message> getMessages(Integer conversationId) {
         return messageRepository.findByConversationIdOrderByTimestampAsc(conversationId);
     }
 
-    // Get participants of conversation
+    // Get participants of a conversation
     public List<User> getParticipants(Integer conversationId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));

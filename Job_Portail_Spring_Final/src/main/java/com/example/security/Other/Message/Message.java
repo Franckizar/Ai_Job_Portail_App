@@ -28,7 +28,7 @@ public class Message {
     @Column(name = "receiver_id")
     private Integer receiverId; // Optional for group chats
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "message_text",nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
