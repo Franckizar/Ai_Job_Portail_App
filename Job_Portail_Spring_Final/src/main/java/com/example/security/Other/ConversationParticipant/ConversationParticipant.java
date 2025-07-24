@@ -1,4 +1,3 @@
-// 13. ConversationParticipant.java
 package com.example.security.Other.ConversationParticipant;
 
 import com.example.security.Other.Conversation.Conversation;
@@ -8,26 +7,26 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "conversation_participants")
-@IdClass(ConversationParticipant.class)
+@IdClass(com.example.security.Other.ConversationParticipantId.ConversationParticipantId.class)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ConversationParticipant {
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "conversation_id", referencedColumnName = "conversation_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "conversation_id", referencedColumnName = "conversation_id", nullable = false)
     private Conversation conversation;
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
-    @Column(name = "joined_at")
+    @Column(name = "joined_at", nullable = false, updatable = false)
     private LocalDateTime joinedAt;
 
     @PrePersist

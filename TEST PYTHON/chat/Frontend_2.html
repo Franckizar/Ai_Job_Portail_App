@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Chat Interface</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 30px;
+    background-color: #e9ebee;
+    color: #222;
+  }
+  h2 {
+    margin-bottom: 10px;
+  }
+  label, input, button, textarea {
+    font-size: 14px;
+  }
+  input[type="number"], textarea {
+    width: 300px;
+    padding: 8px;
+    margin: 4px 0 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  button {
+    padding: 8px 14px;
+    border: none;
+    color: white;
+    background-color: #0069d9;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #004a9f;
+  }
+  #messages, #participants {
+    background: #fff;
+    border: 1px solid #ccc;
+    height: 250px;
+    overflow-y: auto;
+    padding: 8px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+  }
+  .message {
+    margin-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 4px;
+  }
+  .message strong {
+    color: #0b5ed7;
+  }
+</style>
+</head>
+<body>
+
+  <h2>Chat Interface</h2>
+
+  <label for="conversationId">Conversation ID:</label><br/>
+  <input type="number" id="conversationId" value="1" min="1" /><br/>
+  <button id="createConversationBtn">Create Conversation</button><br/><br/>
+
+  <button id="loadMessagesBtn">Load Messages</button>
+  <button id="loadParticipantsBtn">Load Participants</button>
+
+  <h3>Messages</h3>
+  <div id="messages">No messages loaded.</div>
+
+  <h3>Send Message</h3>
+  <label for="senderId">Sender User ID:</label><br/>
+  <input type="number" id="senderId" value="1" min="1" /><br/>
+
+  <textarea id="messageText" rows="3" placeholder="Type your message..."></textarea><br/>
+  <button id="sendMessageBtn">Send</button>
+
+  <h3>Participants</h3>
+  <div id="participants">No participants loaded.</div>
+
+  <h3>Add Participant</h3>
+  <label for="addUserId">User ID:</label><br/>
+  <input type="number" id="addUserId" min="1" placeholder="User ID to add" />
+  <button id="addParticipantBtn">Add Participant</button>
+
+  <script>
+    const apiBase = 'http://localhost:8088/api/v1/auth/conversations';
+
+    function formatTime(isoString) {
+      const dt = new Date(isoString);
+      return dt.toLocaleString();
+    }
+
+    async function loadMessages() {
+      const conversationId = document.getElementById('conversationId').value;
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.textContent = 'Loading messages...';
+
+      try {
+        const res = await fetch(`${apiBase}/${conversationId}/messages`);
+        if (!res.ok) throw new Error(await res.text());
+
+        const messages = await res.json();
+        if (messages.length === 0) {
+          messagesDiv.textContent = 'No messages in this conversation.';
+          return;
+        }
+
+        messagesDiv.innerHTML = '';
+        messages.forEach(msg => {
+          const mDiv = document.createElement('div');
+          mDiv.classList.add('message');
+          mDiv.innerHTML = `<strong>User ${msg.sender.id}</strong> [${formatTime(msg.sentAt)}]:<br/>${msg.messageText}`;
+          messagesDiv.appendChild(mDiv);
+        });
+      } catch (err) {
+        console.error(err);
+        messagesDiv.textContent = 'Failed to load messages. ' + err.message;
+      }
+    }
+
+    async function loadParticipants() {
+      const conversationId = document.getElementById('conversationId').value;
+      const participantsDiv = document.getElementById('participants');
+      participantsDiv.textContent = 'Loading participants...';
+
+      try {
+        const res = await fetch(`${apiBase}/${conversationId}/participants`);
+        if (!res.ok) throw new Error(await res.text());
+
+        const participants = await res.json();
+        if (participants.length === 0) {
+          participantsDiv.textContent = 'No participants in this conversation.';
+          return;
+        }
+
+        participantsDiv.innerHTML = '';
+        participants.forEach(p => {
+          participantsDiv.innerHTML += `User ID: <strong>${p.id}</strong>${p.username ? ` (${p.username})` : ''}<br/>`;
+        });
+      } catch (err) {
+        console.error(err);
+        participantsDiv.textContent = 'Failed to load participants. ' + err.message;
+      }
+    }
+
+    async function sendMessage() {
+      const conversationId = document.getElementById('conversationId').value;
+      const senderId = document.getElementById('senderId').value;
+      const messageText = document.getElementById('messageText').value.trim();
+
+      if (!messageText) {
+        alert('Please enter a message to send.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${apiBase}/${conversationId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senderId: parseInt(senderId), messageText })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to send message');
+        }
+
+        document.getElementById('messageText').value = '';
+        await loadMessages();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to send message. ' + err.message);
+      }
+    }
+
+    async function addParticipant() {
+      const conversationId = document.getElementById('conversationId').value;
+      const userId = document.getElementById('addUserId').value.trim();
+
+      if (!userId) {
+        alert('Please enter a User ID to add.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${apiBase}/${conversationId}/participants/${userId}`, {
+          method: 'POST'
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to add participant');
+        }
+
+        document.getElementById('addUserId').value = '';
+        await loadParticipants();
+        alert('Participant added successfully.');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to add participant. ' + err.message);
+      }
+    }
+
+    async function createConversation() {
+      const userIds = prompt('Enter comma-separated user IDs (e.g., 1,2):');
+      if (!userIds) return;
+
+      try {
+        const ids = userIds.split(',').map(id => parseInt(id.trim()));
+        const res = await fetch(apiBase, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds: ids })
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        const convo = await res.json();
+        document.getElementById('conversationId').value = convo.id;
+        alert('Conversation created with ID: ' + convo.id);
+      } catch (err) {
+        console.error(err);
+        alert('Failed to create conversation. ' + err.message);
+      }
+    }
+
+    // Button bindings
+    document.getElementById('loadMessagesBtn').addEventListener('click', loadMessages);
+    document.getElementById('loadParticipantsBtn').addEventListener('click', loadParticipants);
+    document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+    document.getElementById('addParticipantBtn').addEventListener('click', addParticipant);
+    document.getElementById('createConversationBtn').addEventListener('click', createConversation);
+  </script>
+
+</body>
+</html>

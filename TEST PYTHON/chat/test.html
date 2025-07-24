@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Chat Interface - Complete</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 20px;
+    background-color: #e9ebee;
+    color: #222;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  h2 {
+    margin-top: 0;
+    color: #1877f2;
+  }
+  h3 {
+    color: #333;
+    margin-top: 20px;
+  }
+  label, input, button, textarea, select {
+    font-size: 14px;
+  }
+  input[type="number"], input[type="text"], textarea, select {
+    width: 300px;
+    padding: 8px;
+    margin: 4px 0 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  button {
+    padding: 8px 14px;
+    border: none;
+    color: white;
+    background-color: #1877f2;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin: 5px;
+  }
+  button:hover {
+    background-color: #166fe5;
+  }
+  button.secondary {
+    background-color: #42b883;
+  }
+  button.secondary:hover {
+    background-color: #369870;
+  }
+  button.danger {
+    background-color: #dc3545;
+  }
+  button.danger:hover {
+    background-color: #c82333;
+  }
+  #messages, #participants, #conversations {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    font-family: monospace;
+  }
+  .message {
+    background: white;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 4px solid #1877f2;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .message .sender {
+    font-weight: bold;
+    color: #1877f2;
+  }
+  .message .time {
+    color: #666;
+    font-size: 12px;
+    float: right;
+  }
+  .message .content {
+    margin-top: 5px;
+    color: #333;
+    line-height: 1.4;
+  }
+  .conversation-item {
+    background: white;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .conversation-item:hover {
+    background-color: #f0f2f5;
+  }
+  .participant-item {
+    background: white;
+    margin-bottom: 5px;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid #42b883;
+  }
+  .flex {
+    display: flex;
+    gap: 20px;
+  }
+  .flex > div {
+    flex: 1;
+  }
+  .success {
+    color: #28a745;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+  .error {
+    color: #dc3545;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+  .status {
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  .status.loading {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  .auto-refresh {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>💬 Chat Interface - Complete System</h1>
+
+  <div class="flex">
+    <!-- Left Column -->
+    <div>
+      <!-- Create Conversation -->
+      <div class="section">
+        <h2>🆕 Create Conversation</h2>
+        <label for="createUserIds">User IDs (comma-separated):</label><br/>
+        <input type="text" id="createUserIds" placeholder="1,2,3" /><br/>
+        <button id="createConversationBtn">Create Conversation</button>
+        <div id="createResult"></div>
+      </div>
+
+      <!-- Send Direct Message -->
+      <div class="section">
+        <h2>💌 Send Direct Message</h2>
+        <label for="directSenderId">Sender ID:</label><br/>
+        <input type="number" id="directSenderId" value="1" min="1" /><br/>
+        
+        <label for="directReceiverId">Receiver ID:</label><br/>
+        <input type="number" id="directReceiverId" value="2" min="1" /><br/>
+        
+        <label for="directMessage">Message:</label><br/>
+        <textarea id="directMessage" rows="3" placeholder="Type your message..."></textarea><br/>
+        <button id="sendDirectBtn" class="secondary">Send Direct Message</button>
+        <div id="directResult"></div>
+      </div>
+
+      <!-- User Conversations -->
+      <div class="section">
+        <h2>📋 User Conversations</h2>
+        <label for="userIdForConvos">User ID:</label><br/>
+        <input type="number" id="userIdForConvos" value="1" min="1" />
+        <button id="loadUserConvosBtn">Load Conversations</button>
+        <div id="conversations">No conversations loaded.</div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+      <!-- Conversation Management -->
+      <div class="section">
+        <h2>⚙️ Conversation Management</h2>
+        <label for="conversationId">Conversation ID:</label><br/>
+        <input type="number" id="conversationId" value="1" min="1" /><br/>
+        <button id="loadMessagesBtn">Load Messages</button>
+        <button id="loadParticipantsBtn">Load Participants</button>
+        <button id="refreshBtn" class="secondary">🔄 Refresh All</button>
+        <div class="auto-refresh">Messages auto-refresh every 5 seconds</div>
+      </div>
+
+      <!-- Messages Display -->
+      <div class="section">
+        <h2>💬 Messages</h2>
+        <div id="messages">No messages loaded.</div>
+        <div id="messageStatus" class="status" style="display: none;"></div>
+      </div>
+
+      <!-- Send Message to Conversation -->
+      <div class="section">
+        <h2>✉️ Send Message to Conversation</h2>
+        <label for="senderId">Sender ID:</label><br/>
+        <input type="number" id="senderId" value="1" min="1" /><br/>
+        
+        <textarea id="messageText" rows="3" placeholder="Type your message..."></textarea><br/>
+        <button id="sendMessageBtn">Send to Conversation</button>
+        <button id="clearMessageBtn" class="danger">Clear</button>
+      </div>
+
+      <!-- Participants -->
+      <div class="section">
+        <h2>👥 Participants</h2>
+        <div id="participants">No participants loaded.</div>
+        
+        <h3>Add Participant</h3>
+        <label for="addUserId">User ID:</label><br/>
+        <input type="number" id="addUserId" min="1" placeholder="User ID to add" />
+        <button id="addParticipantBtn">Add Participant</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const apiBase = 'http://localhost:8088/api/v1/auth/conversations';
+
+function formatTime(isoString) {
+  if (!isoString) return 'Unknown time';
+  const dt = new Date(isoString);
+  return dt.toLocaleString();
+}
+
+function showResult(elementId, message, isError = false) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+  element.textContent = message;
+  element.className = isError ? 'error' : 'success';
+}
+
+function showStatus(message, type = 'loading') {
+  const statusDiv = document.getElementById('messageStatus');
+  statusDiv.textContent = message;
+  statusDiv.className = `status ${type}`;
+  statusDiv.style.display = 'block';
+  
+  if (type !== 'loading') {
+    setTimeout(() => {
+      statusDiv.style.display = 'none';
+    }, 3000);
+  }
+}
+
+// Create Conversation
+document.getElementById('createConversationBtn').addEventListener('click', async () => {
+  const input = document.getElementById('createUserIds').value.trim();
+  if (!input) {
+    showResult('createResult', 'Please enter user IDs', true);
+    return;
+  }
+
+  const userIds = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  if (userIds.length === 0) {
+    showResult('createResult', 'Please enter valid numeric user IDs', true);
+    return;
+  }
+
+  try {
+    showResult('createResult', 'Creating conversation...', false);
+    const resp = await fetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds })
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    showResult('createResult', `✅ Conversation created with ID: ${data.id}`);
+    document.getElementById('conversationId').value = data.id;
+    document.getElementById('createUserIds').value = '';
+  } catch (err) {
+    console.error('Create conversation error:', err);
+    showResult('createResult', '❌ Failed: ' + err.message, true);
+  }
+});
+
+// Send Direct Message
+document.getElementById('sendDirectBtn').addEventListener('click', async () => {
+  const senderId = parseInt(document.getElementById('directSenderId').value);
+  const receiverId = parseInt(document.getElementById('directReceiverId').value);
+  const messageText = document.getElementById('directMessage').value.trim();
+
+  if (!messageText) {
+    showResult('directResult', 'Please enter a message', true);
+    return;
+  }
+
+  if (senderId === receiverId) {
+    showResult('directResult', 'Sender and receiver cannot be the same', true);
+    return;
+  }
+
+  try {
+    showResult('directResult', 'Sending message...', false);
+    const resp = await fetch(`${apiBase}/direct`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId, receiverId, messageText })
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    showResult('directResult', `✅ Message sent! Conversation ID: ${data.conversation.id}`);
+    document.getElementById('directMessage').value = '';
+    document.getElementById('conversationId').value = data.conversation.id;
+    
+    // Auto-load the conversation
+    loadMessages();
+    loadParticipants();
+  } catch (err) {
+    console.error('Send direct message error:', err);
+    showResult('directResult', '❌ Failed: ' + err.message, true);
+  }
+});
+
+// Load User Conversations
+document.getElementById('loadUserConvosBtn').addEventListener('click', async () => {
+  const userId = document.getElementById('userIdForConvos').value;
+  const conversationsDiv = document.getElementById('conversations');
+  
+  if (!userId) {
+    conversationsDiv.textContent = 'Please enter a User ID';
+    return;
+  }
+
+  conversationsDiv.innerHTML = '<div class="status loading">Loading conversations...</div>';
+
+  try {
+    const resp = await fetch(`${apiBase}/user/${userId}`);
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    const conversations = await resp.json();
+    if (conversations.length === 0) {
+      conversationsDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No conversations found for this user.</div>';
+      return;
+    }
+
+    conversationsDiv.innerHTML = '';
+    conversations.forEach((convo, index) => {
+      const div = document.createElement('div');
+      div.className = 'conversation-item';
+      div.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 5px;">💬 Conversation ${convo.id}</div>
+        <div style="font-size: 12px; color: #666;">Created: ${formatTime(convo.createdAt)}</div>
+        <div style="font-size: 12px; color: #666;">Participants: ${convo.participants ? convo.participants.length : 'Loading...'}</div>
+        <button onclick="loadConversation(${convo.id})" style="margin-top: 8px; padding: 4px 8px; font-size: 12px;">Load Conversation</button>
+      `;
+      conversationsDiv.appendChild(div);
+    });
+  } catch (err) {
+    console.error('Load user conversations error:', err);
+    conversationsDiv.innerHTML = `<div class="error">❌ Failed to load conversations: ${err.message}</div>`;
+  }
+});
+
+// Load Messages
+async function loadMessages() {
+  const conversationId = document.getElementById('conversationId').value;
+  const messagesDiv = document.getElementById('messages');
+  
+  if (!conversationId) {
+    messagesDiv.textContent = 'Please enter a Conversation ID';
+    return;
+  }
+
+  // Show loading only if messages div is empty
+  if (messagesDiv.children.length === 0) {
+    messagesDiv.innerHTML = '<div class="status loading">Loading messages...</div>';
+  }
+
+  try {
+    const resp = await fetch(`${apiBase}/${conversationId}/messages`);
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    const messages = await resp.json();
+    if (messages.length === 0) {
+      messagesDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No messages in this conversation yet.</div>';
+      return;
+    }
+
+    messagesDiv.innerHTML = '';
+    messages.forEach(msg => {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message';
+      messageDiv.innerHTML = `
+        <div class="time">${formatTime(msg.timestamp)}</div>
+        <div class="sender">👤 User ${msg.senderId}</div>
+        <div class="content">${escapeHtml(msg.content)}</div>
+      `;
+      messagesDiv.appendChild(messageDiv);
+    });
+    
+    // Scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  } catch (err) {
+    console.error('Load messages error:', err);
+    messagesDiv.innerHTML = `<div class="error">❌ Failed to load messages: ${err.message}</div>`;
+  }
+}
+
+// Load Participants
+async function loadParticipants() {
+  const conversationId = document.getElementById('conversationId').value;
+  const participantsDiv = document.getElementById('participants');
+  
+  if (!conversationId) {
+    participantsDiv.textContent = 'Please enter a Conversation ID';
+    return;
+  }
+
+  participantsDiv.innerHTML = '<div class="status loading">Loading participants...</div>';
+
+  try {
+    const resp = await fetch(`${apiBase}/${conversationId}/participants`);
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    const participants = await resp.json();
+    if (participants.length === 0) {
+      participantsDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No participants found.</div>';
+      return;
+    }
+
+    participantsDiv.innerHTML = '';
+    participants.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'participant-item';
+      div.innerHTML = `👤 User ID: <strong>${p.id}</strong>${p.username ? ` (${p.username})` : ''}`;
+      participantsDiv.appendChild(div);
+    });
+  } catch (err) {
+    console.error('Load participants error:', err);
+    participantsDiv.innerHTML = `<div class="error">❌ Failed to load participants: ${err.message}</div>`;
+  }
+}
+
+// Send Message to Conversation
+document.getElementById('sendMessageBtn').addEventListener('click', async () => {
+  const conversationId = document.getElementById('conversationId').value;
+  const senderId = document.getElementById('senderId').value;
+  const messageText = document.getElementById('messageText').value.trim();
+
+  if (!conversationId) {
+    alert('Please enter a Conversation ID');
+    return;
+  }
+
+  if (!senderId) {
+    alert('Please enter a Sender ID');
+    return;
+  }
+
+  if (!messageText) {
+    alert('Please enter a message');
+    return;
+  }
+
+  try {
+    showStatus('Sending message...', 'loading');
+    const resp = await fetch(`${apiBase}/${conversationId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senderId: parseInt(senderId), messageText })
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    document.getElementById('messageText').value = '';
+    showStatus('✅ Message sent successfully!', 'success');
+    await loadMessages();
+  } catch (err) {
+    console.error('Send message error:', err);
+    showStatus('❌ Failed to send message: ' + err.message, 'error');
+  }
+});
+
+// Add Participant
+document.getElementById('addParticipantBtn').addEventListener('click', async () => {
+  const conversationId = document.getElementById('conversationId').value;
+  const userId = document.getElementById('addUserId').value.trim();
+
+  if (!conversationId) {
+    alert('Please enter a Conversation ID');
+    return;
+  }
+
+  if (!userId) {
+    alert('Please enter a User ID');
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${apiBase}/${conversationId}/participants/${userId}`, {
+      method: 'POST'
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(errorText || `HTTP ${resp.status}`);
+    }
+
+    document.getElementById('addUserId').value = '';
+    await loadParticipants();
+    alert('✅ Participant added successfully!');
+  } catch (err) {
+    console.error('Add participant error:', err);
+    alert('❌ Failed to add participant: ' + err.message);
+  }
+});
+
+// Helper function to load a specific conversation
+function loadConversation(conversationId) {
+  document.getElementById('conversationId').value = conversationId;
+  loadMessages();
+  loadParticipants();
+}
+
+// Clear message textarea
+document.getElementById('clearMessageBtn').addEventListener('click', () => {
+  document.getElementById('messageText').value = '';
+});
+
+// Refresh all data
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  loadMessages();
+  loadParticipants();
+});
+
+// Event listeners for main buttons
+document.getElementById('loadMessagesBtn').addEventListener('click', loadMessages);
+document.getElementById('loadParticipantsBtn').addEventListener('click', loadParticipants);
+
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Auto-refresh messages every 5 seconds if a conversation is loaded
+let autoRefreshInterval;
+
+function startAutoRefresh() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
+  
+  autoRefreshInterval = setInterval(() => {
+    const conversationId = document.getElementById('conversationId').value;
+    if (conversationId && conversationId !== '') {
+      loadMessages();
+    }
+  }, 5000);
+}
+
+// Start auto-refresh when page loads
+startAutoRefresh();
+
+// Handle Enter key in textareas
+document.getElementById('messageText').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    document.getElementById('sendMessageBtn').click();
+  }
+});
+
+document.getElementById('directMessage').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    document.getElementById('sendDirectBtn').click();
+  }
+});
+
+console.log('💬 Chat Interface loaded successfully!');
+console.log('💡 Tip: Use Ctrl+Enter to send messages quickly');
+</script>
+
+</body>
+</html>

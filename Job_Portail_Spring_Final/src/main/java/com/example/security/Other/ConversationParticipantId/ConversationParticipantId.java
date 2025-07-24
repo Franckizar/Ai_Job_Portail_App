@@ -10,6 +10,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class ConversationParticipantId implements Serializable {
-    private Long conversation;
+    private Integer conversation;
     private Integer user;
 }

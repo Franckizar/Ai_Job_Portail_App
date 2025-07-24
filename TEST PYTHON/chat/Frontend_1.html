@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Create Conversation</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+    background-color: #f5f7fa;
+  }
+  h2 {
+    color: #333;
+  }
+  input[type="text"] {
+    width: 300px;
+    padding: 8px;
+    font-size: 14px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  button {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  #result {
+    margin-top: 20px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+  <h2>Create Conversation</h2>
+  <p>Enter User IDs (comma separated):</p>
+  <input type="text" id="userIdsInput" placeholder="e.g. 1,2,3" />
+  <button id="createBtn">Create</button>
+
+  <div id="result"></div>
+
+  <script>
+    const apiBase = 'http://localhost:8088/api/v1/auth/conversations';
+
+    document.getElementById('createBtn').addEventListener('click', async () => {
+      const input = document.getElementById('userIdsInput').value.trim();
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = '';
+
+      if (!input) {
+        alert('Please enter at least one user ID.');
+        return;
+      }
+
+      // Parse and filter user IDs
+      const userIds = input.split(',')
+                           .map(s => parseInt(s.trim()))
+                           .filter(n => !isNaN(n));
+
+      if (userIds.length === 0) {
+        alert('Please enter valid numeric user IDs.');
+        return;
+      }
+
+      try {
+        const resp = await fetch(apiBase, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds })
+        });
+
+        if (!resp.ok) {
+          throw new Error(`Server error: ${resp.statusText}`);
+        }
+
+        const data = await resp.json();
+        resultDiv.textContent = `Conversation created successfully with ID: ${data.id}`;
+      } catch (err) {
+        console.error(err);
+        resultDiv.textContent = 'Failed to create conversation. See console for details.';
+      }
+    });
+  </script>
+</body>
+</html>
