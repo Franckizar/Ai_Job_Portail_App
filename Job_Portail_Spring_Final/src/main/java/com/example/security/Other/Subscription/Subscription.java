@@ -54,4 +54,8 @@ public class Subscription {
     public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
         this.subscriptionStatus = subscriptionStatus;
     }
+
+    public Integer getUserId() {
+    return user != null ? user.getId() : null;
+}
 }
