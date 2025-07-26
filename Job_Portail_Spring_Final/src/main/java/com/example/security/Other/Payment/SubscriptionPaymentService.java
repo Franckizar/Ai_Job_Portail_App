@@ -33,79 +33,80 @@ public class SubscriptionPaymentService {
     @Value("${campay.api.token:9f80ec928d13add9b75537127b5cc95e11e83058}")
     private String campayApiToken;
 
-    @Transactional
-    public SubscriptionPaymentResponse processSubscriptionPayment(
-            Integer userId, 
-            User.SubscriptionPlanType planType, 
-            String phoneNumber) {
+  @Transactional
+public SubscriptionPaymentResponse processSubscriptionPayment(
+        Integer userId, 
+        User.SubscriptionPlanType planType, 
+        String phoneNumber) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        Subscription subscription = createPendingSubscription(user, planType);
+    Subscription subscription = createPendingSubscription(user, planType);
 
-        try {
-            Map<String, Object> campayRequest = new HashMap<>();
-            campayRequest.put("amount", planType.getMonthlyPrice().toString());
-            campayRequest.put("from", "+237" + phoneNumber);
-            campayRequest.put("description", "Subscription: " + planType.getDescription());
-            campayRequest.put("external_reference", "SUB-" + subscription.getId());
-            campayRequest.put("currency", "XAF");
+    try {
+        Map<String, Object> campayRequest = new HashMap<>();
+        campayRequest.put("amount", planType.getMonthlyPrice().toString());
+        campayRequest.put("from", "+237" + phoneNumber);
+        campayRequest.put("description", "Subscription: " + planType.getDescription());
+        campayRequest.put("external_reference", "SUB-" + subscription.getId());
+        campayRequest.put("currency", "XAF");
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Token " + campayApiToken);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Token " + campayApiToken);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(campayRequest, headers);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(campayRequest, headers);
 
-            ResponseEntity<Map> campayResponse = restTemplate.exchange(
-                    campayApiUrl,
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
+        ResponseEntity<Map> campayResponse = restTemplate.exchange(
+                campayApiUrl,
+                HttpMethod.POST,
+                entity,
+                Map.class
+        );
 
-            Map<String, Object> responseBody = campayResponse.getBody();
+        Map<String, Object> responseBody = campayResponse.getBody();
 
-            if (campayResponse.getStatusCode() == HttpStatus.OK && 
-                responseBody != null && responseBody.get("id") != null) {
+        if (campayResponse.getStatusCode() == HttpStatus.OK) {
+            // Always success when status code is 200
+            String transactionId = (responseBody != null && responseBody.get("id") != null)
+                    ? responseBody.get("id").toString()
+                    : "NO_TRANSACTION_ID";
 
-                String transactionId = responseBody.get("id").toString();
-                subscription.setTransactionId(transactionId);
-                subscriptionRepository.save(subscription);
+            subscription.setTransactionId(transactionId);
+            subscriptionRepository.save(subscription);
 
-                createPaymentRecord(user, subscription, transactionId);
+            createPaymentRecord(user, subscription, transactionId);
 
-                return SubscriptionPaymentResponse.builder()
-                        .success(true)
-                        .subscriptionId(subscription.getId())
-                        .transactionId(transactionId)
-                        .amount(planType.getMonthlyPrice())
-                        .message("Payment initiated successfully")
-                        .build();
-
-            } else {
-                subscription.setSubscriptionStatus(Subscription.SubscriptionStatus.CANCELLED); // Fixed method name
-                subscriptionRepository.save(subscription);
-
-                return SubscriptionPaymentResponse.builder()
-                        .success(false)
-                        .subscriptionId(subscription.getId())
-                        .message("Payment failed to initiate")
-                        .build();
-            }
-
-        } catch (Exception e) {
-            subscription.setSubscriptionStatus(Subscription.SubscriptionStatus.CANCELLED); // Fixed method name
+            return SubscriptionPaymentResponse.builder()
+                    .success(true)
+                    .subscriptionId(subscription.getId())
+                    .transactionId(transactionId)
+                    .amount(planType.getMonthlyPrice())
+                    .message("Payment initiated successfully")
+                    .build();
+        } else {
+            subscription.setSubscriptionStatus(Subscription.SubscriptionStatus.CANCELLED);
             subscriptionRepository.save(subscription);
 
             return SubscriptionPaymentResponse.builder()
                     .success(false)
                     .subscriptionId(subscription.getId())
-                    .message("Payment error: " + e.getMessage())
+                    .message("Payment failed to initiate")
                     .build();
         }
+
+    } catch (Exception e) {
+        subscription.setSubscriptionStatus(Subscription.SubscriptionStatus.CANCELLED);
+        subscriptionRepository.save(subscription);
+
+        return SubscriptionPaymentResponse.builder()
+                .success(false)
+                .subscriptionId(subscription.getId())
+                .message("Payment error: " + e.getMessage())
+                .build();
     }
+}
 
     private Subscription createPendingSubscription(User user, User.SubscriptionPlanType planType) {
         LocalDateTime now = LocalDateTime.now();
