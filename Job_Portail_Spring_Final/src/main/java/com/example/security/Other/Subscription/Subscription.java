@@ -1,11 +1,10 @@
-// 10. Subscription.java
+// 1. FIXED Subscription.java - Remove conflicting setStatus method
 package com.example.security.Other.Subscription;
 
 import com.example.security.user.User;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -17,80 +16,42 @@ public class Subscription {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "subscription_id")
-    private Long id;
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "service_type")
-    private ServiceType serviceType;
+    private User.SubscriptionPlanType planType;
 
     @Column(name = "start_date")
-    private LocalDate startDate;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date")
-    private LocalDate endDate;
+    private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "subscription_status") // Renamed column to avoid conflicts
     @Builder.Default
-    private SubscriptionStatus status = SubscriptionStatus.ACTIVE;
+    private SubscriptionStatus subscriptionStatus = SubscriptionStatus.PENDING; // Renamed field
 
-    @Column(name = "priority_level")
-    private Integer priorityLevel;
+    private Double amount;
+    private String transactionId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status")
     @Builder.Default
-    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
-
-    public enum ServiceType {
-        ELECTRICITY("electricity"),
-        PRIORITY("priority"),
-        FEATURED("featured");
-
-        private final String value;
-
-        ServiceType(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum SubscriptionStatus {
-        ACTIVE("active"),
-        EXPIRED("expired"),
-        CANCELLED("cancelled");
-
-        private final String value;
-
-        SubscriptionStatus(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
+        ACTIVE, EXPIRED, CANCELLED, PENDING
     }
 
-    public enum PaymentStatus {
-        PAID("paid"),
-        PENDING("pending"),
-        FAILED("failed");
+    // Custom getter and setter to avoid confusion
+    public SubscriptionStatus getSubscriptionStatus() {
+        return subscriptionStatus;
+    }
 
-        private final String value;
-
-        PaymentStatus(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
+    public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
+        this.subscriptionStatus = subscriptionStatus;
     }
 }

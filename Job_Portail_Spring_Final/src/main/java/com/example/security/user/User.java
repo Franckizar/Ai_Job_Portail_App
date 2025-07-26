@@ -23,6 +23,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Data
@@ -91,13 +92,16 @@ public class User implements UserDetails {
     // private List<UserSkill> userSkills;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Subscription> subscriptions;
 
-    @OneToMany(mappedBy = "payer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Payment> paymentsMade;
+    // @OneToMany(mappedBy = "payer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<Payment> paymentsMade;
 
-    @OneToMany(mappedBy = "payee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Payment> paymentsReceived;
+    // @OneToMany(mappedBy = "payee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // private List<Payment> paymentsReceived;
+    @OneToMany(mappedBy = "user")
+    private List<Payment> payments;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -151,4 +155,61 @@ public class User implements UserDetails {
     public Technician getTechnician()         { return technician; }
     public Admin getAdminProfile()            { return adminProfile; }
     public Enterprise getEnterpriseProfile()  { return enterpriseProfile; }
+
+
+
+
+    //////////////////////////////////////////////////////////////
+    
+    // Subscription flags (Only one should be true at a time)
+    @Builder.Default
+    private boolean isFreeSubscribed = true;
+    @Builder.Default
+    private boolean isStandardSubscribed = false;
+    @Builder.Default
+    private boolean isPremiumSubscribed = false;
+
+
+    ////////////////////////////////////////////
+    public void setIsFreeSubscribed(boolean isFreeSubscribed) {
+    this.isFreeSubscribed = isFreeSubscribed;
+}
+public void setIsStandardSubscribed(boolean isStandardSubscribed) {
+    this.isStandardSubscribed = isStandardSubscribed;
+}
+public void setIsPremiumSubscribed(boolean isPremiumSubscribed) {
+    this.isPremiumSubscribed = isPremiumSubscribed;
+}
+
+    /// 
+
+@Enumerated(EnumType.STRING)
+@Builder.Default
+private SubscriptionPlanType currentPlan = SubscriptionPlanType.FREE;
+
+@Column(name = "subscription_expires_at")
+private LocalDateTime subscriptionExpiresAt;
+
+// Add this enum inside your User class
+public enum SubscriptionPlanType {
+    FREE(0.0, 5, "Basic features"),
+    STANDARD(5.0, 50, "Enhanced features"), 
+    PREMIUM(15.0, -1, "All features + priority");
+    // STANDARD(5000.0, 50, "Enhanced features"), 
+    // PREMIUM(15000.0, -1, "All features + priority");
+    
+    private final Double monthlyPrice;
+    private final Integer applicationLimit;
+    private final String description;
+    
+    SubscriptionPlanType(Double monthlyPrice, Integer applicationLimit, String description) {
+        this.monthlyPrice = monthlyPrice;
+        this.applicationLimit = applicationLimit;
+        this.description = description;
+    }
+    
+    public Double getMonthlyPrice() { return monthlyPrice; }
+    public Integer getApplicationLimit() { return applicationLimit; }
+    public String getDescription() { return description; }
+}
 }
