@@ -42,14 +42,19 @@ public SubscriptionPaymentResponse processSubscriptionPayment(
     User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+    // Create subscription with PENDING status
     Subscription subscription = createPendingSubscription(user, planType);
 
     try {
+        // Set the external reference string for both the API call and the local entity
+        String externalReference = "SUB-" + subscription.getId();
+        subscription.setExternalReference(externalReference); // <-- FIX: set this in entity
+
         Map<String, Object> campayRequest = new HashMap<>();
         campayRequest.put("amount", planType.getMonthlyPrice().toString());
         campayRequest.put("from", "+237" + phoneNumber);
         campayRequest.put("description", "Subscription: " + planType.getDescription());
-        campayRequest.put("external_reference", "SUB-" + subscription.getId());
+        campayRequest.put("external_reference", externalReference);
         campayRequest.put("currency", "XAF");
 
         HttpHeaders headers = new HttpHeaders();
@@ -57,6 +62,9 @@ public SubscriptionPaymentResponse processSubscriptionPayment(
         headers.set("Authorization", "Token " + campayApiToken);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(campayRequest, headers);
+
+        // Save subscription with externalReference before sending request
+        subscriptionRepository.save(subscription);
 
         ResponseEntity<Map> campayResponse = restTemplate.exchange(
                 campayApiUrl,
@@ -68,7 +76,7 @@ public SubscriptionPaymentResponse processSubscriptionPayment(
         Map<String, Object> responseBody = campayResponse.getBody();
 
         if (campayResponse.getStatusCode() == HttpStatus.OK) {
-            // Always success when status code is 200
+            // Extract transactionId from Campay response or fallback
             String transactionId = (responseBody != null && responseBody.get("id") != null)
                     ? responseBody.get("id").toString()
                     : "NO_TRANSACTION_ID";
@@ -107,6 +115,7 @@ public SubscriptionPaymentResponse processSubscriptionPayment(
                 .build();
     }
 }
+
 
     private Subscription createPendingSubscription(User user, User.SubscriptionPlanType planType) {
         LocalDateTime now = LocalDateTime.now();

@@ -69,24 +69,33 @@ public class SubscriptionService {
      * Activates a subscription based on successful payment callback.
      * The transactionId is stored in the subscription entity.
      */
- @Transactional
-public void activateSubscription(String transactionId) {
-    Subscription subscription = subscriptionRepository.findByTransactionId(transactionId)
-            .orElseThrow(() -> new IllegalArgumentException("Subscription not found for transaction: " + transactionId));
+public void activateSubscription(Subscription subscription) {
+        User user = subscription.getUser();
+        User.SubscriptionPlanType plan = subscription.getPlanType();
 
-    if (subscription.getSubscriptionStatus() != Subscription.SubscriptionStatus.PENDING &&
-        subscription.getSubscriptionStatus() != Subscription.SubscriptionStatus.ACTIVE) {
-        throw new IllegalStateException("Invalid subscription status for activation");
+        // Reset all flags
+        user.setIsFreeSubscribed(false);
+        user.setIsStandardSubscribed(false);
+        user.setIsPremiumSubscribed(false);
+
+        // Activate appropriate plan
+        switch (plan) {
+            case PREMIUM -> user.setIsPremiumSubscribed(true);
+            case STANDARD -> user.setIsStandardSubscribed(true);
+            case FREE -> user.setIsFreeSubscribed(true);
+        }
+
+        // Set current plan and expiration
+        user.setCurrentPlan(plan);
+        user.setSubscriptionExpiresAt(subscription.getEndDate());
+
+        // Save user
+        userRepository.save(user);
     }
 
-    subscription.setSubscriptionStatus(Subscription.SubscriptionStatus.ACTIVE);
-    subscriptionRepository.save(subscription);
-
-    User user = userRepository.findById(subscription.getUserId())
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-    updateUserSubscriptionInfo(user, subscription.getPlanType(), subscription.getEndDate());
-}
+    public Optional<Subscription> getByExternalReference(String externalReference) {
+        return subscriptionRepository.findByExternalReference(externalReference);
+    }
 
 
     /**

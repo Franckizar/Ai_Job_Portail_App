@@ -12,6 +12,7 @@ import java.util.List;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
+    private final SubscriptionRepository subscriptionRepository;
 
     @PostMapping("/create")
     public ResponseEntity<Subscription> createSubscription(
@@ -33,11 +34,17 @@ public class SubscriptionController {
         return ResponseEntity.ok(User.SubscriptionPlanType.values());
     }
 
-    @PostMapping("/activate/{transactionId}")
-    public ResponseEntity<String> activateSubscription(@PathVariable String transactionId) {
-        subscriptionService.activateSubscription(transactionId);
-        return ResponseEntity.ok("Subscription activated successfully");
-    }
+//  @PostMapping("/activate/{transactionId}")
+// public ResponseEntity<String> activateSubscription(@PathVariable String transactionId) {
+//     Subscription subscription = subscriptionRepository.findByTransactionId(transactionId);
+//     if (subscription == null) {
+//         return ResponseEntity.badRequest().body("Subscription not found");
+//     }
+
+//     subscriptionService.activateSubscription(subscription);
+//     return ResponseEntity.ok("Subscription activated successfully");
+// }
+
 
     @PostMapping("/expire-check")
     public ResponseEntity<String> checkExpiredSubscriptions() {
