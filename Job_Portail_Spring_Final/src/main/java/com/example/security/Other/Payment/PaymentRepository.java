@@ -9,4 +9,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     // Optional<Payment> findByTransactionId(String reference);
 
     Optional<Payment> findBySubscriptionIdAndUserId(Integer subscriptionId, Integer userId);
+    
+    Optional<Payment> findByTransactionId(String transactionId);
 }

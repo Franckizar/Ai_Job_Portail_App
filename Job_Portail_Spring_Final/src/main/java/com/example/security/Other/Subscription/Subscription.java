@@ -1,4 +1,3 @@
-// 1. FIXED Subscription.java - Remove conflicting setStatus method
 package com.example.security.Other.Subscription;
 
 import com.example.security.user.User;
@@ -32,11 +31,12 @@ public class Subscription {
     private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "subscription_status") // Renamed column to avoid conflicts
+    @Column(name = "subscription_status")
     @Builder.Default
-    private SubscriptionStatus subscriptionStatus = SubscriptionStatus.PENDING; // Renamed field
+    private SubscriptionStatus subscriptionStatus = SubscriptionStatus.PENDING;
 
     private Double amount;
+
     private String transactionId;
 
     @Builder.Default
@@ -46,16 +46,11 @@ public class Subscription {
         ACTIVE, EXPIRED, CANCELLED, PENDING
     }
 
-    // Custom getter and setter to avoid confusion
-    public SubscriptionStatus getSubscriptionStatus() {
-        return subscriptionStatus;
-    }
-
-    public void setSubscriptionStatus(SubscriptionStatus subscriptionStatus) {
-        this.subscriptionStatus = subscriptionStatus;
-    }
-
+    // Helper getter for userId
     public Integer getUserId() {
-    return user != null ? user.getId() : null;
-}
+        return user != null ? user.getId() : null;
+    }
+
+    private String externalReference;
+    
 }

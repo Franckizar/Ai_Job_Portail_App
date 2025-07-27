@@ -162,19 +162,23 @@ public class User implements UserDetails {
     //////////////////////////////////////////////////////////////
     
     // Subscription flags (Only one should be true at a time)
-    @Builder.Default
-    private boolean isFreeSubscribed = true;
-    @Builder.Default
-    private boolean isStandardSubscribed = false;
-    @Builder.Default
-    private boolean isPremiumSubscribed = false;
+    // @Builder.Default
+@Column(name = "is_free_subscribed", nullable = false)
+private boolean isFreeSubscribed;
+
+@Column(name = "is_standard_subscribed", nullable = false)
+private boolean isStandardSubscribed;
+
+@Column(name = "is_premium_subscribed", nullable = false)
+private boolean isPremiumSubscribed;
+
 
 
     ////////////////////////////////////////////
     public void setIsFreeSubscribed(boolean isFreeSubscribed) {
     this.isFreeSubscribed = isFreeSubscribed;
 }
-public void setIsStandardSubscribed(boolean isStandardSubscribed) {
+public void setIsStandardSubscribed(boolean isStandardSubscribed) { 
     this.isStandardSubscribed = isStandardSubscribed;
 }
 public void setIsPremiumSubscribed(boolean isPremiumSubscribed) {

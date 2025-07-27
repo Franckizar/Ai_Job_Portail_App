@@ -8,7 +8,7 @@
 // @RestController
 // public class CampayTestController {
 
-//     @GetMapping("/api/v1/auth/campay/callback/test")
+//     @GetMapping("/api/v1/auth/campay/callback")
 //     public ResponseEntity<String> testCallback(@RequestParam Map<String, String> allParams) {
 //         System.out.println("✅ Campay CALLBACK RECEIVED");
 //         allParams.forEach((key, value) -> {
