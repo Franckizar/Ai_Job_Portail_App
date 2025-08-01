@@ -15,6 +15,11 @@ import Loader from "./Loader";
 import InvoiceForm from "./forms/InvoiceForm";
 import NurseForm from "./forms/NurseForm";
 import BigCalendarAdmin from "./BigCalendarAdmin";
+import Footer from "./Job_portail/Home/Footer";
+import Hero_home from "./Job_portail/Home/Hero_home";
+import JobList from "./Job_portail/Home/Job";
+import Navbar1 from "./Job_portail/Home/Navbar";
+import FeaturedCompanies from "./Job_portail/Home/Featured";
 // import Announceme
 // import BigCalendar
 // import lib from "../app/lib"
@@ -36,9 +41,13 @@ export {
     InvoiceForm,
     NurseForm,
     BigCalendarAdmin,
-    Announcements_Patient
-    
+    Announcements_Patient,
+    Footer,
+    JobList,
+    Hero_home,
+    Navbar1,
+    FeaturedCompanies,
+
 
     
-
 }
