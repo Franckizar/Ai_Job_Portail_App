@@ -9,7 +9,7 @@ const protectedEndpoints = [
   "/api/jobs",
   "/api/applications",
   // "/api/v1/auth/appointments",
-  "/api/v1/admin",                    // <-- Added admin routes here
+  "/api/v1/admin",                      // <-- Added admin routes here
   // Add all other protected API routes here
 ];
 
