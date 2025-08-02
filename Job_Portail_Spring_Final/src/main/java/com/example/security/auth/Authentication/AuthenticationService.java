@@ -20,6 +20,8 @@ import com.example.security.user.Technicien.TechnicianRequest;
 import com.example.security.user.Technicien.TechnicianService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+// import org.apache.el.stream.Optional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -183,25 +186,39 @@ public AuthenticationResponse register(RegisterRequest request) {
         String jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
+//////////////////////////////////////////////////////////////
+   public String initiatePasswordReset(String email) {
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-    public String initiatePasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    // Check for existing token
+  Optional<PasswordResetToken> existingTokenOpt = passwordResetTokenRepository.findByUserId(user.getId());
 
-        String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = PasswordResetToken.builder()
-                .token(token)
-                .user(user)
-                .expiryDate(LocalDateTime.now().plusHours(1))
-                .build();
-        passwordResetTokenRepository.save(resetToken);
+String token = UUID.randomUUID().toString();
 
-        String resetLink = "https://yourdomain.com/reset-password?token=" + token;
-        emailService.sendPasswordResetEmail(email, resetLink);
+if (existingTokenOpt.isPresent()) {
+    PasswordResetToken existingToken = existingTokenOpt.get();
+    existingToken.setToken(token);
+    existingToken.setExpiryDate(LocalDateTime.now().plusHours(1));
+    passwordResetTokenRepository.save(existingToken);
+} else {
+    PasswordResetToken resetToken = PasswordResetToken.builder()
+            .token(token)
+            .user(user)
+            .expiryDate(LocalDateTime.now().plusHours(1))
+            .build();
+    passwordResetTokenRepository.save(resetToken);
+}
 
-        return "Reset email sent";
-    }
+String resetLink = "https://modest-integral-ibex.ngrok-free.app/Job_portail/Home/test?token=" + token;
 
+// String resetLink = "https://yourdomain.com/reset-password?token=" + token;
+emailService.sendPasswordResetEmail(email, resetLink);
+
+return "Reset email sent";
+   }
+
+//////////////////////////////////////////////////////////////////////
     public String finalizePasswordReset(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid token"));

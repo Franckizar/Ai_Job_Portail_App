@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
+// Types
 interface User {
   id: string;
   email: string;
@@ -15,32 +16,21 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string, role: string) => Promise<boolean>;
   logout: () => Promise<void>;
-
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
-
   verifyEmail: (token: string) => Promise<void>;
   resendVerification: (email: string) => Promise<void>;
-
   updateProfile: (updates: Partial<User>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
-// Type guard to check if an error is an Error object with a message
 function isError(error: unknown): error is Error {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as Record<string, unknown>).message === 'string'
-  );
+  return typeof error === 'object' && error !== null && 'message' in error && typeof (error as Record<string, unknown>).message === 'string';
 }
 
-// Helper to safely parse JSON from a Response, returns null if empty or invalid JSON
 async function safeParseJSON(response: Response): Promise<any | null> {
   const text = await response.text();
   if (!text) return null;
@@ -69,12 +59,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1/auth';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api/v1/auth';
 
   useEffect(() => {
     void checkAuthStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuthStatus = async (): Promise<void> => {
@@ -85,14 +73,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
         return;
       }
-
       const response = await fetch(`${API_BASE_URL}/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-
       if (response.ok) {
         const userData = await safeParseJSON(response);
         setUser(userData);
@@ -109,54 +95,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
- const login = async (email: string, password: string): Promise<boolean> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/authenticate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await safeParseJSON(response);
-
-    if (!response.ok) {
-      const msg = (data && data.message) || 'Login failed. Please check your credentials.';
-      toast.error(msg);
-      throw new Error(msg);
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/authenticate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await safeParseJSON(response);
+      if (!response.ok) {
+        const msg = (data && data.message) || 'Login failed. Please check your credentials.';
+        toast.error(msg);
+        throw new Error(msg);
+      }
+      if (!data || !data.token) {
+        const errMsg = 'Login failed: Invalid server response.';
+        toast.error(errMsg);
+        throw new Error(errMsg);
+      }
+      // Save token
+      localStorage.setItem('auth_token', data.token);
+      toast.success('Login successful! Welcome back.');
+      await checkAuthStatus();
+      return true;
+    } catch (error: unknown) {
+      if (isError(error)) {
+        toast.error(error.message);
+        throw error;
+      }
+      toast.error('An unexpected error occurred during login.');
+      throw new Error('An unexpected error occurred during login.');
     }
-
-    if (!data || !data.token /* || !data.user */) {
-      const errMsg = 'Login failed: Invalid server response.';
-      toast.error(errMsg);
-      throw new Error(errMsg);
-    }
-
-    // Save token in cookie
-    const token = data.token;
-    // Set cookie for 1 day
-    document.cookie = `auth_token=${token}; path=/; Secure; SameSite=Strict; Max-Age=${60 * 60 * 24}`;
-
-    // Optionally you can save user in state as well
-    // setUser(data.user);
-
-    toast.success('Login successful! Welcome back.');
-    return true;
-  } catch (error: unknown) {
-    if (isError(error)) {
-      toast.error(error.message);
-      throw error;
-    }
-    toast.error('An unexpected error occurred during login.');
-    throw new Error('An unexpected error occurred during login.');
-  }
-};
-
+  };
 
   const register = async (
-    email: string,
-    password: string,
-    name: string,
-    role: string
+    email: string, password: string, name: string, role: string
   ): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE_URL}/register`, {
@@ -164,15 +137,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, role }),
       });
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Registration failed.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       toast.success('Registration successful! Please verify your email.');
       return true;
     } catch (error: unknown) {
@@ -216,15 +186,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           headers: { 'Content-Type': 'application/json' },
         }
       );
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Failed to send reset email.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       toast.success('Password reset instructions sent to your email.');
     } catch (error: unknown) {
       if (isError(error)) {
@@ -243,15 +210,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Failed to reset password.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       toast.success('Password has been reset successfully.');
     } catch (error: unknown) {
       if (isError(error)) {
@@ -270,17 +234,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       });
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Failed to verify email.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       if (user) setUser({ ...user, isEmailVerified: true });
-
       toast.success('Email verified successfully!');
     } catch (error: unknown) {
       if (isError(error)) {
@@ -299,15 +259,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Failed to resend verification code.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       toast.success('Verification code sent to your email.');
     } catch (error: unknown) {
       if (isError(error)) {
@@ -323,7 +280,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) throw new Error('Not authenticated.');
-
       const response = await fetch(`${API_BASE_URL}/profile`, {
         method: 'PATCH',
         headers: {
@@ -332,15 +288,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         body: JSON.stringify(updates),
       });
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Failed to update profile.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       setUser(data.user);
       toast.success('Profile updated successfully.');
     } catch (error: unknown) {
@@ -360,7 +313,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) throw new Error('Not authenticated.');
-
       const response = await fetch(`${API_BASE_URL}/change-password`, {
         method: 'POST',
         headers: {
@@ -369,15 +321,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-
       const data = await safeParseJSON(response);
-
       if (!response.ok) {
         const msg = (data && data.message) || 'Failed to change password.';
         toast.error(msg);
         throw new Error(msg);
       }
-
       toast.success('Password changed successfully.');
     } catch (error: unknown) {
       if (isError(error)) {

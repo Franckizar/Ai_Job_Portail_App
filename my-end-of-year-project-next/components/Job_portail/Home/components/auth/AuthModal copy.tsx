@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,8 +25,10 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowLeft,
+  Shield,
 } from "lucide-react";
 
+// Utility function to combine class names
 function cn(...inputs: (string | undefined | null | boolean)[]): string {
   return inputs.filter(Boolean).join(" ");
 }
@@ -41,10 +43,12 @@ type AuthView =
   | "login"
   | "register"
   | "forgot-password"
+  | "reset-password"
   | "verify-email"
   | "success";
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+  // State hooks
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,21 +58,27 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const [resetEmail, setResetEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
+  // Auth context functions
   const {
     login,
     register,
     forgotPassword,
+    resetPassword,
     verifyEmail,
     resendVerification,
   } = useAuth();
 
+  // Login data state
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
     role: "job_seeker" as UserRole,
   });
 
+  // Register data state
   const [registerData, setRegisterData] = useState({
     firstName: "",
     lastName: "",
@@ -78,20 +88,42 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     role: "job_seeker" as UserRole,
   });
 
+  // User role options
   const roleOptions = [
-    { value: "job_seeker", label: "Job Seeker", description: "Find opportunities", icon: User },
-    { value: "technician", label: "Technician", description: "Technical roles", icon: Wrench },
-    { value: "recruiter", label: "Recruiter", description: "Hire talent", icon: UserCheck },
-    { value: "enterprise", label: "Enterprise", description: "Business solutions", icon: Building2 },
+    {
+      value: "job_seeker",
+      label: "Job Seeker",
+      description: "Find opportunities",
+      icon: User,
+    },
+    {
+      value: "technician",
+      label: "Technician",
+      description: "Technical roles",
+      icon: Wrench,
+    },
+    {
+      value: "recruiter",
+      label: "Recruiter",
+      description: "Hire talent",
+      icon: UserCheck,
+    },
+    {
+      value: "enterprise",
+      label: "Enterprise",
+      description: "Business solutions",
+      icon: Building2,
+    },
   ];
 
-  // Password validation; used only on register form
+  // Password validation helper
   const validatePassword = (password: string) => {
     const minLength = password.length >= 8;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
     return {
       minLength,
       hasUpperCase,
@@ -104,43 +136,22 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   const passwordValidation = validatePassword(registerData.password);
+  const newPasswordValidation = validatePassword(newPassword);
 
-  const resetAllForms = () => {
-    setError("");
-    setSuccess("");
-    setCurrentView("login");
-    setLoginData({ email: "", password: "", role: "job_seeker" });
-    setRegisterData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      role: "job_seeker",
-    });
-    setResetEmail("");
-    setVerificationCode("");
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-  };
-
-  const handleClose = () => {
-    resetAllForms();
-    onClose();
-  };
-
-  // ---- Handlers below ----
+  // Handlers for auth flows
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     setSuccess("");
+
     try {
       const success = await login(loginData.email, loginData.password);
       if (success) {
         setSuccess("Login successful! Welcome back.");
         setTimeout(() => {
-          handleClose();
+          onClose();
+          resetAllForms();
         }, 1500);
       }
     } catch (err: any) {
@@ -155,16 +166,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
     setError("");
     setSuccess("");
+
     if (registerData.password !== registerData.confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
       return;
     }
+
     if (!passwordValidation.isValid) {
       setError("Please ensure your password meets all requirements");
       setIsLoading(false);
       return;
     }
+
     try {
       const success = await register(
         registerData.email,
@@ -188,12 +202,42 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
     setError("");
     setSuccess("");
+
     try {
       await forgotPassword(resetEmail);
       setSuccess("Password reset instructions sent to your email.");
-      // After sending instructions, keep user on forgot-password with success message
+      setCurrentView("reset-password");
     } catch (err: any) {
       setError(err.message || "Failed to send reset email. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!newPasswordValidation.isValid) {
+      setError("Please ensure your password meets all requirements");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await resetPassword(verificationCode, newPassword);
+      setCurrentView("success");
+      setSuccess("Password reset successful! You can now sign in with your new password.");
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password. Please check your code and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -204,6 +248,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
     setError("");
     setSuccess("");
+
     try {
       await verifyEmail(verificationCode);
       setCurrentView("success");
@@ -218,6 +263,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleResendVerification = async () => {
     setIsLoading(true);
     setError("");
+
     try {
       await resendVerification(registerData.email || resetEmail);
       setSuccess("Verification code sent to your email.");
@@ -228,25 +274,68 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
   };
 
+  // Reset all form states to initial
+  const resetAllForms = () => {
+    setError("");
+    setSuccess("");
+    setCurrentView("login");
+    setLoginData({ email: "", password: "", role: "job_seeker" });
+    setRegisterData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "job_seeker",
+    });
+    setResetEmail("");
+    setVerificationCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleClose = () => {
+    resetAllForms();
+    onClose();
+  };
+
   const getHeaderTitle = () => {
     switch (currentView) {
-      case "login": return "Sign In";
-      case "register": return "Create Account";
-      case "forgot-password": return "Reset Password";
-      case "verify-email": return "Verify Email";
-      case "success": return "Success";
-      default: return "JobPortal";
+      case "login":
+        return "Sign In";
+      case "register":
+        return "Create Account";
+      case "forgot-password":
+        return "Reset Password";
+      case "reset-password":
+        return "New Password";
+      case "verify-email":
+        return "Verify Email";
+      case "success":
+        return "Success";
+      default:
+        return "JobPortal";
     }
   };
 
   const getHeaderDescription = () => {
     switch (currentView) {
-      case "login": return "Welcome back to your account";
-      case "register": return "Join our professional network";
-      case "forgot-password": return "We'll send you reset instructions";
-      case "verify-email": return "Check your email for verification code";
-      case "success": return "Action completed successfully";
-      default: return "Professional career platform";
+      case "login":
+        return "Welcome back to your account";
+      case "register":
+        return "Join our professional network";
+      case "forgot-password":
+        return "We'll send you reset instructions";
+      case "reset-password":
+        return "Enter your new password";
+      case "verify-email":
+        return "Check your email for verification code";
+      case "success":
+        return "Action completed successfully";
+      default:
+        return "Professional career platform";
     }
   };
 
@@ -277,22 +366,33 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </div>
 
         <div className="p-6">
+          {/* Success/Error Messages */}
           {(error || success) && (
             <div
               className={cn(
                 "mb-4 p-3 rounded-md flex items-center gap-2 text-sm",
-                error ? "bg-gray-50 text-red-600 border border-red-200" : "bg-gray-50 text-green-600 border border-green-200"
+                error
+                  ? "bg-gray-50 text-red-600 border border-red-200"
+                  : "bg-gray-50 text-green-600 border border-green-200"
               )}
               role="alert"
             >
-              {error ? <AlertCircle className="h-4 w-4 flex-shrink-0" /> : <CheckCircle className="h-4 w-4 flex-shrink-0" />}
+              {error ? (
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              ) : (
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+              )}
               <span>{error || success}</span>
             </div>
           )}
 
-          {/* LOGIN and REGISTER Tabs */}
+          {/* Tabs for login/register */}
           {(currentView === "login" || currentView === "register") && (
-            <Tabs value={currentView} onValueChange={(v) => setCurrentView(v as AuthView)} className="w-full">
+            <Tabs
+              value={currentView}
+              onValueChange={(value) => setCurrentView(value as AuthView)}
+              className="w-full"
+            >
               <TabsList className="grid grid-cols-2 mb-6 bg-gray-200 p-1 rounded-md h-10">
                 <TabsTrigger
                   value="login"
@@ -310,9 +410,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
               {/* LOGIN FORM */}
               <TabsContent value="login" className="space-y-4">
-                <form onSubmit={handleLogin} noValidate className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4" noValidate>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-900">Email Address</Label>
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-900">
+                      Email Address
+                    </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                       <Input
@@ -321,14 +423,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         placeholder="Enter your email"
                         className="pl-10 h-10 border-gray-300 focus:border-black focus:ring-black"
                         value={loginData.email}
-                        onChange={e => setLoginData({ ...loginData, email: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, email: e.target.value })
+                        }
                         required
                         autoComplete="email"
                       />
                     </div>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-gray-900">Password</Label>
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-900">
+                      Password
+                    </Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                       <Input
@@ -337,7 +444,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         placeholder="Enter your password"
                         className="pl-10 pr-10 h-10 border-gray-300 focus:border-black focus:ring-black"
                         value={loginData.password}
-                        onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, password: e.target.value })
+                        }
                         required
                         autoComplete="current-password"
                       />
@@ -381,61 +490,90 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
               {/* REGISTER FORM */}
               <TabsContent value="register" className="space-y-4">
-                <form onSubmit={handleRegister} noValidate className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4" noValidate>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-sm font-medium text-gray-900">First Name</Label>
+                      <Label
+                        htmlFor="firstName"
+                        className="text-sm font-medium text-gray-900"
+                      >
+                        First Name
+                      </Label>
                       <Input
                         id="firstName"
                         placeholder="John"
+                        className="h-10 border-gray-300 focus:border-black focus:ring-black"
                         value={registerData.firstName}
-                        onChange={e => setRegisterData({ ...registerData, firstName: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, firstName: e.target.value })
+                        }
                         required
                         autoComplete="given-name"
-                        className="h-10 border-gray-300 focus:border-black focus:ring-black"
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-sm font-medium text-gray-900">Last Name</Label>
+                      <Label
+                        htmlFor="lastName"
+                        className="text-sm font-medium text-gray-900"
+                      >
+                        Last Name
+                      </Label>
                       <Input
                         id="lastName"
                         placeholder="Doe"
+                        className="h-10 border-gray-300 focus:border-black focus:ring-black"
                         value={registerData.lastName}
-                        onChange={e => setRegisterData({ ...registerData, lastName: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, lastName: e.target.value })
+                        }
                         required
                         autoComplete="family-name"
-                        className="h-10 border-gray-300 focus:border-black focus:ring-black"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-sm font-medium text-gray-900">Email Address</Label>
+                    <Label
+                      htmlFor="register-email"
+                      className="text-sm font-medium text-gray-900"
+                    >
+                      Email Address
+                    </Label>
                     <Input
                       id="register-email"
                       type="email"
                       placeholder="john.doe@email.com"
+                      className="h-10 border-gray-300 focus:border-black focus:ring-black"
                       value={registerData.email}
-                      onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
+                      onChange={(e) =>
+                        setRegisterData({ ...registerData, email: e.target.value })
+                      }
                       required
                       autoComplete="email"
-                      className="h-10 border-gray-300 focus:border-black focus:ring-black"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="register-password" className="text-sm font-medium text-gray-900">Password</Label>
+                      <Label
+                        htmlFor="register-password"
+                        className="text-sm font-medium text-gray-900"
+                      >
+                        Password
+                      </Label>
                       <div className="relative">
                         <Input
                           id="register-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Password"
+                          className="pr-10 h-10 border-gray-300 focus:border-black focus:ring-black"
                           value={registerData.password}
-                          onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
+                          onChange={(e) =>
+                            setRegisterData({ ...registerData, password: e.target.value })
+                          }
                           required
                           autoComplete="new-password"
-                          className="pr-10 h-10 border-gray-300 focus:border-black focus:ring-black"
                         />
                         <button
                           type="button"
@@ -443,10 +581,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
                           aria-label={showPassword ? "Hide password" : "Show password"}
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
+
                     <div className="space-y-2">
                       <Label
                         htmlFor="register-confirm-password"
@@ -459,32 +602,114 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                           id="register-confirm-password"
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="Confirm password"
-                          value={registerData.confirmPassword}
-                          onChange={e => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                          required
-                          autoComplete="new-password"
                           className={cn(
                             "pr-10 h-10 border-gray-300 focus:border-black focus:ring-black",
-                            registerData.confirmPassword && registerData.password !== registerData.confirmPassword
-                              ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""
+                            registerData.confirmPassword &&
+                              registerData.password !== registerData.confirmPassword
+                              ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                              : ""
                           )}
+                          value={registerData.confirmPassword}
+                          onChange={(e) =>
+                            setRegisterData({ ...registerData, confirmPassword: e.target.value })
+                          }
+                          required
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-                          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                          aria-label={
+                            showConfirmPassword ? "Hide password" : "Show password"
+                          }
                         >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Password requirements indicator */}
+                  {/* Password Requirements - Compact */}
                   {registerData.password && (
-                    <div className="bg-gray-50 p-3 rounded-md text-xs text-gray-600 mb-4">
-                      Password must include at least 8 characters, uppercase and lowercase letters, numbers, and special characters.
+                    <div className="bg-gray-50 p-3 rounded-md">
+                      <div className="text-xs text-gray-600 mb-2">Password must include:</div>
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        <div
+                          className={cn(
+                            "flex items-center gap-1",
+                            passwordValidation.minLength ? "text-green-600" : "text-gray-400"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              passwordValidation.minLength ? "bg-green-500" : "bg-gray-300"
+                            )}
+                          />
+                          8+ chars
+                        </div>
+                        <div
+                          className={cn(
+                            "flex items-center gap-1",
+                            passwordValidation.hasUpperCase ? "text-green-600" : "text-gray-400"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              passwordValidation.hasUpperCase ? "bg-green-500" : "bg-gray-300"
+                            )}
+                          />
+                          Upper case
+                        </div>
+                        <div
+                          className={cn(
+                            "flex items-center gap-1",
+                            passwordValidation.hasLowerCase ? "text-green-600" : "text-gray-400"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              passwordValidation.hasLowerCase ? "bg-green-500" : "bg-gray-300"
+                            )}
+                          />
+                          Lower case
+                        </div>
+                        <div
+                          className={cn(
+                            "flex items-center gap-1",
+                            passwordValidation.hasNumbers ? "text-green-600" : "text-gray-400"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              passwordValidation.hasNumbers ? "bg-green-500" : "bg-gray-300"
+                            )}
+                          />
+                          Numbers
+                        </div>
+                        <div
+                          className={cn(
+                            "flex items-center gap-1",
+                            passwordValidation.hasSpecialChar ? "text-green-600" : "text-gray-400"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              passwordValidation.hasSpecialChar ? "bg-green-500" : "bg-gray-300"
+                            )}
+                          />
+                          Special char
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -492,7 +717,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     <Label className="text-sm font-medium text-gray-900">Account Type</Label>
                     <RadioGroup
                       value={registerData.role}
-                      onValueChange={value =>
+                      onValueChange={(value) =>
                         setRegisterData({ ...registerData, role: value as UserRole })
                       }
                       className="grid grid-cols-2 gap-2"
@@ -545,7 +770,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           {/* FORGOT PASSWORD FORM */}
           {currentView === "forgot-password" && (
-            <form onSubmit={handleForgotPassword} noValidate className="space-y-4">
+            <form onSubmit={handleForgotPassword} className="space-y-4" noValidate>
               <div className="text-center mb-4">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-sm text-gray-600">
@@ -554,18 +779,21 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reset-email" className="text-sm font-medium text-gray-900">
+                <Label
+                  htmlFor="reset-email"
+                  className="text-sm font-medium text-gray-900"
+                >
                   Email Address
                 </Label>
                 <Input
                   id="reset-email"
                   type="email"
                   placeholder="Enter your email"
+                  className="h-10 border-gray-300 focus:border-black focus:ring-black"
                   value={resetEmail}
-                  onChange={e => setResetEmail(e.target.value)}
+                  onChange={(e) => setResetEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  className="h-10 border-gray-300 focus:border-black focus:ring-black"
                 />
               </div>
 
@@ -596,29 +824,229 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </form>
           )}
 
+          {/* RESET PASSWORD FORM */}
+          {currentView === "reset-password" && (
+            <form onSubmit={handleResetPassword} className="space-y-4" noValidate>
+              <div className="text-center mb-4">
+                <Shield className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm text-gray-600">
+                  Enter the verification code from your email and your new password.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="verification-code"
+                  className="text-sm font-medium text-gray-900"
+                >
+                  Verification Code
+                </Label>
+                <Input
+                  id="verification-code"
+                  placeholder="Enter 6-digit code"
+                  className="h-10 border-gray-300 focus:border-black focus:ring-black text-center tracking-widest"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  maxLength={6}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="new-password"
+                  className="text-sm font-medium text-gray-900"
+                >
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    className="pr-10 h-10 border-gray-300 focus:border-black focus:ring-black"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="confirm-new-password"
+                  className="text-sm font-medium text-gray-900"
+                >
+                  Confirm New Password
+                </Label>
+                <Input
+                  id="confirm-new-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm new password"
+                  className={cn(
+                    "h-10 border-gray-300 focus:border-black focus:ring-black",
+                    confirmNewPassword && newPassword !== confirmNewPassword
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                      : ""
+                  )}
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  style={{ position: "absolute", top: "0.75rem", right: "0.75rem" }}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* New Password Requirements */}
+              {newPassword && (
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <div className="text-xs text-gray-600 mb-2">Password must include:</div>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <div
+                      className={cn(
+                        "flex items-center gap-1",
+                        newPasswordValidation.minLength ? "text-green-600" : "text-gray-400"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1 h-1 rounded-full",
+                          newPasswordValidation.minLength ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                      8+ chars
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1",
+                        newPasswordValidation.hasUpperCase ? "text-green-600" : "text-gray-400"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1 h-1 rounded-full",
+                          newPasswordValidation.hasUpperCase ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                      Upper case
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1",
+                        newPasswordValidation.hasLowerCase ? "text-green-600" : "text-gray-400"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1 h-1 rounded-full",
+                          newPasswordValidation.hasLowerCase ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                      Lower case
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1",
+                        newPasswordValidation.hasNumbers ? "text-green-600" : "text-gray-400"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1 h-1 rounded-full",
+                          newPasswordValidation.hasNumbers ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                      Numbers
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center gap-1",
+                        newPasswordValidation.hasSpecialChar ? "text-green-600" : "text-gray-400"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-1 h-1 rounded-full",
+                          newPasswordValidation.hasSpecialChar ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                      Special char
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-10 bg-black hover:bg-gray-800 text-white font-medium rounded-md transition-colors"
+                disabled={
+                  isLoading ||
+                  !newPasswordValidation.isValid ||
+                  newPassword !== confirmNewPassword ||
+                  verificationCode.length !== 6
+                }
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Resetting password...
+                  </>
+                ) : (
+                  "Reset Password"
+                )}
+              </Button>
+            </form>
+          )}
+
           {/* EMAIL VERIFICATION FORM */}
           {currentView === "verify-email" && (
-            <form onSubmit={handleVerifyEmail} noValidate className="space-y-4">
+            <form onSubmit={handleVerifyEmail} className="space-y-4" noValidate>
               <div className="text-center mb-4">
                 <Mail className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-sm text-gray-600 mb-2">
                   We've sent a verification code to your email address.
                 </p>
-                <p className="text-sm font-medium text-gray-800">{registerData.email || resetEmail}</p>
+                <p className="text-sm font-medium text-gray-800">
+                  {registerData.email || resetEmail}
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email-verification-code" className="text-sm font-medium text-gray-900">
+                <Label
+                  htmlFor="email-verification-code"
+                  className="text-sm font-medium text-gray-900"
+                >
                   Verification Code
                 </Label>
                 <Input
                   id="email-verification-code"
                   placeholder="Enter 6-digit code"
+                  className="h-10 border-gray-300 focus:border-black focus:ring-black text-center tracking-widest"
                   value={verificationCode}
-                  onChange={e => setVerificationCode(e.target.value)}
+                  onChange={(e) => setVerificationCode(e.target.value)}
                   maxLength={6}
                   required
-                  className="h-10 border-gray-300 focus:border-black focus:ring-black text-center tracking-widest"
                 />
               </div>
 
@@ -676,7 +1104,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
           )}
 
-          {/* Terms & Privacy */}
+          {/* Terms and Privacy */}
           {(currentView === "login" || currentView === "register") && (
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
