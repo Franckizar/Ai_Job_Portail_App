@@ -47,6 +47,19 @@ const ModernMenu = () => {
       href: "/Job/list/dash",
       visible: ["admin", "doctor", "nurse"],
     },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "testI",
+      href: "/Job/list/dashL",
+      visible: ["admin", "doctor", "nurse"],
+    },
+    
+    {
+      icon: <Users className="w-4 h-4" />,
+        label: "Dashboard",
+      href: "/Job/Admin",
+      visible: ["admin", "doctor", "nurse"],
+    },
     // {
     //   icon: <User className="w-4 h-4" />,
     //   label: "Nurses",
