@@ -22,6 +22,7 @@ import Navbar1 from "./Job_portail/Home/Navbar";
 import FeaturedCompanies from "./Job_portail/Home/Featured";
 import ModernNavbar from "./Job_portail/Home/components/ModernNavbar";
 import ModernMenu from "./ModernMenu";
+import CookieConsentBanner from "./Job_portail/Home/components/CookieConsentBanner";
 // import Announceme
 // import BigCalendar
 // import lib from "../app/lib"
@@ -53,6 +54,7 @@ export {
     ModernNavbar,
     ////////////////////
     ModernMenu,
+    CookieConsentBanner,
     
 
 

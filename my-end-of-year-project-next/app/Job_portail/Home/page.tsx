@@ -1,22 +1,18 @@
-
-
-
+// app/home/page.tsx
 'use client';
-import { AuthProvider } from '../../../components/Job_portail/Home/components/auth/AuthContext';
-// import { AuthProvider } from '../components/Job_portail/Home/components/auth/AuthContext';
-import { FeaturedCompanies, Footer, Hero, Navbar1 } from '@/components';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import { HeroSection } from '@/components/Job_portail/Home/components/HeroSection';
+import { FeaturedJobs } from '@/components/Job_portail/Home/components/FeaturedJobs';
+import { JobCategories } from '@/components/Job_portail/Home/components/JobCategories';
+import { StatsSection } from '@/components/Job_portail/Home/components/StatsSection';
+
+export default function HomePage() {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          <Navbar1 />
-          {children}
-          <FeaturedCompanies />
-          <Footer />
-        </AuthProvider>
-      </body>
-    </html>
+    <main>
+      <HeroSection />
+      <FeaturedJobs />
+      <JobCategories />
+      <StatsSection />
+    </main>
   );
 }

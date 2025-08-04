@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Header } from "../../../../components/Job_portail/Home/components/Header";
-import { HeroSection } from "../../../../components/Job_portail/Home/components/HeroSection";
-import { FeaturedJobs } from "../../../../components/Job_portail/Home/components/FeaturedJobs";
-import { JobCategories } from "../../../../components/Job_portail/Home/components/JobCategories";
-import { StatsSection } from "../../../../components/Job_portail/Home/components/StatsSection";
-import { Footer } from "../../../../components/Job_portail/Home/components/Footer";
-import { JobSearchPage } from "../../../../components/Job_portail/Home/components/JobSearchPage";
-import { JobDetailPage } from "../../../../components/Job_portail/Home/components/JobDetailPage";
-import { UserProfilePage } from "../../../../components/Job_portail/Home/components/UserProfilePage";
-import { AuthProvider } from "../../../../components/Job_portail/Home/components/auth/AuthContext";
-import { AppRouterProvider, useRouter } from "../../../../components/Job_portail/Home/components/AppRouter";
+import { Header } from "../../../components/Job_portail/Home/components/Header";
+import { HeroSection } from "../../../components/Job_portail/Home/components/HeroSection";
+import { FeaturedJobs } from "../../../components/Job_portail/Home/components/FeaturedJobs";
+import { JobCategories } from "../../../components/Job_portail/Home/components/JobCategories";
+import { StatsSection } from "../../../components/Job_portail/Home/components/StatsSection";
+import { Footer } from "../../../components/Job_portail/Home/components/Footer";
+import { JobSearchPage } from "../../../components/Job_portail/Home/components/JobSearchPage";
+import { JobDetailPage } from "../../../components/Job_portail/Home/components/JobDetailPage";
+import { UserProfilePage } from "../../../components/Job_portail/Home/components/UserProfilePage";
+import { AuthProvider } from "../../../components/Job_portail/Home/components/auth/AuthContext";
+import { AppRouterProvider, useRouter } from "../../../components/Job_portail/Home/components/AppRouter";
 
 import { ToastContainer } from "react-toastify"; // ✅ Import ToastContainer
 import 'react-toastify/dist/ReactToastify.css'; // ✅ Import CSS
