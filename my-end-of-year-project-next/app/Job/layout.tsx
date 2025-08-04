@@ -17,7 +17,7 @@ export default function DashboardLayout({
         <div className="flex items-center justify-between px-6 py-4">
           {/* Logo - Left Side */}
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/wamb.png" alt="logo" width={1} height={40} className="rounded-lg" />
+            <Image src="/wamb.png" alt="logo" width={250} height={40} className="rounded-lg" />
             {/* <span className="text-xl font-bold text-gray-900">Wamb's</span> */}
           </Link>
           
@@ -34,7 +34,7 @@ export default function DashboardLayout({
       </header>
 
       {/* Main Content */}
-      <main className="pt-20 px-6 pb-6">
+      <main className="pt-30 px-6 pb-6">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>

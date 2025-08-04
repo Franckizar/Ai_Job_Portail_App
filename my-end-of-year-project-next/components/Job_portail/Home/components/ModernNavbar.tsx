@@ -1,6 +1,7 @@
-"use client";
+'use client';
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getRoleFromLocalStorage } from "@/jwt";
 import Link from "next/link";
 import {
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 const ModernNavbar = () => {
+  const pathname = usePathname();
   const [role, setRole] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState(3); // Example notification count
@@ -27,6 +29,11 @@ const ModernNavbar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     router.push('/');
+  };
+
+  const isActive = (href: string): boolean => {
+    // Handles exact path match or startWith for deeper paths
+    return pathname === href || pathname.startsWith(href);
   };
 
   if (!role) return null;
@@ -44,17 +51,25 @@ const ModernNavbar = () => {
       </button>
 
       {/* Messages */}
-      <Link 
+      <Link
         href="/messages"
-        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
+        className={`p-2 rounded-full transition-all duration-200 ${
+          isActive('/messages')
+            ? 'bg-blue-500 text-white'
+            : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+        }`}
       >
         <MessageSquare className="w-5 h-5" />
       </Link>
 
       {/* Settings */}
-      <Link 
+      <Link
         href="/Settings"
-        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
+        className={`p-2 rounded-full transition-all duration-200 ${
+          isActive('/Settings')
+            ? 'bg-blue-500 text-white'
+            : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+        }`}
       >
         <Settings className="w-5 h-5" />
       </Link>

@@ -43,40 +43,40 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
-      label: "Patients",
-      href: "/list/Patients",
+      label: "test",
+      href: "/Job/list/dash",
       visible: ["admin", "doctor", "nurse"],
     },
-    {
-      icon: <User className="w-4 h-4" />,
-      label: "Nurses",
-      href: "/list/Nurses",
-      visible: ["admin"],
-    },
-    {
-      icon: <Calendar className="w-4 h-4" />,
-      label: "Appointments",
-      href: "/Appointment",
-      visible: ["admin", "doctor", "nurse"],
-    },
-    {
-      icon: <FileText className="w-4 h-4" />,
-      label: "Records",
-      href: "/Medical_Record",
-      visible: ["admin", "doctor"],
-    },
-    {
-      icon: <DollarSign className="w-4 h-4" />,
-      label: "Invoices",
-      href: "/list/Invoices",
-      visible: ["admin", "patient"],
-    },
-    {
-      icon: <FilePlus className="w-4 h-4" />,
-      label: "Services",
-      href: "/Job/list/Services",
-      visible: ["admin", "doctor", "nurse", "patient"],
-    },
+    // {
+    //   icon: <User className="w-4 h-4" />,
+    //   label: "Nurses",
+    //   href: "/list/Nurses",
+    //   visible: ["admin"],
+    // },
+    // {
+    //   icon: <Calendar className="w-4 h-4" />,
+    //   label: "Appointments",
+    //   href: "/Appointment",
+    //   visible: ["admin", "doctor", "nurse"],
+    // },
+    // {
+    //   icon: <FileText className="w-4 h-4" />,
+    //   label: "Records",
+    //   href: "/Medical_Record",
+    //   visible: ["admin", "doctor"],
+    // },
+    // {
+    //   icon: <DollarSign className="w-4 h-4" />,
+    //   label: "Invoices",
+    //   href: "/list/Invoices",
+    //   visible: ["admin", "patient"],
+    // },
+    // {
+    //   icon: <FilePlus className="w-4 h-4" />,
+    //   label: "Services",
+    //   href: "/Job/list/Services",
+    //   visible: ["admin", "doctor", "nurse", "patient"],
+    // },
   ];
 
   if (!role) return null;

@@ -1,6 +1,5 @@
 import Hero from "./Hero";
 import Menu from "./Menu";
-import Menu_jopportail from "./Menu_jopportail";
 import Navbar from "./Navbar";
 import UserCard from "./UserCard";
 import CountChart from "./CountChart";
@@ -22,7 +21,7 @@ import JobList from "./Job_portail/Home/Job";
 import Navbar1 from "./Job_portail/Home/Navbar";
 import FeaturedCompanies from "./Job_portail/Home/Featured";
 import ModernNavbar from "./Job_portail/Home/components/ModernNavbar";
-import ModernMenu from "./Menu_jopportail";
+import ModernMenu from "./ModernMenu";
 // import Announceme
 // import BigCalendar
 // import lib from "../app/lib"
@@ -50,7 +49,6 @@ export {
     Hero_home,
     Navbar1,
     FeaturedCompanies,
-    Menu_jopportail,
     ///////////////////////////////
     ModernNavbar,
     ////////////////////
