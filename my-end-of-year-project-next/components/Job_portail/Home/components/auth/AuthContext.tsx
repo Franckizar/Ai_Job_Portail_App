@@ -1,7 +1,8 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
-// Types
 interface User {
   id: string;
   email: string;
@@ -113,7 +114,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         toast.error(errMsg);
         throw new Error(errMsg);
       }
-      // Save token
       localStorage.setItem('auth_token', data.token);
       toast.success('Login successful! Welcome back.');
       await checkAuthStatus();
@@ -129,7 +129,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (
-    email: string, password: string, name: string, role: string
+    email: string,
+    password: string,
+    name: string,
+    role: string
   ): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE_URL}/register`, {

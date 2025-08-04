@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../../../components/Job_portail/Home/components/auth/AuthContext";
+import { useAuth } from "../../components/Job_portail/Home/components/auth/AuthContext";
 // import { useAuth } from "./AuthContext";
-import { Button } from "../../../../components/Job_portail/Home/components/ui/button";
-import { Input } from "../../../../components/Job_portail/Home/components/ui/input";
-import { Label } from "../../../../components/Job_portail/Home/components/ui/label";
+import { Button } from "../../components/Job_portail/Home/components/ui/button";
+import { Input } from "../../components/Job_portail/Home/components/ui/input";
+import { Label } from "../../components/Job_portail/Home/components/ui/label";
 import { AlertCircle, Eye, EyeOff, Loader2, Shield } from "lucide-react";
 
 const cn = (...inputs: (string | undefined | null | boolean)[]) =>
@@ -198,3 +198,4 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+
