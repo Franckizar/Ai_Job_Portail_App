@@ -13,6 +13,11 @@ import TeacherForm from "./forms/TeacherForm";
 import RoleProtectedDashboard from "./RoleProtectedDashboard";
 import Loader from "./Loader";
 import InvoiceForm from "./forms/InvoiceForm";
+//////
+import JobCard from "./Job/JobCard";
+import JobFilter from "./Job/JobFilters";
+import JobList1 from "./Job/JobList";
+/////
 import NurseForm from "./forms/NurseForm";
 import BigCalendarAdmin from "./BigCalendarAdmin";
 import Footer from "./Job_portail/Home/Footer";
@@ -55,6 +60,10 @@ export {
     ////////////////////
     ModernMenu,
     CookieConsentBanner,
+    JobList1,
+    JobCard,
+    JobFilter,
+
     
 
 
