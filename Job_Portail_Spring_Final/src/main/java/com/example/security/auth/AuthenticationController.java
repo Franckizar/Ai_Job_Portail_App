@@ -99,4 +99,25 @@ public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         List<User> users = authenticationService.getAllUnknownUsers();
         return ResponseEntity.ok(users);
     }
+
+
+
+//     @GetMapping("/me")
+// public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+//     if (authentication == null || !authentication.isAuthenticated()) {
+//         return ResponseEntity.status(401).body("Unauthorized");
+//     }
+
+//     String email = authentication.getName(); // or username, depends on your auth principal
+
+//     // Fetch user by email (or username) from your service
+//     User user = authenticationService.getUserByEmail(email);
+
+//     if (user == null) {
+//         return ResponseEntity.status(404).body("User not found");
+//     }
+
+//     return ResponseEntity.ok(user);
+// }
+
 }

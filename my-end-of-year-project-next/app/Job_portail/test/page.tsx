@@ -31,7 +31,7 @@ export default function StorageAndCookiesViewer() {
   }, []);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto font-sans text-black">
+    <div className="p-6 max-w-4xl mx-auto font-sans">
       <h1 className="text-3xl font-bold mb-6">Cookies & Local Storage Viewer</h1>
 
       <section className="mb-8">

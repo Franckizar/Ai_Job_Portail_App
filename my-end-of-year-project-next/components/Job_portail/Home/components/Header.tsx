@@ -51,6 +51,12 @@ export function Header() {
       icon: BookOpen,
       href: '/Job_portail/resources'  // → app/Job_portail/resources/page.js
     },
+    {
+      key: 'resources', 
+      label: 'Max', 
+      // icon: BookOpen,
+      href: '/Job_portail/max'  // → app/Job_portail/resources/page.js
+    },
     // 📝 TO ADD A NEW ROUTE: Copy this template
     // { 
     //   key: 'blog', 

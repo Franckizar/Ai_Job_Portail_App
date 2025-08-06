@@ -1,16 +1,32 @@
 // utils/fetchWithAuth.ts
 
-/** 
+/**
+ * Get JWT token from localStorage
+ * @returns JWT token string or null if not found
+ */
+function getJwtToken(): string | null {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem('jwt_token');
+  }
+  return null;
+}
+
+/**
  * List all your API route prefixes that require authentication.
- * Only requests to these endpoints will include the JWT from localStorage.
+ * Only requests to these endpoints will include the JWT from storage.
  */
 const protectedEndpoints = [
   "/api/user/profile",
   "/api/jobs",
   "/api/applications",
-  // "/api/v1/auth/appointments",
-  "/api/v1/admin",                      // <-- Added admin routes here
+  "/api/v1/auth/verify-user",
+  "/api/v1/auth/logout",
+  "/api/v1/auth/profile",
+  "/api/v1/auth/change-password",
+  "/api/v1/sharedPlus/me", // Add your /me endpoint
+  "/api/v1/admin", // Add admin routes here
   // Add all other protected API routes here
+  // Note: /authenticate should NOT be in protected endpoints as it's used to GET the token
 ];
 
 /**
@@ -44,28 +60,42 @@ export async function fetchWithAuth(
   options: RequestInit = {}
 ): Promise<Response> {
   const headers = new Headers(options.headers || {});
-
-  // Always add ngrok header to skip browser warning
+  
+  // Always add ngrok header to skip browser warning (if you want)
   headers.set("ngrok-skip-browser-warning", "true");
-
+  
+  // Check if this endpoint requires authentication
   if (isProtectedEndpoint(url)) {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("jwt_token");
+      const token = getJwtToken();
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
+        console.log(`Adding Bearer token to request: ${url}`);
+      } else {
+        console.warn(`No JWT token found for protected endpoint: ${url}`);
       }
     }
   }
 
   try {
-    return await fetch(url, {
+    const response = await fetch(url, {
       ...options,
       headers,
     });
-  } catch {
-    // Catch errors but intentionally ignore the error object to fix ESLint no-unused-vars
-    // You may optionally log here if you want:
-    // console.error("Fetch failed", _err);
+    
+    // Log the request details for debugging
+    console.log(`Request to ${url}:`, {
+      method: options.method || 'GET',
+      hasAuth: headers.has('Authorization'),
+      status: response.status
+    });
+    
+    return response;
+  } catch (error) {
+    console.error(`Network error for ${url}:`, error);
     throw new Error("Network error or failed to fetch resource.");
   }
 }
+
+// Export the getJwtToken function in case you need it elsewhere
+export { getJwtToken };

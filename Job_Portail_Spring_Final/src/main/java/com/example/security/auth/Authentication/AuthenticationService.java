@@ -250,4 +250,11 @@ return "Reset email sent";
                 .filter(user -> user.getRoles() == null || user.getRoles().contains(Role.UNKNOWN))
                 .collect(Collectors.toList());
     }
+
+
+    public User getUserByEmail(String email) {
+    return userRepository.findByEmail(email)
+        .orElse(null);
+}
+
 }
