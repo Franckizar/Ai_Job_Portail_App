@@ -9,11 +9,14 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'job_seeker' | 'technician' | 'recruiter' | 'enterprise' | 'admin';
+  // Include all expected roles, lowercase for consistent frontend usage
+  role: 'job_seeker' | 'technician' | 'recruiter' | 'enterprise' | 'admin' 
+        | 'JOB_SEEKER' | 'TECHNICIAN' | 'RECRUITER' | 'ENTERPRISE' | 'ADMIN';
   isEmailVerified: boolean;
   avatar?: string;
   createdAt: string;
 }
+
 
 interface AuthContextType {
   user: User | null;
@@ -49,7 +52,7 @@ async function safeParseJSON(response: Response): Promise<any | null> {
   }
 }
 
-// Helper function to decode JWT and extract email
+// Helper function to decode JWT and extract email (from sub claim)
 function decodeJWTEmail(token: string): string | null {
   try {
     const base64Url = token.split('.')[1];
@@ -57,7 +60,7 @@ function decodeJWTEmail(token: string): string | null {
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
     const payload = JSON.parse(jsonPayload);
@@ -87,11 +90,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Checks current authentication status by verifying user and loading profile
+  // Check authentication status on initial app load
   const checkAuthStatus = async (): Promise<void> => {
     setIsLoading(true);
     try {
-      // Get stored token and extract email from it
       const token = localStorage.getItem('jwt_token');
       if (!token) {
         setUser(null);
@@ -109,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Use fetchWithAuth to automatically attach Bearer token
+      // IMPORTANT: Send email in POST body as JSON to /auth/verify-user endpoint 
       const response = await fetchWithAuth(`${API_BASE_URL}/auth/verify-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,7 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = await response.json();
         setUser(userData);
       } else {
-        console.error('Failed to verify user');
+        console.error('Failed to verify user during auth check');
         localStorage.removeItem('jwt_token');
         localStorage.removeItem('email');
         setUser(null);
@@ -139,7 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     void checkAuthStatus();
   }, []);
 
-  // Login function: authenticates, saves token & email, loads user, redirects
+  // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch(`${API_BASE_URL}/authenticate`, {
@@ -159,7 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('email', email);
       toast.success('Login successful!');
 
-      // Extract email from JWT token instead of using the login email
+      // Decode email from token for fetching user profile
       const jwtEmail = decodeJWTEmail(data.token);
       if (!jwtEmail) {
         toast.error('Failed to extract user information from token');
@@ -168,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('JWT email extracted:', jwtEmail);
 
-      // Load user profile using fetchWithAuth to include Bearer token and send extracted email in body
+      // Fetch user profile, include email in request body
       const userResponse = await fetchWithAuth('http://localhost:8088/api/v1/sharedPlus/me', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,17 +184,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const userData = await userResponse.json();
       console.log('User data received from /me endpoint:', userData);
-      
+
       setUser(userData);
 
-      // Extract role from different possible locations and formats
-      let role = null;
-      
-      // Check multiple possible role field names and formats
+      // Role extraction and normalization
+      let role: string | null = null;
       if (userData.role) {
         role = userData.role;
       } else if (userData.roles && Array.isArray(userData.roles) && userData.roles.length > 0) {
-        role = userData.roles[0]; // Take first role if it's an array
+        role = userData.roles[0];
       } else if (userData.userRole) {
         role = userData.userRole;
       } else if (userData.authority) {
@@ -200,20 +200,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       console.log('Extracted role:', role);
-      
-      // Normalize role to uppercase and remove any prefixes
-      let normalizedRole = null;
+
+      let normalizedRole: string | null = null;
       if (role) {
         normalizedRole = String(role).toUpperCase();
-        // Remove common prefixes like ROLE_
         if (normalizedRole.startsWith('ROLE_')) {
           normalizedRole = normalizedRole.replace('ROLE_', '');
         }
       }
-      
+
       console.log('Normalized role:', normalizedRole);
 
-      // Redirect based on user role
+      // Redirect based on roles if needed
       switch (normalizedRole) {
         case 'ADMIN':
           console.log('Redirecting to Admin dashboard');
@@ -234,7 +232,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           break;
         case 'RECRUITER':
           console.log('Redirecting to Recruiter dashboard');
-          router.push('/Job/Recruiter'); // Add this route if needed
+          router.push('/Job/Recruiter');
           break;
         default:
           console.log('Unknown or null role, redirecting to home:', normalizedRole);
@@ -253,6 +251,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error('An unexpected error occurred during login.');
     }
   };
+
+  // Other functions remain unchanged and use fetchWithAuth when authorized calls required
 
   const register = async (
     email: string,
@@ -293,9 +293,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('email');
       setUser(null);
       toast.info('Logged out.');
-      router.push('/'); // Redirect home on logout
+      router.push('/');
     }
   };
+
+  // Implementations for forgotPassword, resetPassword, verifyEmail, resendVerification, updateProfile, changePassword
+  // can follow your current structure, using fetchWithAuth to include authorization where needed.
 
   const forgotPassword = async (email: string): Promise<void> => {
     try {
@@ -334,25 +337,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const verifyEmail = async (token: string): Promise<void> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/verify-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      const data = await safeParseJSON(response);
-      if (!response.ok) {
-        toast.error(data?.message || 'Failed to verify email.');
-        throw new Error(data?.message || 'Failed to verify email.');
-      }
-      if (user) setUser({ ...user, isEmailVerified: true });
-      toast.success('Email verified successfully!');
-    } catch (error) {
-      toast.error(isError(error) ? error.message : 'An error occurred during email verification.');
-      throw error;
+const verifyEmail = async (jwtEmail: string): Promise<void> => {
+  try {
+    // Sends the POST to backend, passing email; token added automatically in Authorization header by fetchWithAuth
+    const response = await fetchWithAuth('http://localhost:8088/api/v1/sharedPlus/verify-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: jwtEmail }),
+    });
+
+    const data = await safeParseJSON(response);
+
+    if (!response.ok) {
+      toast.error(data?.message || 'Failed to verify email.');
+      throw new Error(data?.message || 'Failed to verify email.');
     }
-  };
+
+    // If API returns the updated user object, extract role info inside verifyEmail:
+    let role: string | null = null;
+
+    if (data.role) {
+      role = data.role;
+    } else if (Array.isArray(data.roles) && data.roles.length > 0) {
+      role = data.roles[0]; // e.g., "ADMIN"
+    } else if (Array.isArray(data.authorities) && data.authorities.length > 0) {
+      const authority = data.authorities[0];
+      if (authority && typeof authority.authority === 'string') {
+        role = authority.authority;
+      }
+    } else if (data.userRole) {
+      role = data.userRole;
+    } else if (data.authority) {
+      role = data.authority;
+    }
+
+    // Normalize the role string (uppercase, strip "ROLE_" if present)
+    if (role) {
+      role = role.toUpperCase();
+      if (role.startsWith('ROLE_')) {
+        role = role.slice(5);
+      }
+    }
+
+    // Update user state with isEmailVerified: true and normalized role if we have user in context
+    if (user) {
+      setUser({
+        ...user,
+        isEmailVerified: true,
+        role: role || user.role, // update role if found, or fallback to previous
+      });
+    }
+
+    toast.success('Email verified successfully!');
+  } catch (error) {
+    toast.error(isError(error) ? error.message : 'An error occurred during email verification.');
+    throw error;
+  }
+};
+
+
 
   const resendVerification = async (email: string): Promise<void> => {
     try {

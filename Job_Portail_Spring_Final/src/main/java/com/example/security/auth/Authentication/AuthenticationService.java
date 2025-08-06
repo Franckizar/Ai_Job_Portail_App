@@ -253,8 +253,10 @@ return "Reset email sent";
 
 
     public User getUserByEmail(String email) {
+
     return userRepository.findByEmail(email)
         .orElse(null);
 }
+
 
 }
