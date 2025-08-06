@@ -2,6 +2,8 @@
 package com.example.security.Other.Payment;
 
 import com.example.security.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,6 +25,7 @@ public class Payment {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    // @JsonIgnore
     private User user;
 
     private Double amount;

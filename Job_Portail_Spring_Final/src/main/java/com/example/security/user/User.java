@@ -101,6 +101,7 @@ public class User implements UserDetails {
     // @OneToMany(mappedBy = "payee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     // private List<Payment> paymentsReceived;
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<Payment> payments;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
