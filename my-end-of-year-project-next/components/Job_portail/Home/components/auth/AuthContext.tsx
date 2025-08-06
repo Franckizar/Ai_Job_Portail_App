@@ -181,25 +181,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const userData = await userResponse.json();
+      console.log('User data received from /me endpoint:', userData);
+      
       setUser(userData);
 
-      // Redirect based on user role
-      const role = userData.role?.toUpperCase();
+      // Extract role from different possible locations and formats
+      let role = null;
+      
+      // Check multiple possible role field names and formats
+      if (userData.role) {
+        role = userData.role;
+      } else if (userData.roles && Array.isArray(userData.roles) && userData.roles.length > 0) {
+        role = userData.roles[0]; // Take first role if it's an array
+      } else if (userData.userRole) {
+        role = userData.userRole;
+      } else if (userData.authority) {
+        role = userData.authority;
+      }
 
-      switch (role) {
+      console.log('Extracted role:', role);
+      
+      // Normalize role to uppercase and remove any prefixes
+      let normalizedRole = null;
+      if (role) {
+        normalizedRole = String(role).toUpperCase();
+        // Remove common prefixes like ROLE_
+        if (normalizedRole.startsWith('ROLE_')) {
+          normalizedRole = normalizedRole.replace('ROLE_', '');
+        }
+      }
+      
+      console.log('Normalized role:', normalizedRole);
+
+      // Redirect based on user role
+      switch (normalizedRole) {
         case 'ADMIN':
+          console.log('Redirecting to Admin dashboard');
           router.push('/Job/Admin');
           break;
         case 'TECHNICIAN':
+          console.log('Redirecting to Technician dashboard');
           router.push('/Job/Technician');
           break;
         case 'JOB_SEEKER':
+        case 'JOBSEEKER':
+          console.log('Redirecting to JobSeeker dashboard');
           router.push('/Job/JobSeeker');
           break;
         case 'ENTERPRISE':
+          console.log('Redirecting to Enterprise dashboard');
           router.push('/Job/Enterprise');
           break;
+        case 'RECRUITER':
+          console.log('Redirecting to Recruiter dashboard');
+          router.push('/Job/Recruiter'); // Add this route if needed
+          break;
         default:
+          console.log('Unknown or null role, redirecting to home:', normalizedRole);
+          toast.warning(`Unknown user role: ${role || 'null'}. Redirecting to home.`);
           router.push('/');
           break;
       }
