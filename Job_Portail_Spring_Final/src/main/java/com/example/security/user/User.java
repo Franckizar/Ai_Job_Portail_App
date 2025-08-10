@@ -12,7 +12,8 @@ import com.example.security.Other.UserImage.UserImage;
 // import com.example.security.Other.UserSkill.UserSkill;
 import com.example.security.user.Admin.Admin;
 import com.example.security.user.Enterprise.Enterprise;
-import com.example.security.user.JobSeeker.JobSeeker;
+import com.example.security.user.JobSeeker.JobSeeker;    // Add this import for PersonalEmployer entity
+import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
 import com.example.security.user.Technicien.Technician;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -76,8 +77,12 @@ public class User implements UserDetails {
     @JsonBackReference
     private Enterprise enterpriseProfile;
 
-    // ========== Business Relationships ==========
+    // ** Added PersonalEmployer Profile Relationship **
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonBackReference
+    private PersonalEmployerProfile personalEmployerProfile;
 
+    // ========== Business Relationships ==========
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserImage> userImages;
 
@@ -144,77 +149,74 @@ public class User implements UserDetails {
                 .toList();
     }
 
-    @Override public String getUsername()              { return email; }
+    @Override public String getUsername()               { return email; }
     @Override public boolean isAccountNonExpired()     { return true; }
     @Override public boolean isAccountNonLocked()      { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled()               { return true; }
+    @Override public boolean isEnabled()                { return true; }
 
     // ========== Profile Getters (Optional) ==========
 
     public JobSeeker getJobSeekerProfile()    { return jobSeekerProfile; }
-    public Technician getTechnician()         { return technician; }
-    public Admin getAdminProfile()            { return adminProfile; }
-    public Enterprise getEnterpriseProfile()  { return enterpriseProfile; }
-
-
-
+    public Technician getTechnician()          { return technician; }
+    public Admin getAdminProfile()              { return adminProfile; }
+    public Enterprise getEnterpriseProfile()   { return enterpriseProfile; }
+    public PersonalEmployerProfile getPersonalEmployerProfile() { return personalEmployerProfile; }   // Added getter
 
     //////////////////////////////////////////////////////////////
     
     // Subscription flags (Only one should be true at a time)
     // @Builder.Default
-@Column(name = "is_free_subscribed", nullable = false)
-private boolean isFreeSubscribed;
+    @Column(name = "is_free_subscribed", nullable = false)
+    private boolean isFreeSubscribed;
 
-@Column(name = "is_standard_subscribed", nullable = false)
-private boolean isStandardSubscribed;
+    @Column(name = "is_standard_subscribed", nullable = false)
+    private boolean isStandardSubscribed;
 
-@Column(name = "is_premium_subscribed", nullable = false)
-private boolean isPremiumSubscribed;
-
-
+    @Column(name = "is_premium_subscribed", nullable = false)
+    private boolean isPremiumSubscribed;
 
     ////////////////////////////////////////////
     public void setIsFreeSubscribed(boolean isFreeSubscribed) {
-    this.isFreeSubscribed = isFreeSubscribed;
-}
-public void setIsStandardSubscribed(boolean isStandardSubscribed) { 
-    this.isStandardSubscribed = isStandardSubscribed;
-}
-public void setIsPremiumSubscribed(boolean isPremiumSubscribed) {
-    this.isPremiumSubscribed = isPremiumSubscribed;
-}
+        this.isFreeSubscribed = isFreeSubscribed;
+    }
+    public void setIsStandardSubscribed(boolean isStandardSubscribed) { 
+        this.isStandardSubscribed = isStandardSubscribed;
+    }
+    public void setIsPremiumSubscribed(boolean isPremiumSubscribed) {
+        this.isPremiumSubscribed = isPremiumSubscribed;
+    }
 
     /// 
 
-@Enumerated(EnumType.STRING)
-@Builder.Default
-private SubscriptionPlanType currentPlan = SubscriptionPlanType.FREE;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SubscriptionPlanType currentPlan = SubscriptionPlanType.FREE;
 
-@Column(name = "subscription_expires_at")
-private LocalDateTime subscriptionExpiresAt;
+    @Column(name = "subscription_expires_at")
+    private LocalDateTime subscriptionExpiresAt;
 
-// Add this enum inside your User class
-public enum SubscriptionPlanType {
-    FREE(0.0, 5, "Basic features"),
-    STANDARD(5.0, 50, "Enhanced features"), 
-    PREMIUM(15.0, -1, "All features + priority");
-    // STANDARD(5000.0, 50, "Enhanced features"), 
-    // PREMIUM(15000.0, -1, "All features + priority");
-    
-    private final Double monthlyPrice;
-    private final Integer applicationLimit;
-    private final String description;
-    
-    SubscriptionPlanType(Double monthlyPrice, Integer applicationLimit, String description) {
-        this.monthlyPrice = monthlyPrice;
-        this.applicationLimit = applicationLimit;
-        this.description = description;
+    // Add this enum inside your User class
+    public enum SubscriptionPlanType {
+        FREE(0.0, 5, "Basic features"),
+        STANDARD(5.0, 50, "Enhanced features"), 
+        PREMIUM(15.0, -1, "All features + priority");
+        // STANDARD(5000.0, 50, "Enhanced features"), 
+        // PREMIUM(15000.0, -1, "All features + priority");
+        
+        private final Double monthlyPrice;
+        private final Integer applicationLimit;
+        private final String description;
+        
+        SubscriptionPlanType(Double monthlyPrice, Integer applicationLimit, String description) {
+            this.monthlyPrice = monthlyPrice;
+            this.applicationLimit = applicationLimit;
+            this.description = description;
+        }
+        
+        public Double getMonthlyPrice() { return monthlyPrice; }
+        public Integer getApplicationLimit() { return applicationLimit; }
+        public String getDescription() { return description; }
     }
-    
-    public Double getMonthlyPrice() { return monthlyPrice; }
-    public Integer getApplicationLimit() { return applicationLimit; }
-    public String getDescription() { return description; }
-}
+
 }

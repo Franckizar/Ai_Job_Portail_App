@@ -15,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="bg-background min-h-screen">
+      {/* <body className="bg-background min-h-screen"> */}
         <AuthProvider>
           <AppRouterProvider>
             <Header />

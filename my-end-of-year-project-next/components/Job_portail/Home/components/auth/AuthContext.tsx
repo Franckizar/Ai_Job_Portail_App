@@ -13,7 +13,6 @@ interface User {
   role:
     | 'JOB_SEEKER'
     | 'TECHNICIAN'
-    | 'RECRUITER'
     | 'ENTERPRISE'
     | 'ADMIN'
     | 'PERSONAL_EMPLOYER'
@@ -26,7 +25,6 @@ interface User {
   technicianId?: number;
   jobSeekerId?: number;
   enterpriseId?: number;
-  recruiterId?: number;
   personalEmployerId?: number;
   userId?: number;
   firstname?: string;
@@ -173,12 +171,6 @@ function setUserData(token: string, email: string, userData: any, jwtPayload: an
         document.cookie = `enterprise_id=${jwtPayload.enterpriseId}; ${cookieOptions}`;
       }
       break;
-    case 'RECRUITER':
-      if (jwtPayload.recruiterId) {
-        localStorage.setItem('recruiter_id', jwtPayload.recruiterId.toString());
-        document.cookie = `recruiter_id=${jwtPayload.recruiterId}; ${cookieOptions}`;
-      }
-      break;
     case 'PERSONAL_EMPLOYER':
       if (jwtPayload.personalEmployerId) {
         localStorage.setItem('personal_employer_id', jwtPayload.personalEmployerId.toString());
@@ -219,7 +211,6 @@ function setUserData(token: string, email: string, userData: any, jwtPayload: an
     technicianId: jwtPayload.technicianId || userData.technicianId,
     jobSeekerId: jwtPayload.jobSeekerId || userData.jobSeekerId,
     enterpriseId: jwtPayload.enterpriseId || userData.enterpriseId,
-    recruiterId: jwtPayload.recruiterId || userData.recruiterId,
     personalEmployerId: jwtPayload.personalEmployerId || userData.personalEmployerId,
     role: normalizedRole
   };
@@ -249,7 +240,6 @@ function clearUserData(): void {
   localStorage.removeItem('technician_id');
   localStorage.removeItem('job_seeker_id');
   localStorage.removeItem('enterprise_id');
-  localStorage.removeItem('recruiter_id');
   localStorage.removeItem('personal_employer_id');
   
   // Clear cookies
@@ -270,7 +260,6 @@ function clearUserData(): void {
   document.cookie = `technician_id=; ${cookieOptions}`;
   document.cookie = `job_seeker_id=; ${cookieOptions}`;
   document.cookie = `enterprise_id=; ${cookieOptions}`;
-  document.cookie = `recruiter_id=; ${cookieOptions}`;
   document.cookie = `personal_employer_id=; ${cookieOptions}`;
 }
 
@@ -308,42 +297,76 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      const email = decodeJWTEmail(token);
-      if (!email) {
-        console.error('Failed to extract email from JWT');
+      // Decode JWT to get role and ID
+      const jwtPayload = decodeJWTPayload(token);
+      if (!jwtPayload) {
+        console.error('Failed to decode JWT');
         setUser(null);
         setIsLoading(false);
         return;
       }
 
-      const response = await fetchWithAuth(`${API_BASE_URL}/verify-user`, {
+      // Determine role and corresponding ID from JWT payload
+      let role: string | null = null;
+      let roleSpecificId: number | null = null;
+
+      if (jwtPayload.adminId) {
+        role = 'ADMIN';
+        roleSpecificId = jwtPayload.adminId;
+      } else if (jwtPayload.technicianId) {
+        role = 'TECHNICIAN';
+        roleSpecificId = jwtPayload.technicianId;
+      } else if (jwtPayload.jobSeekerId) {
+        role = 'JOB_SEEKER';
+        roleSpecificId = jwtPayload.jobSeekerId;
+      } else if (jwtPayload.enterpriseId) {
+        role = 'ENTERPRISE';
+        roleSpecificId = jwtPayload.enterpriseId;
+      } else if (jwtPayload.personalEmployerId) {
+        role = 'PERSONAL_EMPLOYER';
+        roleSpecificId = jwtPayload.personalEmployerId;
+      }
+
+      if (!role || !roleSpecificId) {
+        console.error('Unable to determine user role or ID from token');
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetchWithAuth('http://localhost:8088/api/v1/sharedPlus/me', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          role: role,
+          id: roleSpecificId
+        }),
       });
 
       if (response.ok) {
         const userData = await response.json();
-        const jwtPayload = decodeJWTPayload(token);
         
         // Merge JWT payload data with user data
         const enrichedUserData = {
           ...userData,
-          firstname: jwtPayload?.firstname || userData.firstname,
-          lastname: jwtPayload?.lastname || userData.lastname,
-          userId: jwtPayload?.userId || userData.userId,
-          adminId: jwtPayload?.adminId || userData.adminId,
-          technicianId: jwtPayload?.technicianId || userData.technicianId,
-          jobSeekerId: jwtPayload?.jobSeekerId || userData.jobSeekerId,
-          enterpriseId: jwtPayload?.enterpriseId || userData.enterpriseId,
-          recruiterId: jwtPayload?.recruiterId || userData.recruiterId,
-          personalEmployerId: jwtPayload?.personalEmployerId || userData.personalEmployerId,
+          firstname: jwtPayload.firstname || userData.firstname,
+          lastname: jwtPayload.lastname || userData.lastname,
+          userId: jwtPayload.userId || userData.userId,
+          adminId: jwtPayload.adminId || userData.adminId,
+          technicianId: jwtPayload.technicianId || userData.technicianId,
+          jobSeekerId: jwtPayload.jobSeekerId || userData.jobSeekerId,
+          enterpriseId: jwtPayload.enterpriseId || userData.enterpriseId,
+          personalEmployerId: jwtPayload.personalEmployerId || userData.personalEmployerId,
+          role: role
         };
         
         setUser(enrichedUserData);
         
         // Update both localStorage and cookies with current data
-        setUserData(token, email, enrichedUserData, jwtPayload);
+        const email = jwtPayload.sub || localStorage.getItem('email');
+        if (email) {
+          setUserData(token, email, enrichedUserData, jwtPayload);
+        }
       } else {
         console.error('Failed to verify user during auth check');
         setUser(null);
@@ -389,12 +412,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
 
-      // Fetch user profile from API
-      const jwtEmail = jwtPayload.sub;
+      // Determine role and corresponding ID from JWT payload
+      let role: string | null = null;
+      let roleSpecificId: number | null = null;
+
+      if (jwtPayload.adminId) {
+        role = 'ADMIN';
+        roleSpecificId = jwtPayload.adminId;
+      } else if (jwtPayload.technicianId) {
+        role = 'TECHNICIAN';
+        roleSpecificId = jwtPayload.technicianId;
+      } else if (jwtPayload.jobSeekerId) {
+        role = 'JOB_SEEKER';
+        roleSpecificId = jwtPayload.jobSeekerId;
+      } else if (jwtPayload.enterpriseId) {
+        role = 'ENTERPRISE';
+        roleSpecificId = jwtPayload.enterpriseId;
+      } else if (jwtPayload.personalEmployerId) {
+        role = 'PERSONAL_EMPLOYER';
+        roleSpecificId = jwtPayload.personalEmployerId;
+      }
+
+      if (!role || !roleSpecificId) {
+        toast.error('Unable to determine user role or ID from token');
+        return false;
+      }
+
+      // Fetch user profile from API with role and ID
       const userResponse = await fetchWithAuth('http://localhost:8088/api/v1/sharedPlus/me', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: jwtEmail }),
+        body: JSON.stringify({ 
+          role: role,
+          id: roleSpecificId
+        }),
       });
 
       if (!userResponse.ok) {
@@ -414,8 +465,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         technicianId: jwtPayload.technicianId || userData.technicianId,
         jobSeekerId: jwtPayload.jobSeekerId || userData.jobSeekerId,
         enterpriseId: jwtPayload.enterpriseId || userData.enterpriseId,
-        recruiterId: jwtPayload.recruiterId || userData.recruiterId,
         personalEmployerId: jwtPayload.personalEmployerId || userData.personalEmployerId,
+        role: role
       };
 
       setUser(enrichedUserData);
@@ -423,30 +474,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set all data in both localStorage and cookies
       setUserData(data.token, email, enrichedUserData, jwtPayload);
 
-      // Extract and normalize role for routing
-      let role: string | null = null;
-      if (enrichedUserData.role) {
-        role = enrichedUserData.role;
-      } else if (Array.isArray(enrichedUserData.roles) && enrichedUserData.roles.length > 0) {
-        role = enrichedUserData.roles[0];
-      } else if (enrichedUserData.userRole) {
-        role = enrichedUserData.userRole;
-      } else if (enrichedUserData.authority) {
-        role = enrichedUserData.authority;
-      } else if (Array.isArray(jwtPayload.roles) && jwtPayload.roles.length > 0) {
-        role = jwtPayload.roles[0];
-      }
-
-      let normalizedRole: string | null = null;
-      if (role) {
-        normalizedRole = String(role).toUpperCase();
-        if (normalizedRole.startsWith('ROLE_')) {
-          normalizedRole = normalizedRole.replace('ROLE_', '');
-        }
-      }
-
       // Redirect based on role
-      switch (normalizedRole) {
+      switch (role) {
         case 'ADMIN':
           router.push('/Job/Admin');
           break;
@@ -454,20 +483,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           router.push('/Job/Technician');
           break;
         case 'JOB_SEEKER':
-        case 'JOBSEEKER':
           router.push('/Job/JobSeeker');
           break;
         case 'ENTERPRISE':
           router.push('/Job/Enterprise');
           break;
-        case 'RECRUITER':
-          router.push('/Job/Recruiter');
-          break;
         case 'PERSONAL_EMPLOYER':
           router.push('/Job/PersonalEmployer');
           break;
         default:
-          toast.warning(`Unknown user role: ${role || 'null'}. Redirecting to home.`);
+          toast.warning(`Unknown user role: ${role}. Redirecting to home.`);
           router.push('/');
           break;
       }
@@ -653,7 +678,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const email = localStorage.getItem('email');
         if (token && email) {
           const jwtPayload = decodeJWTPayload(token);
-          setUserCookies(token, email, data.user, jwtPayload);
+          setUserData(token, email, data.user, jwtPayload);
         }
       }
       toast.success('Profile updated successfully.');
@@ -707,3 +732,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+//   const value: AuthContextType = {
+//     user,
+//     isLoading,
+//     isAuthenticated: !!user,
+//     login,
+//     register,
+//     logout,
+//     forgotPassword,
+//     resetPassword,
+//     verifyEmail,
+//     resendVerification,
+//     updateProfile,
+//     changePassword,
+//   };
+
+//   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+// };
