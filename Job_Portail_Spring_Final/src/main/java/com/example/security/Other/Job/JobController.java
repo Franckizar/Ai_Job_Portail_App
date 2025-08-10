@@ -7,9 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.security.Other.Job.Job.JobStatus;
+import com.example.security.Other.Job.Job.JobType;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/auth/jobs")
@@ -83,22 +86,90 @@ public ResponseEntity<JobResponse> updateJob(@PathVariable Integer id, @RequestB
 
     
 
-        @GetMapping("/filter")
-    public ResponseEntity<List<Job>> getJobs(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String skill,
-            @RequestParam(required = false) String city) {
+    //     @GetMapping("/filter")
+    // public ResponseEntity<List<Job>> getJobs(
+    //         @RequestParam(required = false) String status,
+    //         @RequestParam(required = false) String skill,
+    //         @RequestParam(required = false) String city) {
 
-        JobStatus jobStatus = null;
-        if (status != null) {
-            try {
-                jobStatus = JobStatus.valueOf(status.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().build();
-            }
+    //     JobStatus jobStatus = null;
+    //     if (status != null) {
+    //         try {
+    //             jobStatus = JobStatus.valueOf(status.toUpperCase());
+    //         } catch (IllegalArgumentException e) {
+    //             return ResponseEntity.badRequest().build();
+    //         }
+    //     }
+
+    //     List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city);
+    //     return ResponseEntity.ok(filteredJobs);
+    // }
+
+
+    //   @GetMapping("/filter")
+    // public ResponseEntity<List<Job>> getJobs(
+    //         @RequestParam(required = false) String status,
+    //         @RequestParam(required = false) String skill,
+    //         @RequestParam(required = false) String city,
+    //         @RequestParam(required = false) String type) {
+
+    //     JobStatus jobStatus = null;
+    //     if (status != null) {
+    //         try {
+    //             jobStatus = JobStatus.valueOf(status.toUpperCase());
+    //         } catch (IllegalArgumentException e) {
+    //             return ResponseEntity.badRequest().build();
+    //         }
+    //     }
+
+    //     List<JobType> jobTypes = null;
+    //     if (type != null && !type.isEmpty()) {
+    //         try {
+    //             jobTypes = Arrays.stream(type.split(","))
+    //                     .map(String::toUpperCase)
+    //                     .map(JobType::valueOf)
+    //                     .collect(Collectors.toList());
+    //         } catch (IllegalArgumentException e) {
+    //             return ResponseEntity.badRequest().build();
+    //         }
+    //     }
+
+    //     List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
+    //     return ResponseEntity.ok(filteredJobs);
+    // }
+@GetMapping("/filter")
+public ResponseEntity<List<Job>> getJobs(
+    @RequestParam(required = false) String status,
+    @RequestParam(required = false) String skill,
+    @RequestParam(required = false) String city,
+    @RequestParam(required = false) String type // keep as String
+) {
+    JobStatus jobStatus = null;
+    if (status != null && !status.isEmpty()) {
+        try {
+            jobStatus = JobStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         }
-
-        List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city);
-        return ResponseEntity.ok(filteredJobs);
     }
+
+    List<JobType> jobTypes = null;
+    if (type != null && !type.isEmpty()) {
+        try {
+            jobTypes = Arrays.stream(type.split(","))
+                             .map(String::trim)
+                             .map(String::toUpperCase)
+                             .map(JobType::valueOf)
+                             .toList();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
+    return ResponseEntity.ok(filteredJobs);
+}
+
+
+
 }

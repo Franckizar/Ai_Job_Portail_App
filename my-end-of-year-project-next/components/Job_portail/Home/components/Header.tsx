@@ -13,6 +13,7 @@ import {
   DollarSign,
   BookOpen,
   Building,
+  Home,
 } from 'lucide-react';
 
 import { Button } from './ui/button';
@@ -56,33 +57,39 @@ export function Header() {
   // Navigation items
   const navigationItems = [
     {
+      key: 'Home',
+      label: 'Home',
+      icon: Home,
+      href: '/Job_portail/Home',
+    },
+    {
       key: 'jobs',
       label: 'Find Jobs',
       icon: Briefcase,
       href: '/Job_portail/Find_Jobs',
     },
+    // {
+    //   key: 'companies',
+    //   label: 'Companies',
+    //   icon: Building,
+    //   href: '/Job_portail/Companies',
+    // },
+    // {
+    //   key: 'salaries',
+    //   label: 'Salaries',
+    //   icon: DollarSign,
+    //   href: '/Job_portail/salaries',
+    // },
+    // {
+    //   key: 'resources',
+    //   label: 'Resources',
+    //   icon: BookOpen,
+    //   href: '/Job_portail/resources',
+    // },
     {
-      key: 'companies',
-      label: 'Companies',
-      icon: Building,
-      href: '/Job_portail/Companies',
-    },
-    {
-      key: 'salaries',
-      label: 'Salaries',
-      icon: DollarSign,
-      href: '/Job_portail/salaries',
-    },
-    {
-      key: 'resources',
-      label: 'Resources',
-      icon: BookOpen,
-      href: '/Job_portail/resources',
-    },
-    {
-      key: 'max',
-      label: 'Max',
-      href: '/Job_portail/max',
+      key: 'About_Us',
+      label: 'About Us',
+      href: '/Job_portail/About_Us',
     },
   ];
 

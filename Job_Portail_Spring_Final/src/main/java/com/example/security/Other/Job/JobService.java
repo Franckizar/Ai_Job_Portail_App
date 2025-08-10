@@ -1,6 +1,7 @@
 package com.example.security.Other.Job;
 
 import com.example.security.Other.Job.Job.JobStatus;
+import com.example.security.Other.Job.Job.JobType;
 import com.example.security.Other.JobSkill.CreateJobSkillDto;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.JobSkill.JobSkillRepository;
@@ -82,6 +83,7 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
     job.setState(request.getState());
     job.setPostalCode(request.getPostalCode());
     job.setCountry(request.getCountry());
+    job.setType(request.getType());  
 
     // Handle association update
     if (request.getEnterpriseId() != null) {
@@ -107,7 +109,7 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
 
     return buildResponse(job, jobSkills);
 }
-
+/////////////////////////////////////////////
 
     public void deleteJob(Integer id) {
         Job job = jobRepository.findById(id)
@@ -191,11 +193,28 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
     }
 
 
+////////////////////////
+/// Filtering Jobs
+    //    public List<Job> findJobsByFilters(JobStatus status, String skill, String city) {
+    //     Specification<Job> spec = Specification.where(JobSpecification.hasStatus(status))
+    //                                           .and(JobSpecification.hasSkill(skill))
+    //                                           .and(JobSpecification.inLocation(city));
+    //     return jobRepository.findAll(spec);
+    // }
 
-       public List<Job> findJobsByFilters(JobStatus status, String skill, String city) {
-        Specification<Job> spec = Specification.where(JobSpecification.hasStatus(status))
-                                              .and(JobSpecification.hasSkill(skill))
-                                              .and(JobSpecification.inLocation(city));
-        return jobRepository.findAll(spec);
+    // In service
+public List<Job> findJobsByFilters(JobStatus status, String skill, String city, List<JobType> types) {
+    Specification<Job> spec = Specification.where(JobSpecification.hasStatus(status))
+                                          .and(JobSpecification.hasSkill(skill))
+                                          .and(JobSpecification.inLocation(city));
+
+    if (types != null && !types.isEmpty()) {
+        spec = spec.and(JobSpecification.hasAnyType(types));
     }
+
+    return jobRepository.findAll(spec);
+}
+
+
+
 }

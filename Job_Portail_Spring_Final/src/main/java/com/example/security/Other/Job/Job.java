@@ -81,6 +81,8 @@ public class Job {
 
     private String country;
 
+    
+
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @JsonIgnore
@@ -121,7 +123,12 @@ public class Job {
     }
 
     public enum JobType {
-        FULL_TIME, PART_TIME, INTERNSHIP
+         FULL_TIME,
+    PART_TIME,
+    INTERNSHIP,
+    REMOTE,
+    CONTRACT,
+    FREELANCE
     }
 
     public enum JobStatus {

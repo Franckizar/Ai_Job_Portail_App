@@ -43,7 +43,7 @@ export default function CookieConsentBanner() {
       <p style={{ margin: 0 }}>
         We use cookies to improve your experience. By continuing to use this site, you accept our&nbsp;
         <a
-          href="/cookie-policy"
+          href="/Job_portail/cookie-policy"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: '#90caf9', textDecoration: 'underline' }}

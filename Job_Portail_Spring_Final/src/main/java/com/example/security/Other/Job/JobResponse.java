@@ -9,7 +9,7 @@ public class JobResponse {
     private Integer id;
     private String title;
     private String description;
-    private String type;
+    private Job.JobType type;
     private Integer salaryMin;
     private Integer salaryMax;
     private String city;
@@ -18,6 +18,7 @@ public class JobResponse {
     private Integer enterpriseId;
     private Integer personalEmployerId;
     private String employerName;     // add this field!
+    
 
     // Lombok @Data provides getter/setter automatically
 

@@ -1,5 +1,7 @@
 package com.example.security.Other.Job;
 
+import java.util.List;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import com.example.security.Other.Job.Job.JobStatus;
@@ -31,6 +33,26 @@ public class JobSpecification {
         return (root, query, cb) -> 
             city == null ? null : cb.equal(cb.lower(root.get("city")), city.toLowerCase());
     }
+
+    
+    public static Specification<Job> hasType(Job.JobType type) {
+        return (root, query, cb) -> {
+            if (type == null) {
+                return null; // no filter if null
+            }
+            return cb.equal(root.get("type"), type);
+        };
+    }
+
+    public static Specification<Job> hasAnyType(List<Job.JobType> types) {
+    return (root, query, cb) -> {
+        if (types == null || types.isEmpty()) {
+            return cb.conjunction(); // no filtering
+        }
+        return root.get("type").in(types);
+    };
+}
+
 }
 
 
