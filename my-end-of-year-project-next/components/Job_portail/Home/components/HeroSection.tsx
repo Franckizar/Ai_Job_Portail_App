@@ -1,55 +1,80 @@
-import { Search, MapPin } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { useEffect, useState, useRef } from "react";
+// components/Job_portail/Home/components/HeroSection.tsx
+'use client';
+
+import React, { useEffect, useState, useRef } from 'react';
+import { Search, MapPin } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { useSearch } from '../context/SearchContext';
 
 const images = [
-  "/home_page_images/1.jpg",
-  "/home_page_images/2.jpg",
-  "/home_page_images/3.jpg",
-  "/home_page_images/4.jpg",
+  '/home_page_images/1.jpg',
+  '/home_page_images/2.jpg',
+  '/home_page_images/3.jpg',
+  '/home_page_images/4.jpg',
 ];
 
 export function HeroSection() {
+  const { filters, setFilters, triggerSearch } = useSearch();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const [isClient, setIsClient] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fix hydration issue - only run on client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => {
+    if (!isClient) return;
+
+    intervalRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 4000); // 4 seconds per image
+    }, 4000);
 
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
-  }, [currentIndex]);
+  }, [isClient]);
+
+  const handleSearch = () => {
+    triggerSearch();
+  };
 
   return (
     <section className="relative py-20 text-black min-h-[600px] overflow-hidden">
-      {/* Background images - absolutely positioned and fading */}
+      {/* Background Images - Always render all images but control opacity */}
       {images.map((src, i) => (
         <div
           key={i}
           className={`absolute inset-0 bg-center bg-cover transition-opacity duration-1000 ${
-            i === currentIndex ? "opacity-100" : "opacity-0"
+            // Show first image by default during SSR, then switch to currentIndex on client
+            (!isClient && i === 0) || (isClient && i === currentIndex) 
+              ? 'opacity-100' 
+              : 'opacity-0'
           }`}
           style={{ backgroundImage: `url(${src})`, zIndex: -1 }}
           aria-hidden="true"
         />
       ))}
+      <div className="absolute inset-0 bg-black opacity-30 z-0" />
 
-      {/* Overlay to dim background if needed */}
-      <div className="absolute inset-0 bg-black opacity-30 z-0"></div>
-
-      {/* Main container content on top */}
       <div className="relative container mx-auto px-4 z-10 max-w-4xl text-center">
         <h1 className="text-4xl md:text-5xl font-medium mb-6 text-white drop-shadow-lg">
           Find Your Dream Job Today
         </h1>
         <p className="text-lg md:text-xl mb-8 text-white/90 drop-shadow">
-          Discover thousands of job opportunities with all the information you need. 
-          It's your future. Come find it.
+          Discover thousands of job opportunities with all the information you
+          need. It&apos;s your future. Come find it.
         </p>
 
         <div className="bg-white bg-opacity-80 rounded-lg p-6 shadow-lg">
@@ -59,6 +84,10 @@ export function HeroSection() {
               <Input
                 placeholder="Job title, keywords, or company"
                 className="pl-10 bg-white text-black"
+                value={filters.skill}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, skill: e.target.value }))
+                }
               />
             </div>
 
@@ -67,32 +96,37 @@ export function HeroSection() {
               <Input
                 placeholder="City or state"
                 className="pl-10 bg-white text-black"
+                value={filters.city}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, city: e.target.value }))
+                }
               />
             </div>
 
-            <Select>
+            <Select
+              value={filters.type}
+              onValueChange={(value) =>
+                setFilters((f) => ({ ...f, type: value }))
+              }
+            >
               <SelectTrigger className="bg-white text-black">
                 <SelectValue placeholder="Job type" />
               </SelectTrigger>
               <SelectContent className="bg-white text-black">
-                <SelectItem value="full-time">Full-time</SelectItem>
-                <SelectItem value="part-time">Part-time</SelectItem>
-                <SelectItem value="contract">Contract</SelectItem>
-                <SelectItem value="freelance">Freelance</SelectItem>
+                <SelectItem value="FULL_TIME">Full-time</SelectItem>
+                {/* <SelectItem value="ANY">Any type</SelectItem>  */}
+                <SelectItem value="PART_TIME">Part-time</SelectItem>
+                <SelectItem value="CONTRACT">Contract</SelectItem>
+                <SelectItem value="FREELANCE">Freelance</SelectItem>
               </SelectContent>
             </Select>
 
-            <Button className="bg-primary hover:bg-primary/90 text-white">
+            <Button
+              onClick={handleSearch}
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
               Search Jobs
             </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-2 text-sm">
-            <span className="text-muted-foreground">Popular searches:</span>
-            <button className="text-primary hover:underline">Designer</button>
-            <button className="text-primary hover:underline">Developer</button>
-            <button className="text-primary hover:underline">Product Manager</button>
-            <button className="text-primary hover:underline">Marketing</button>
           </div>
         </div>
       </div>

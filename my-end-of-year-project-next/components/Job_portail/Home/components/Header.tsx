@@ -10,9 +10,6 @@ import {
   LogOut,
   X,
   Briefcase,
-  DollarSign,
-  BookOpen,
-  Building,
   Home,
 } from 'lucide-react';
 
@@ -38,16 +35,20 @@ function getCookieValue(name: string): string | null {
 export function Header() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Local state for role and token from cookies
+  
+  // Hydration-safe state
+  const [isClient, setIsClient] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  const { user, logout } = useAuth(); // Still get user info and logout function
+  const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
+  // Fix hydration by ensuring client-side only operations happen after mount
   useEffect(() => {
+    setIsClient(true);
+    // Only access cookies on client side
     const tokenCookie = getCookieValue('jwt_token');
     const roleCookie = getCookieValue('user_role');
     setToken(tokenCookie);
@@ -68,24 +69,6 @@ export function Header() {
       icon: Briefcase,
       href: '/Job_portail/Find_Jobs',
     },
-    // {
-    //   key: 'companies',
-    //   label: 'Companies',
-    //   icon: Building,
-    //   href: '/Job_portail/Companies',
-    // },
-    // {
-    //   key: 'salaries',
-    //   label: 'Salaries',
-    //   icon: DollarSign,
-    //   href: '/Job_portail/salaries',
-    // },
-    // {
-    //   key: 'resources',
-    //   label: 'Resources',
-    //   icon: BookOpen,
-    //   href: '/Job_portail/resources',
-    // },
     {
       key: 'About_Us',
       label: 'About Us',
@@ -100,18 +83,20 @@ export function Header() {
   };
 
   const handleLogout = () => {
-    // Clear cookies on logout
-    document.cookie = `jwt_token=; path=/; max-age=0`;
-    document.cookie = `user_role=; path=/; max-age=0`;
+    if (typeof document !== 'undefined') {
+      // Clear cookies on logout
+      document.cookie = `jwt_token=; path=/; max-age=0`;
+      document.cookie = `user_role=; path=/; max-age=0`;
+    }
 
-    logout(); // Call logout to clear context, etc.
-
+    logout();
     router.push('/');
     setIsMobileMenuOpen(false);
   };
 
-  // Show Sign In/ Get Started buttons when NOT authenticated (cookies missing)  
-  const isAuthenticated = !!token && !!role;
+  // Only show auth state after client hydration
+  const isAuthenticated = isClient && !!token && !!role;
+  const showAuthButtons = isClient && !isAuthenticated;
 
   return (
     <>
@@ -147,67 +132,73 @@ export function Header() {
 
             {/* Right Side Section */}
             <div className="flex items-center space-x-4">
-              {!isAuthenticated && (
-                <div className="hidden md:flex items-center space-x-3 bg-black">
-                  <Button variant="outline" onClick={() => setShowAuthModal(true)}>
-                    Sign In
-                  </Button>
-                  <Button onClick={() => setShowAuthModal(true)}>Get Started</Button>
-                </div>
-              )}
+              {/* Always render the same structure, but conditionally show content */}
+              <div className="hidden md:flex items-center space-x-3">
+                {!isClient ? (
+                  // Loading state to prevent hydration mismatch
+                  <div className="w-32 h-10 bg-gray-200 animate-pulse rounded"></div>
+                ) : showAuthButtons ? (
+                  // Auth buttons for non-authenticated users
+                  <>
+                    <Button variant="outline" onClick={() => setShowAuthModal(true)}>
+                      Sign In
+                    </Button>
+                    <Button onClick={() => setShowAuthModal(true)}>Get Started</Button>
+                  </>
+                ) : isAuthenticated ? (
+                  // User menu for authenticated users
+                  <>
+                    <Button variant="ghost" size="icon" className="relative">
+                      <Bell className="h-5 w-5" />
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        2
+                      </span>
+                    </Button>
 
-              {isAuthenticated && (
-                <div className="hidden md:flex items-center space-x-3">
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                      2
-                    </span>
-                  </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <User className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <div className="px-3 py-2 text-sm border-b">
+                          <p className="font-medium">{user?.profile?.full_name || user?.username}</p>
+                          <p className="text-gray-500">{user?.email}</p>
+                        </div>
+                        <DropdownMenuItem>
+                          <Link href="/Job_portail/profile" className="flex items-center w-full">
+                            <User className="h-4 w-4 mr-2" />
+                            Profile
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Link href="/Job_portail/applications" className="flex items-center w-full">
+                            <Briefcase className="h-4 w-4 mr-2" />
+                            My Applications
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <User className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <div className="px-3 py-2 text-sm border-b">
-                        <p className="font-medium">{user?.profile?.full_name || user?.username}</p>
-                        <p className="text-gray-500">{user?.email}</p>
-                      </div>
-                      <DropdownMenuItem>
-                        <Link href="/Job_portail/profile" className="flex items-center w-full">
-                          <User className="h-4 w-4 mr-2" />
-                          Profile
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Link href="/Job_portail/applications" className="flex items-center w-full">
-                          <Briefcase className="h-4 w-4 mr-2" />
-                          My Applications
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {role?.toLowerCase() === 'recruiter' && (
-                    <Link href="/Job_portail/post-job">
-                      <Button>Post a Job</Button>
-                    </Link>
-                  )}
-                </div>
-              )}
+                    {role?.toLowerCase() === 'recruiter' && (
+                      <Link href="/Job_portail/post-job">
+                        <Button>Post a Job</Button>
+                      </Link>
+                    )}
+                  </>
+                ) : null}
+              </div>
 
               {/* Mobile menu toggle button */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden bg-black"
+                className="md:hidden"
                 onClick={toggleMobileMenu}
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -244,7 +235,9 @@ export function Header() {
 
               {/* Auth section */}
               <div className="mt-6 pt-4 border-t">
-                {!isAuthenticated ? (
+                {!isClient ? (
+                  <div className="w-full h-20 bg-gray-200 animate-pulse rounded"></div>
+                ) : showAuthButtons ? (
                   <div className="space-y-2">
                     <Button
                       variant="outline"
@@ -266,7 +259,7 @@ export function Header() {
                       Get Started
                     </Button>
                   </div>
-                ) : (
+                ) : isAuthenticated ? (
                   <div className="space-y-1">
                     <div className="px-4 py-2 text-sm border-b">
                       <p className="font-medium">{user?.profile?.full_name || user?.username}</p>
@@ -300,14 +293,16 @@ export function Header() {
                       <span>Sign Out</span>
                     </button>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
         )}
       </header>
 
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      {isClient && (
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      )}
     </>
   );
 }

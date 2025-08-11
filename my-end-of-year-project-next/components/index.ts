@@ -28,6 +28,7 @@ import FeaturedCompanies from "./Job_portail/Home/Featured";
 import ModernNavbar from "./Job_portail/Home/components/ModernNavbar";
 import ModernMenu from "./ModernMenu";
 import CookieConsentBanner from "./Job_portail/Home/components/CookieConsentBanner";
+import { SearchResults } from "./Job_portail/Home/SearchResults";
 // import Announceme
 // import BigCalendar
 // import lib from "../app/lib"
@@ -63,6 +64,7 @@ export {
     JobList1,
     JobCard,
     JobFilter,
+    SearchResults,
 
     
 
