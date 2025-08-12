@@ -25,9 +25,8 @@ import {
 import { AuthModal } from './auth/AuthModal';
 import { useAuth } from './auth/AuthContext';
 
-// Utility to get cookie value by name
 function getCookieValue(name: string): string | null {
-  if (typeof document === 'undefined') return null; // SSR guard
+  if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
   return match ? decodeURIComponent(match[2]) : null;
 }
@@ -35,27 +34,26 @@ function getCookieValue(name: string): string | null {
 export function Header() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // Hydration-safe state
   const [isClient, setIsClient] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Fix hydration by ensuring client-side only operations happen after mount
   useEffect(() => {
     setIsClient(true);
-    // Only access cookies on client side
     const tokenCookie = getCookieValue('jwt_token');
     const roleCookie = getCookieValue('user_role');
     setToken(tokenCookie);
     setRole(roleCookie);
   }, []);
 
-  // Navigation items
   const navigationItems = [
     {
       key: 'Home',
@@ -78,127 +76,136 @@ export function Header() {
 
   const isActive = (href: string) => pathname === href;
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
   const handleLogout = () => {
     if (typeof document !== 'undefined') {
-      // Clear cookies on logout
       document.cookie = `jwt_token=; path=/; max-age=0`;
       document.cookie = `user_role=; path=/; max-age=0`;
     }
-
     logout();
     router.push('/');
     setIsMobileMenuOpen(false);
   };
 
-  // Only show auth state after client hydration
   const isAuthenticated = isClient && !!token && !!role;
   const showAuthButtons = isClient && !isAuthenticated;
 
   return (
     <>
-      <header className="border-b bg-zinc-100 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-8">
-              <Link href="/Job_portail/Home" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-black font-medium">J</span>
+      <header className="sticky top-0 z-50 bg-[var(--color-bg-primary)] border-b border-[var(--color-border-light)] shadow-sm">
+        <div className="container mx-auto px-4 py-3"> {/* Increased padding from px-4 to px-6 */}
+          <div className="flex items-center justify-between h-16">
+            {/* Logo and Navigation */}
+            <div className="flex items-center gap-8"> {/* Changed space-x-8 to gap-8 */}
+              <Link href="/Job_portail/Home" className="flex items-center gap-2"> {/* Changed space-x-2 to gap-2 */}
+                <div className="w-8 h-8 bg-[var(--color-lamaSkyDark)] rounded-lg flex items-center justify-center">
+                  <Briefcase className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-medium text-black">JobPortal</span>
+                <span className="text-xl font-bold text-[var(--color-text-primary)]">JobLama</span>
               </Link>
 
               {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center space-x-6">
+              <nav className="hidden md:flex items-center gap-6"> {/* Changed space-x-6 to gap-6 */}
                 {navigationItems.map((item) => (
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`transition-colors ${
+                    className={`transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md ${
                       isActive(item.href)
-                        ? 'text-blue-600 font-medium'
-                        : 'text-zinc-500 hover:text-blue-500'
+                        ? 'text-[var(--color-lamaSkyDark)] font-medium bg-[var(--color-lamaSkyLight)]'
+                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSkyLight)]'
                     }`}
                   >
+                    {item.icon && <item.icon className="h-4 w-4" />}
                     {item.label}
                   </Link>
                 ))}
               </nav>
             </div>
 
-            {/* Right Side Section */}
-            <div className="flex items-center space-x-4">
-              {/* Always render the same structure, but conditionally show content */}
-              <div className="hidden md:flex items-center space-x-3">
-                {!isClient ? (
-                  // Loading state to prevent hydration mismatch
-                  <div className="w-32 h-10 bg-gray-200 animate-pulse rounded"></div>
-                ) : showAuthButtons ? (
-                  // Auth buttons for non-authenticated users
-                  <>
-                    <Button variant="outline" onClick={() => setShowAuthModal(true)}>
-                      Sign In
-                    </Button>
-                    <Button onClick={() => setShowAuthModal(true)}>Get Started</Button>
-                  </>
-                ) : isAuthenticated ? (
-                  // User menu for authenticated users
-                  <>
-                    <Button variant="ghost" size="icon" className="relative">
-                      <Bell className="h-5 w-5" />
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                        2
-                      </span>
-                    </Button>
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-3"> {/* Changed space-x-3 to gap-3 */}
+              {!isClient ? (
+                <div className="flex gap-3"> {/* Changed space-x-3 to gap-3 */}
+                  <div className="w-20 h-9 bg-[var(--color-bg-secondary)] rounded animate-pulse"></div>
+                  <div className="w-24 h-9 bg-[var(--color-bg-secondary)] rounded animate-pulse"></div>
+                </div>
+              ) : showAuthButtons ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAuthModal(true)}
+                    className="border-[var(--color-lamaSkyDark)] text-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSkyLight)]"
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    onClick={() => setShowAuthModal(true)}
+                    className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)]"
+                  >
+                    Get Started
+                  </Button>
+                </>
+              ) : isAuthenticated ? (
+                <>
+                  <Button variant="ghost" size="icon" className="relative text-[var(--color-text-secondary)] hover:bg-[var(--color-lamaSkyLight)]">
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute -top-1 -right-1 bg-[var(--color-lamaRedDark)] text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      2
+                    </span>
+                  </Button>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <User className="h-5 w-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <div className="px-3 py-2 text-sm border-b">
-                          <p className="font-medium">{user?.profile?.full_name || user?.username}</p>
-                          <p className="text-gray-500">{user?.email}</p>
-                        </div>
-                        <DropdownMenuItem>
-                          <Link href="/Job_portail/profile" className="flex items-center w-full">
-                            <User className="h-4 w-4 mr-2" />
-                            Profile
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Link href="/Job_portail/applications" className="flex items-center w-full">
-                            <Briefcase className="h-4 w-4 mr-2" />
-                            My Applications
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Sign Out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-[var(--color-text-secondary)] hover:bg-[var(--color-lamaSkyLight)]">
+                        <User className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent 
+                      align="end" 
+                      className="w-56 border border-[var(--color-border-light)] bg-[var(--color-bg-primary)]"
+                    >
+                      <div className="px-3 py-2 text-sm border-b border-[var(--color-border-light)]">
+                        <p className="font-medium text-[var(--color-text-primary)]">{user?.profile?.full_name || user?.username}</p>
+                        <p className="text-[var(--color-text-tertiary)]">{user?.email}</p>
+                      </div>
+                      <DropdownMenuItem className="text-[var(--color-text-primary)] hover:bg-[var(--color-lamaSkyLight)]">
+                        <Link href="/Job_portail/profile" className="flex items-center w-full gap-2"> {/* Changed space-x-2 to gap-2 */}
+                          <User className="h-4 w-4 text-[var(--color-lamaSkyDark)]" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-[var(--color-text-primary)] hover:bg-[var(--color-lamaSkyLight)]">
+                        <Link href="/Job_portail/applications" className="flex items-center w-full gap-2"> {/* Changed space-x-2 to gap-2 */}
+                          <Briefcase className="h-4 w-4 text-[var(--color-lamaSkyDark)]" />
+                          My Applications
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-[var(--color-border-light)]" />
+                      <DropdownMenuItem 
+                        onClick={handleLogout} 
+                        className="text-[var(--color-lamaRedDark)] hover:bg-[var(--color-lamaRedLight)]"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-                    {role?.toLowerCase() === 'recruiter' && (
-                      <Link href="/Job_portail/post-job">
-                        <Button>Post a Job</Button>
-                      </Link>
-                    )}
-                  </>
-                ) : null}
-              </div>
+                  {role?.toLowerCase() === 'recruiter' && (
+                    <Link href="/Job_portail/post-job">
+                      <Button className="bg-[var(--color-lamaPurpleDark)] hover:bg-[var(--color-lamaPurple)]">
+                        Post a Job
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              ) : null}
 
-              {/* Mobile menu toggle button */}
+              {/* Mobile menu toggle */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden"
+                className="md:hidden text-[var(--color-text-secondary)] hover:bg-[var(--color-lamaSkyLight)]"
                 onClick={toggleMobileMenu}
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -209,9 +216,9 @@ export function Header() {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t bg-white shadow-lg">
-            <div className="container mx-auto px-4 py-4">
-              {/* Navigation links */}
+          <div className="md:hidden bg-[var(--color-bg-primary)] border-t border-[var(--color-border-light)] shadow-lg">
+            <div className="container mx-auto px-6 py-2"> {/* Increased padding from px-4 to px-6 */}
+              {/* Mobile Navigation */}
               <div className="space-y-1">
                 {navigationItems.map((item) => {
                   const IconComponent = item.icon;
@@ -220,10 +227,10 @@ export function Header() {
                       key={item.key}
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${
                         isActive(item.href)
-                          ? 'bg-blue-50 text-blue-600 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-[var(--color-lamaSkyLight)] text-[var(--color-lamaSkyDark)] font-medium'
+                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-lamaSkyLight)]'
                       }`}
                     >
                       {IconComponent && <IconComponent className="h-5 w-5" />}
@@ -233,15 +240,18 @@ export function Header() {
                 })}
               </div>
 
-              {/* Auth section */}
-              <div className="mt-6 pt-4 border-t">
+              {/* Mobile Auth Section */}
+              <div className="mt-4 pt-4 border-t border-[var(--color-border-light)]">
                 {!isClient ? (
-                  <div className="w-full h-20 bg-gray-200 animate-pulse rounded"></div>
+                  <div className="space-y-2">
+                    <div className="h-10 bg-[var(--color-bg-secondary)] rounded animate-pulse"></div>
+                    <div className="h-10 bg-[var(--color-bg-secondary)] rounded animate-pulse"></div>
+                  </div>
                 ) : showAuthButtons ? (
                   <div className="space-y-2">
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="w-full border-[var(--color-lamaSkyDark)] text-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSkyLight)]"
                       onClick={() => {
                         setShowAuthModal(true);
                         setIsMobileMenuOpen(false);
@@ -250,7 +260,7 @@ export function Header() {
                       Sign In
                     </Button>
                     <Button
-                      className="w-full"
+                      className="w-full bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)]"
                       onClick={() => {
                         setShowAuthModal(true);
                         setIsMobileMenuOpen(false);
@@ -261,25 +271,31 @@ export function Header() {
                   </div>
                 ) : isAuthenticated ? (
                   <div className="space-y-1">
-                    <div className="px-4 py-2 text-sm border-b">
-                      <p className="font-medium">{user?.profile?.full_name || user?.username}</p>
-                      <p className="text-gray-500">{user?.email}</p>
+                    <div className="px-4 py-2 text-sm border-b border-[var(--color-border-light)]">
+                      <p className="font-medium text-[var(--color-text-primary)]">{user?.profile?.full_name || user?.username}</p>
+                      <p className="text-[var(--color-text-tertiary)]">{user?.email}</p>
                     </div>
                     <Link
                       href="/Job_portail/profile"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-lamaSkyLight)]"
                     >
                       <User className="h-5 w-5" />
                       <span>Profile</span>
                     </Link>
-                    <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left hover:bg-gray-50">
+                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-lamaSkyLight)]">
                       <Bell className="h-5 w-5" />
                       <span>Notifications (2)</span>
                     </button>
                     {role?.toLowerCase() === 'recruiter' && (
-                      <Link href="/Job_portail/post-job" onClick={() => setIsMobileMenuOpen(false)}>
-                        <Button className="w-full mt-2">Post a Job</Button>
+                      <Link 
+                        href="/Job_portail/post-job" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block mt-2"
+                      >
+                        <Button className="w-full bg-[var(--color-lamaPurpleDark)] hover:bg-[var(--color-lamaPurple)]">
+                          Post a Job
+                        </Button>
                       </Link>
                     )}
                     <button
@@ -287,7 +303,7 @@ export function Header() {
                         handleLogout();
                         setIsMobileMenuOpen(false);
                       }}
-                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-red-600 hover:bg-red-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-[var(--color-lamaRedDark)] hover:bg-[var(--color-lamaRedLight)]"
                     >
                       <LogOut className="h-5 w-5" />
                       <span>Sign Out</span>

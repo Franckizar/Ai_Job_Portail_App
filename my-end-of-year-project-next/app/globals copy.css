@@ -1,6 +1,6 @@
-@import "tailwindcss";
+/* @import "tailwindcss"; */
 /* @plugin "daisyui" */
-
+/* 
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -17,14 +17,14 @@
   --color-avocado-600: oklch(0.53 0.12 118.34);
   --ease-fluid: cubic-bezier(0.3, 0, 0, 1);
   --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
-  /* --color-lamaSky: #C3EBFA;
+  --color-lamaSky: #C3EBFA;
   --color-lamaSkyLight: #EDF9FD;
   --color-lamaPurple: #CFCEFF;
   --color-lamaPurpleLight: #F1F0FF;
   --color-lamaYellow: #FAE27C;
   --color-lamaYellowLight: #FEFCE8; */
   /* ... */
-} 
+/* } */
 
 
 /* @theme inline {
@@ -33,7 +33,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 } */
-
+/* 
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -87,8 +87,8 @@ border-color: #eee !important;
 }
 .rbc-time-header{
 display: none !important; 
-}
-.rbc-time-content{
+} */
+/* .rbc-time-content{
  border: none !important;
 }
 .rbc-time-gutter.rbc-time-column{
@@ -108,12 +108,12 @@ display: none !important;
   color: black !important;
   padding: 10px !important;
   margin: 10px !important;
-  width: 99% !important;
+  width: 99% !important; */
   /* box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.1) !important;
   border-radius: 4px !important;
   background-color: #f1f0ff !important;
   font-size: 14px !important; */
-}
+/* }
 
 .rbc-event:nth-child(1) {
     background-color: #e2f8ff !important;
@@ -138,7 +138,7 @@ display: none !important;
   }
   .rbc-event:nth-child(8) {
     background-color: #fdf2fb !important;
-  }
+  } */
   /* .rbc-event:nth-child(9) {
     background-color: #C3EBFA !important;
   }
@@ -146,11 +146,11 @@ display: none !important;
     background-color: #C3EBFA !important;
   } */
  
-.rbc-event-label{
+/* .rbc-event-label{
   color: gray !important;
   margin-bottom: 5px ;
 }
-
+ */
 
 
 
@@ -188,60 +188,4 @@ display: none !important;
 }
 
 
-
-
-
-
-/* //////////////////////////////////////////////////////////////// */
-
-
-:root {
-  /* Base Colors */
-  --color-lamaSky: #C3EBFA;
-  --color-lamaSkyLight: #EDF9FD;
-  --color-lamaSkyDark: #7DD3FC;
-  
-  --color-lamaPurple: #CFCEFF;
-  --color-lamaPurpleLight: #F1F0FF;
-  --color-lamaPurpleDark: #A5B4FC;
-  
-  --color-lamaYellow: #FAE27C;
-  --color-lamaYellowLight: #FEFCE8;
-  --color-lamaYellowDark: #FACC15;
-  
-  /* New Complementary Colors */
-  --color-lamaGreen: #BBF7D0;
-  --color-lamaGreenLight: #F0FDF4;
-  --color-lamaGreenDark: #86EFAC;
-  
-  --color-lamaOrange: #FED7AA;
-  --color-lamaOrangeLight: #FFF7ED;
-  --color-lamaOrangeDark: #FDBA74;
-  
-  --color-lamaRed: #FECACA;
-  --color-lamaRedLight: #FEF2F2;
-  --color-lamaRedDark: #FCA5A5;
-  
-  /* Text Colors */
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #6B7280;
-  --color-text-tertiary: #9CA3AF;
-  
-  /* Backgrounds */
-  --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #F9FAFB;
-  
-  /* Borders */
-  --color-border-light: #E5E7EB;
-  --color-border-medium: #D1D5DB;
-
-   /* Updated Backgrounds */
-  --color-bg-primary: #FFFFFF; /* Pure white for cards */
-  --color-bg-secondary: var(--color-lamaSkyLight); /* #EDF9FD - Light sky blue */
-  --color-bg-tertiary: var(--color-lamaSkyDark); /* #7DD3FC - Accents */
-  
-  /* Updated Borders */
-  --color-border-light: #C3EBFA; /* Lighter version of lamaSky */
-  --color-border-medium: #A5D8F5; /* Soft blue-gray */
-}
 
