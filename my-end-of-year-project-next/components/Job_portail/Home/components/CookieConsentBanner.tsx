@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Cookie, X } from 'lucide-react';
+import { Button } from "@/components/Job_portail/Home/components/ui/button";
 
 const COOKIE_CONSENT_KEY = 'cookie_consent_accepted';
 
@@ -19,54 +21,59 @@ export default function CookieConsentBanner() {
     setVisible(false);
   };
 
+  const rejectCookies = () => {
+    localStorage.setItem(COOKIE_CONSENT_KEY, 'false');
+    setVisible(false);
+  };
+
   if (!visible) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '1rem',
-        right: '1rem',
-        maxWidth: '320px',
-        backgroundColor: '#222',
-        color: '#fff',
-        padding: '1rem 1.5rem',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        zIndex: 9999,
-        fontSize: '14px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.75rem',
-      }}
+    <div 
+      role="dialog"
+      aria-labelledby="cookie-consent-heading"
+      className="fixed bottom-6 right-6 max-w-md bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-6 rounded-xl shadow-lg border border-[var(--color-border-light)] z-50"
     >
-      <p style={{ margin: 0 }}>
-        We use cookies to improve your experience. By continuing to use this site, you accept our&nbsp;
-        <a
-          href="/Job_portail/cookie-policy"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: '#90caf9', textDecoration: 'underline' }}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-3">
+          <Cookie className="h-6 w-6 text-[var(--color-lamaSkyDark)]" aria-hidden="true" />
+          <h3 id="cookie-consent-heading" className="font-bold">We Value Your Privacy</h3>
+        </div>
+        <button 
+          onClick={() => setVisible(false)}
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          aria-label="Close cookie consent banner"
         >
-          cookie policy
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+      </div>
+      
+      <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+        We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies. Learn more in our{' '}
+        <a 
+          href="/Job_portail/cookie-policy" 
+          className="text-[var(--color-lamaSkyDark)] underline hover:text-[var(--color-lamaSky)]"
+        >
+          Cookie Policy
         </a>.
       </p>
-      <div style={{ alignSelf: 'flex-end' }}>
-        <button
-          onClick={acceptCookies}
-          style={{
-            backgroundColor: '#4caf50',
-            border: 'none',
-            padding: '0.4rem 1rem',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '14px',
-            cursor: 'pointer',
-            borderRadius: '4px',
-          }}
+      
+      <div className="flex gap-3">
+        <Button 
+          variant="outline"
+          type="button"
+          className="border-[var(--color-border-medium)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]"
+          onClick={rejectCookies}
         >
-          Accept
-        </button>
+          Reject
+        </Button>
+        <Button 
+          type="button"
+          className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)]"
+          onClick={acceptCookies}
+        >
+          Accept All
+        </Button>
       </div>
     </div>
   );

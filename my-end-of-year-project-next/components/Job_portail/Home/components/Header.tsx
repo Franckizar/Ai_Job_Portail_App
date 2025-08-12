@@ -55,12 +55,12 @@ export function Header() {
   }, []);
 
   const navigationItems = [
-    {
-      key: 'Home',
-      label: 'Home',
-      icon: Home,
-      href: '/Job_portail/Home',
-    },
+    // {
+    //   key: 'Home',
+    //   label: 'Home',
+    //   icon: Home,
+    //   href: '/Job_portail/Home',
+    // },
     {
       key: 'jobs',
       label: 'Find Jobs',
