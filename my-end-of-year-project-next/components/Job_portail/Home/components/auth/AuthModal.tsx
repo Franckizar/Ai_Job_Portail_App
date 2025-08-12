@@ -677,8 +677,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="mt-6 text-center">
               <p className="text-xs text-[#6B7280]">
                 By continuing, you agree to our{" "}
-                <button className="text-[#7DD3FC] hover:underline">Terms</button> and{" "}
-                <button className="text-[#7DD3FC] hover:underline">Privacy Policy</button>
+                <button className="text-[#7DD3FC] hover:underline" onClick={() => window.open("/Job_portail/Terms_&_Condition", "_blank")}>Terms</button> and{" "}
+                <button className="text-[#7DD3FC] hover:underline" onClick={() => window.open("/Job_portail/privacy-policy", "_blank")}>Privacy Policy</button>
               </p>
             </div>
           )}
