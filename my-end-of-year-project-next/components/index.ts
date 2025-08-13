@@ -29,6 +29,8 @@ import ModernNavbar from "./Job_portail/Home/components/ModernNavbar";
 import ModernMenu from "./ModernMenu";
 import CookieConsentBanner from "./Job_portail/Home/components/CookieConsentBanner";
 import { SearchResults } from "./Job_portail/Home/SearchResults";
+// import { Loader1 } from "./Loader"; 
+
 // import Announceme
 // import BigCalendar
 // import lib from "../app/lib"
@@ -65,6 +67,8 @@ export {
     JobCard,
     JobFilter,
     SearchResults,
+    Loader1,
+    // 
 
     
 

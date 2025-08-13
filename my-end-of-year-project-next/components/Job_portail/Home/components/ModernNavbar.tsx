@@ -46,7 +46,7 @@ const ModernNavbar = () => {
     // Optionally clear localStorage or other states here as needed
     // localStorage.clear();
 
-    router.push('/');
+    router.push('/Job_portail/Home');
   };
 
   const isActive = (href: string): boolean => {

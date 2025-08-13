@@ -493,7 +493,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           break;
         default:
           toast.warning(`Unknown user role: ${role}. Redirecting to home.`);
-          router.push('/');
+          router.push('/Job_portail/Home');
           break;
       }
 
@@ -550,7 +550,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(null);
       toast.info('Logged out.');
-      router.push('/');
+      router.push('/Job_portail/Home');
     }
   };
 

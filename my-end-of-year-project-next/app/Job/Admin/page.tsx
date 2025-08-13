@@ -1,284 +1,284 @@
 'use client';
+import { useState, useEffect } from 'react';
+import { 
+  Briefcase, Users, FileText, BarChart2, Settings, Mail, Bell, Shield, 
+  DollarSign, MapPin, Activity, ClipboardList, MessageSquare, Database,
+  Search, Filter, Download, Plus, MoreVertical, ChevronDown, ChevronUp,ChevronRight,
+  ArrowUp, ArrowDown, Clock, CheckCircle, AlertCircle
+} from 'lucide-react';
 
-import React, { useEffect, useState } from 'react';
-import { Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
-
-export default function StorageAndCookiesViewer() {
-  const [cookies, setCookies] = useState<Record<string, string>>({});
-  const [localStorageItems, setLocalStorageItems] = useState<Record<string, string>>({});
-  const [showConfirmDialog, setShowConfirmDialog] = useState<{
-    type: 'localStorage' | 'cookie' | 'clearAll';
-    key?: string;
-  } | null>(null);
-
-  const loadData = () => {
-    // Parse cookies into an object
-    const cookieObj: Record<string, string> = {};
-    if (typeof document !== 'undefined' && document.cookie) {
-      document.cookie.split(';').forEach(cookieStr => {
-        const [key, ...valParts] = cookieStr.trim().split('=');
-        if (key) {
-          cookieObj[key] = valParts.join('=');
-        }
-      });
-    }
-    setCookies(cookieObj);
-
-    // Read all localStorage items
-    const localStorageObj: Record<string, string> = {};
-    if (typeof window !== 'undefined' && window.localStorage) {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          localStorageObj[key] = localStorage.getItem(key) || '';
-        }
-      }
-    }
-    setLocalStorageItems(localStorageObj);
-  };
+const AdminDashboard = () => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeJobs: 0,
+    pendingApprovals: 0,
+    totalApplications: 0,
+    premiumEnterprises: 0,
+    revenue: 0,
+    matchesMade: 0
+  });
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('7d');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        setStats({
+          totalUsers: 2458,
+          activeJobs: 189,
+          pendingApprovals: 23,
+          totalApplications: 3421,
+          premiumEnterprises: 56,
+          revenue: 1254000,
+          matchesMade: 843
+        });
 
-  const deleteLocalStorageItem = (key: string) => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(key);
-      loadData(); // Refresh the data
-    }
-  };
+        setRecentActivities([
+          { 
+            id: 1, 
+            type: 'new_user', 
+            title: 'New premium user', 
+            description: 'Tech Solutions Inc. upgraded to enterprise plan', 
+            time: '5 mins ago',
+            icon: <CheckCircle className="h-5 w-5 text-green-500" />
+          },
+          { 
+            id: 2, 
+            type: 'job_post', 
+            title: 'Job requires approval', 
+            description: 'Senior DevOps Engineer at Cloud Innovations', 
+            time: '25 mins ago',
+            icon: <AlertCircle className="h-5 w-5 text-yellow-500" />
+          },
+          { 
+            id: 3, 
+            type: 'payment', 
+            title: 'Payment received', 
+            description: '25,000 XAF from Digital Marketing Pros', 
+            time: '1 hour ago',
+            icon: <DollarSign className="h-5 w-5 text-blue-500" />
+          },
+          { 
+            id: 4, 
+            type: 'new_enterprise', 
+            title: 'New enterprise registered', 
+            description: 'Data Analytics Co. joined the platform', 
+            time: '3 hours ago',
+            icon: <Database className="h-5 w-5 text-purple-500" />
+          }
+        ]);
 
-  const deleteCookie = (key: string) => {
-    if (typeof document !== 'undefined') {
-      // Delete cookie by setting it to expire in the past
-      document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-      // Also try with different path variations
-      document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
-      document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT;`;
-      loadData(); // Refresh the data
-    }
-  };
-
-  const clearAllLocalStorage = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.clear();
-      loadData(); // Refresh the data
-    }
-  };
-
-  const clearAllCookies = () => {
-    if (typeof document !== 'undefined') {
-      Object.keys(cookies).forEach(key => {
-        deleteCookie(key);
-      });
-      loadData(); // Refresh the data
-    }
-  };
-
-  const handleConfirmAction = () => {
-    if (!showConfirmDialog) return;
-
-    switch (showConfirmDialog.type) {
-      case 'localStorage':
-        if (showConfirmDialog.key) {
-          deleteLocalStorageItem(showConfirmDialog.key);
-        }
-        break;
-      case 'cookie':
-        if (showConfirmDialog.key) {
-          deleteCookie(showConfirmDialog.key);
-        }
-        break;
-      case 'clearAll':
-        clearAllLocalStorage();
-        clearAllCookies();
-        break;
-    }
-    setShowConfirmDialog(null);
-  };
-
-  const ConfirmDialog = () => {
-    if (!showConfirmDialog) return null;
-
-    const getDialogContent = () => {
-      switch (showConfirmDialog.type) {
-        case 'localStorage':
-          return {
-            title: 'Delete localStorage Item',
-            message: `Are you sure you want to delete the localStorage item "${showConfirmDialog.key}"?`,
-            action: 'Delete'
-          };
-        case 'cookie':
-          return {
-            title: 'Delete Cookie',
-            message: `Are you sure you want to delete the cookie "${showConfirmDialog.key}"?`,
-            action: 'Delete'
-          };
-        case 'clearAll':
-          return {
-            title: 'Clear All Storage',
-            message: 'Are you sure you want to clear ALL localStorage items and cookies? This action cannot be undone.',
-            action: 'Clear All'
-          };
-        default:
-          return { title: '', message: '', action: '' };
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    const { title, message, action } = getDialogContent();
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-          <div className="flex items-center mb-4">
-            <AlertTriangle className="h-6 w-6 text-red-500 mr-2" />
-            <h3 className="text-lg font-semibold">{title}</h3>
-          </div>
-          <p className="text-gray-600 mb-6">{message}</p>
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={() => setShowConfirmDialog(null)}
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmAction}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-            >
-              {action}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+    fetchDashboardData();
+  }, [timeRange]);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto font-sans text-black">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Cookies & Local Storage Viewer</h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={loadData}
-            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </button>
-          <button
-            onClick={() => setShowConfirmDialog({ type: 'clearAll' })}
-            className="flex items-center px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Clear All
-          </button>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600">Overview of platform activity and metrics</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="24h">Last 24 hours</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          </div>
         </div>
       </div>
 
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-semibold">Local Storage ({Object.keys(localStorageItems).length})</h2>
-          {Object.keys(localStorageItems).length > 0 && (
-            <button
-              onClick={() => setShowConfirmDialog({ type: 'clearAll' })}
-              className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-            >
-              Clear All localStorage
-            </button>
-          )}
-        </div>
-        {Object.keys(localStorageItems).length === 0 ? (
-          <p className="italic text-gray-500">No localStorage items found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border border-gray-300 rounded-md">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left px-4 py-2 border-b">Key</th>
-                  <th className="text-left px-4 py-2 border-b">Value</th>
-                  <th className="text-center px-4 py-2 border-b w-20">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(localStorageItems).map(([key, value]) => (
-                  <tr key={key} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 border-b font-medium">{key}</td>
-                    <td className="px-4 py-2 border-b break-all max-w-md">
-                      <div className="max-h-20 overflow-y-auto text-sm">
-                        {value}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 border-b text-center">
-                      <button
-                        onClick={() => setShowConfirmDialog({ type: 'localStorage', key })}
-                        className="p-1 text-red-500 hover:bg-red-100 rounded transition-colors"
-                        title={`Delete ${key}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard 
+          title="Total Users" 
+          value={stats.totalUsers} 
+          change={12.5} 
+          icon={<Users className="h-6 w-6" />}
+        />
+        <StatCard 
+          title="Active Jobs" 
+          value={stats.activeJobs} 
+          change={5.2} 
+          icon={<Briefcase className="h-6 w-6" />}
+        />
+        <StatCard 
+          title="Pending Approvals" 
+          value={stats.pendingApprovals} 
+          change={-3.1} 
+          icon={<Shield className="h-6 w-6" />}
+        />
+        <StatCard 
+          title="Revenue" 
+          value={`${(stats.revenue / 1000).toFixed(1)}K`} 
+          change={18.7} 
+          icon={<DollarSign className="h-6 w-6" />}
+          isCurrency={true}
+        />
+      </div>
 
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-semibold">Cookies ({Object.keys(cookies).length})</h2>
-          {Object.keys(cookies).length > 0 && (
-            <button
-              onClick={() => {
-                clearAllCookies();
-              }}
-              className="text-sm px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-            >
-              Clear All Cookies
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Activity */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold">Recent Activity</h2>
+            <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+              View all
+              <ChevronRight className="h-4 w-4" />
             </button>
-          )}
-        </div>
-        {Object.keys(cookies).length === 0 ? (
-          <p className="italic text-gray-500">No cookies found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border border-gray-300 rounded-md">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left px-4 py-2 border-b">Name</th>
-                  <th className="text-left px-4 py-2 border-b">Value</th>
-                  <th className="text-center px-4 py-2 border-b w-20">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(cookies).map(([key, value]) => (
-                  <tr key={key} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 border-b font-medium">{key}</td>
-                    <td className="px-4 py-2 border-b break-all max-w-md">
-                      <div className="max-h-20 overflow-y-auto text-sm">
-                        {value}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 border-b text-center">
-                      <button
-                        onClick={() => setShowConfirmDialog({ type: 'cookie', key })}
-                        className="p-1 text-red-500 hover:bg-red-100 rounded transition-colors"
-                        title={`Delete ${key}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
-        )}
-      </section>
+          <div className="space-y-4">
+            {recentActivities.map(activity => (
+              <ActivityItem key={activity.id} activity={activity} />
+            ))}
+          </div>
+        </div>
 
-      <ConfirmDialog />
+        {/* Quick Actions */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <ActionButton 
+                icon={<Users className="h-5 w-5" />}
+                label="Manage Users"
+                color="bg-blue-100 text-blue-600"
+              />
+              <ActionButton 
+                icon={<Briefcase className="h-5 w-5" />}
+                label="Approve Jobs"
+                color="bg-green-100 text-green-600"
+              />
+              <ActionButton 
+                icon={<DollarSign className="h-5 w-5" />}
+                label="View Payments"
+                color="bg-purple-100 text-purple-600"
+              />
+              <ActionButton 
+                icon={<Settings className="h-5 w-5" />}
+                label="Settings"
+                color="bg-gray-100 text-gray-600"
+              />
+            </div>
+          </div>
+
+          {/* System Status */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold mb-4">System Status</h2>
+            <div className="space-y-3">
+              <StatusItem 
+                label="API Service" 
+                status="operational" 
+                lastChecked="2 mins ago" 
+              />
+              <StatusItem 
+                label="Database" 
+                status="operational" 
+                lastChecked="5 mins ago" 
+              />
+              <StatusItem 
+                label="Payment Gateway" 
+                status="degraded" 
+                lastChecked="10 mins ago" 
+              />
+              <StatusItem 
+                label="AI Matching" 
+                status="operational" 
+                lastChecked="15 mins ago" 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+// Stat Card Component
+const StatCard = ({ title, value, change, icon, isCurrency = false }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="text-sm font-medium text-gray-500">{title}</p>
+        <p className="text-2xl font-semibold mt-1">
+          {isCurrency ? `${value} XAF` : value}
+        </p>
+      </div>
+      <div className={`p-2 rounded-lg ${change >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+        {icon}
+      </div>
+    </div>
+    <div className={`flex items-center mt-3 text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+      {change >= 0 ? (
+        <ArrowUp className="h-4 w-4 mr-1" />
+      ) : (
+        <ArrowDown className="h-4 w-4 mr-1" />
+      )}
+      <span>{Math.abs(change)}% from last period</span>
+    </div>
+  </div>
+);
+
+// Activity Item Component
+const ActivityItem = ({ activity }) => (
+  <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+    <div className="flex-shrink-0 mt-1">
+      {activity.icon}
+    </div>
+    <div className="flex-1 min-w-0">
+      <h3 className="font-medium text-gray-900 truncate">{activity.title}</h3>
+      <p className="text-sm text-gray-500 truncate">{activity.description}</p>
+    </div>
+    <div className="flex-shrink-0 flex items-center gap-1 text-xs text-gray-400">
+      <Clock className="h-3 w-3" />
+      <span>{activity.time}</span>
+    </div>
+  </div>
+);
+
+// Action Button Component
+const ActionButton = ({ icon, label, color }) => (
+  <button className={`flex flex-col items-center justify-center p-3 rounded-lg ${color} hover:opacity-90 transition-opacity`}>
+    <div className="p-2 rounded-full bg-white/50">
+      {icon}
+    </div>
+    <span className="mt-2 text-sm font-medium">{label}</span>
+  </button>
+);
+
+// Status Item Component
+const StatusItem = ({ label, status, lastChecked }) => (
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className={`h-2.5 w-2.5 rounded-full ${
+        status === 'operational' ? 'bg-green-500' : 'bg-yellow-500'
+      }`}></div>
+      <span className="font-medium">{label}</span>
+    </div>
+    <span className="text-sm text-gray-500">{lastChecked}</span>
+  </div>
+);
+
+export default AdminDashboard;

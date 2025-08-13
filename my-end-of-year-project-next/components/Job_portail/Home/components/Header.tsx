@@ -82,7 +82,7 @@ export function Header() {
       document.cookie = `user_role=; path=/; max-age=0`;
     }
     logout();
-    router.push('/');
+    router.push('/Job_portail/Home');
     setIsMobileMenuOpen(false);
   };
 
