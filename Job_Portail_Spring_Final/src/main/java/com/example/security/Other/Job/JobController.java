@@ -136,14 +136,15 @@ public ResponseEntity<JobResponse> updateJob(@PathVariable Integer id, @RequestB
 
     //     List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
     //     return ResponseEntity.ok(filteredJobs);
-    // }
 @GetMapping("/filter")
 public ResponseEntity<List<Job>> getJobs(
     @RequestParam(required = false) String status,
     @RequestParam(required = false) String skill,
     @RequestParam(required = false) String city,
-    @RequestParam(required = false) String type // keep as String
+    @RequestParam(required = false) String type
 ) {
+    System.out.println("Received city parameter: " + city); // <-- Add this line
+
     JobStatus jobStatus = null;
     if (status != null && !status.isEmpty()) {
         try {

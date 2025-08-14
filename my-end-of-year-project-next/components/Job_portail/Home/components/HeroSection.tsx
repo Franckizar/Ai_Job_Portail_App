@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Search, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { cameroonTowns } from '@/lib/cameroonTowns';
 import {
   Select,
   SelectContent,
@@ -134,7 +135,7 @@ export function HeroSection() {
             </div>
 
             {/* Location Search */}
-            <div className="relative group">
+            {/* <div className="relative group">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <MapPin className="h-5 w-5 text-[var(--color-lamaSkyDark)] group-hover:text-[var(--color-lamaSky)] transition-colors" />
               </div>
@@ -142,9 +143,39 @@ export function HeroSection() {
                 placeholder="Location"
                 className="pl-10 bg-white/95 border-[var(--color-border-light)] hover:border-[var(--color-lamaSky)] focus:border-[var(--color-lamaSkyDark)] focus:ring-2 focus:ring-[var(--color-lamaSkyLight)] text-[var(--color-text-primary)]"
                 value={filters.city}
+                // onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
+                
                 onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
+                onBlur={() => console.log('City updated:', filters.city)}
               />
-            </div>
+            </div> */}
+            <div className="relative group">
+  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none  ">
+    <MapPin className="h-5 w-5 text-[var(--color-lamaSkyDark)] group-hover:text-[var(--color-lamaSky)] transition-colors" />
+   
+  </div>
+
+  <Select
+    value={filters.city}
+    onValueChange={(value) => setFilters((f) => ({ ...f, city: value }))}
+  >
+    <SelectTrigger className="pl-10 bg-white/95 border-[var(--color-border-light)] hover:border-[var(--color-lamaSky)] focus:border-[var(--color-lamaSkyDark)] focus:ring-2 focus:ring-[var(--color-lamaSkyLight)] text-[var(--color-text-primary)]">
+      <SelectValue placeholder="Select City" />
+    </SelectTrigger>
+
+ <SelectContent className="text-black bg-white/95 border-[var(--color-border-light)] backdrop-blur-sm max-h-60 overflow-y-auto">
+  {cameroonTowns
+    .slice() // create a copy to avoid mutating original array
+    .sort((a, b) => a.localeCompare(b))
+    .map((town) => (
+      <SelectItem key={town} value={town}>
+        {town}
+      </SelectItem>
+    ))}
+</SelectContent>
+
+  </Select>
+</div>
 
             {/* Job Type Selector */}
             <div className="flex gap-2">
@@ -155,28 +186,28 @@ export function HeroSection() {
                 <SelectTrigger className="bg-white/95 border-[var(--color-border-light)] hover:border-[var(--color-lamaSky)] focus:border-[var(--color-lamaSkyDark)] focus:ring-2 focus:ring-[var(--color-lamaSkyLight)] text-[var(--color-text-primary)]">
                   <SelectValue placeholder="Job type" />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 border-[var(--color-border-light)] backdrop-blur-sm">
+                <SelectContent className=" bg-white/95 border-[var(--color-border-light)] backdrop-blur-sm">
                   <SelectItem 
                     value="ANY"
-                    className="hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
+                    className=" text-black hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
                   >
                     Any type
                   </SelectItem>
                   <SelectItem 
                     value="FULL_TIME" 
-                    className="hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
+                    className="text-black hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
                   >
                     Full-time
                   </SelectItem>
                   <SelectItem 
                     value="PART_TIME"
-                    className="hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
+                    className=" text-black hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
                   >
                     Part-time
                   </SelectItem>
                   <SelectItem 
                     value="CONTRACT"
-                    className="hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
+                    className=" text-black hover:bg-[var(--color-lamaSkyLight)] focus:bg-[var(--color-lamaSkyLight)]"
                   >
                     Contract
                   </SelectItem>
