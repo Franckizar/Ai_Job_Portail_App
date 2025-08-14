@@ -509,12 +509,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register
- const register = async (
+  type UserRole = "job_seeker" | "technician" | "recruiter" | "enterprise";
+
+const register = async (
   email: string,
   password: string,
-  firstName: string,  // Add first name
-  lastName: string,   // Add last name
-  role: string
+  firstName: string,
+  lastName: string,
+ role: UserRole
+
 ): Promise<boolean> => {
   try {
     const response = await fetch(`${API_BASE_URL}/register`, {
@@ -523,7 +526,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       body: JSON.stringify({ 
         email, 
         password, 
-        firstname: firstName,  // Send as separate fields
+        firstname: firstName,
         lastname: lastName,
         role 
       }),
@@ -543,6 +546,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return false;
   }
 };
+
   // Logout
   const logout = async (): Promise<void> => {
     try {

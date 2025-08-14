@@ -78,6 +78,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     role: "job_seeker" as UserRole,
   });
 
+  
   const roleOptions = [
     { value: "JOB_SEEKER", label: "Job Seeker", description: "Find opportunities", icon: User },
     { value: "TECHNICIAN", label: "Technician", description: "Technical roles", icon: Wrench },
@@ -156,37 +157,43 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-    setSuccess("");
-    if (registerData.password !== registerData.confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
+  e.preventDefault();
+  setIsLoading(true);
+  setError('');
+  setSuccess('');
+
+  if (registerData.password !== registerData.confirmPassword) {
+    setError('Passwords do not match');
+    setIsLoading(false);
+    return;
+  }
+
+  if (!passwordValidation.isValid) {
+    setError('Please ensure your password meets all requirements');
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    const success = await register(
+      registerData.email,
+      registerData.password,
+      registerData.firstName,
+      registerData.lastName,
+      registerData.role // ✅ matches UserRole
+    );
+
+    if (success) {
+      setCurrentView('verify-email');
+      setSuccess('Account created! Please check your email for verification.');
     }
-    if (!passwordValidation.isValid) {
-      setError("Please ensure your password meets all requirements");
-      setIsLoading(false);
-      return;
-    }
-    try {
-      const success = await register(
-        registerData.email,
-        registerData.password,
-        `${registerData.firstName} ${registerData.lastName}`,
-        registerData.role
-      );
-      if (success) {
-        setCurrentView("verify-email");
-        setSuccess("Account created! Please check your email for verification.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Registration failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (err: any) {
+    setError(err.message || 'Registration failed. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
