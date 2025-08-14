@@ -54,7 +54,7 @@ const ModernMenu = () => {
         dashboardPath = "/Job/Technician";
         break;
       case "JOB_SEEKER":
-        dashboardPath = "/Job/JobSeeker";
+        dashboardPath = "/Job/Job_Seeker";
         break;
       case "ENTERPRISE":
         dashboardPath = "/Job/Enterprise";
@@ -77,9 +77,16 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
+      label: "User",
+      href: "/Job/User",
+      visible: ["ADMIN"],
+      onClick: () => handleNavigation("/Job/User"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
       label: "Test A",
       href: "/Job/list/dash",
-      visible: ["ADMIN", "TECHNICIAN"],
+      visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/list/dash"),
     },
     {
@@ -111,7 +118,7 @@ const ModernMenu = () => {
               : (item.label === "Dashboard" && [
                   "/Job/Admin",
                   "/Job/Technician",
-                  "/Job/JobSeeker",
+                  "/Job/Job_Seeker",
                   "/Job/Enterprise",
                   "/Job/PersonalEmployer",
                 ].includes(activeRoute));

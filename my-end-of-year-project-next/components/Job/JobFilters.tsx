@@ -1,5 +1,5 @@
 'use client'
-import { useState } from "react";
+import { useEffect } from "react";
 import { cameroonTowns } from "@/lib/cameroonTowns";
 
 const jobTypes = ["", "Full-Time", "Part-Time", "Internship"];
@@ -7,23 +7,25 @@ const categories = ["", "Engineering", "Design", "Marketing"];
 const locations = ["", ...cameroonTowns];
 const companies = ["", "TechCorp", "DesignHub", "MarketMakers"];
 
-export default function JobFilters({ onSearch }: { onSearch: (filters: any) => void }) {
-  const [type, setType] = useState("");
-  const [category, setCategory] = useState("");
-  const [location, setLocation] = useState("");
-  const [company, setCompany] = useState("");
-
-  const handleSearch = () => {
-    onSearch({ type, category, location, company });
+export default function JobFilters({
+  filters,
+  setFilters,
+}: {
+  filters: any;
+  setFilters: (filters: any) => void;
+}) {
+  // When any filter changes, update parent state immediately
+  const handleChange = (key: string, value: string) => {
+    setFilters({ ...filters, [key]: value });
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-      {/* Job Type Filter */}
+      {/* Job Type */}
       <div className="relative">
         <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
+          value={filters.type}
+          onChange={(e) => handleChange("type", e.target.value)}
           className="border border-[var(--color-border-light)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-3 rounded-lg w-full focus:ring-2 focus:ring-[var(--color-lamaSky)] focus:border-transparent appearance-none"
         >
           {jobTypes.map((typeOption) => (
@@ -39,11 +41,11 @@ export default function JobFilters({ onSearch }: { onSearch: (filters: any) => v
         </div>
       </div>
 
-      {/* Category Filter */}
+      {/* Category */}
       <div className="relative">
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={filters.category}
+          onChange={(e) => handleChange("category", e.target.value)}
           className="border border-[var(--color-border-light)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-3 rounded-lg w-full focus:ring-2 focus:ring-[var(--color-lamaPurple)] focus:border-transparent appearance-none"
         >
           {categories.map((categoryOption) => (
@@ -59,11 +61,11 @@ export default function JobFilters({ onSearch }: { onSearch: (filters: any) => v
         </div>
       </div>
 
-      {/* Location Filter */}
+      {/* Location */}
       <div className="relative">
         <select
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
+          value={filters.location}
+          onChange={(e) => handleChange("location", e.target.value)}
           className="border border-[var(--color-border-light)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-3 rounded-lg w-full focus:ring-2 focus:ring-[var(--color-lamaGreen)] focus:border-transparent appearance-none"
         >
           <option value="">All Locations</option>
@@ -80,11 +82,11 @@ export default function JobFilters({ onSearch }: { onSearch: (filters: any) => v
         </div>
       </div>
 
-      {/* Company Filter */}
+      {/* Company */}
       <div className="relative">
         <select
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
+          value={filters.company}
+          onChange={(e) => handleChange("company", e.target.value)}
           className="border border-[var(--color-border-light)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-3 rounded-lg w-full focus:ring-2 focus:ring-[var(--color-lamaOrange)] focus:border-transparent appearance-none"
         >
           {companies.map((companyOption) => (
@@ -99,17 +101,6 @@ export default function JobFilters({ onSearch }: { onSearch: (filters: any) => v
           </svg>
         </div>
       </div>
-
-      {/* Search Button */}
-      <button
-        onClick={handleSearch}
-        className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)] text-white rounded-lg px-4 py-3 transition-colors flex items-center justify-center gap-2"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        Search Jobs
-      </button>
     </div>
   );
 }

@@ -480,10 +480,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           router.push('/Job/Admin');
           break;
         case 'TECHNICIAN':
-          router.push('/Job/Technician');
+          router.push('/Job/TECHNICIAN');
           break;
         case 'JOB_SEEKER':
-          router.push('/Job/JobSeeker');
+          router.push('/Job/Job_Seeker');
           break;
         case 'ENTERPRISE':
           router.push('/Job/Enterprise');
@@ -509,34 +509,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register
-  const register = async (
-    email: string,
-    password: string,
-    name: string,
-    role: string
-  ): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, role }),
-      });
+ const register = async (
+  email: string,
+  password: string,
+  firstName: string,  // Add first name
+  lastName: string,   // Add last name
+  role: string
+): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        firstname: firstName,  // Send as separate fields
+        lastname: lastName,
+        role 
+      }),
+    });
 
-      const data = await safeParseJSON(response);
+    const data = await safeParseJSON(response);
 
-      if (!response.ok) {
-        toast.error(data?.message || 'Registration failed.');
-        return false;
-      }
-
-      toast.success('Registration successful! Please verify your email.');
-      return true;
-    } catch (error) {
-      toast.error('An unexpected error occurred during registration.');
+    if (!response.ok) {
+      toast.error(data?.message || 'Registration failed.');
       return false;
     }
-  };
 
+    toast.success('Registration successful! Please verify your email.');
+    return true;
+  } catch (error) {
+    toast.error('An unexpected error occurred during registration.');
+    return false;
+  }
+};
   // Logout
   const logout = async (): Promise<void> => {
     try {

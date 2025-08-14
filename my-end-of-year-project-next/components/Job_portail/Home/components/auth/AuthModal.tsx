@@ -79,10 +79,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   });
 
   const roleOptions = [
-    { value: "job_seeker", label: "Job Seeker", description: "Find opportunities", icon: User },
-    { value: "technician", label: "Technician", description: "Technical roles", icon: Wrench },
-    { value: "recruiter", label: "Recruiter", description: "Hire talent", icon: UserCheck },
-    { value: "enterprise", label: "Enterprise", description: "Business solutions", icon: Building2 },
+    { value: "JOB_SEEKER", label: "Job Seeker", description: "Find opportunities", icon: User },
+    { value: "TECHNICIAN", label: "Technician", description: "Technical roles", icon: Wrench },
+    { value: "PERSONAL_EMPLOYER", label: "Recruiter", description: "Hire talent", icon: UserCheck },
+    { value: "ENTERPRISE", label: "Enterprise", description: "Business solutions", icon: Building2 },
+
+    //   ADMIN,
+    // TECHNICIAN,
+    // JOB_SEEKER,
+    // ENTERPRISE,
+    // UNKNOWN,
+    // PERSONAL_EMPLOYER
   ];
 
   const validatePassword = (password: string) => {

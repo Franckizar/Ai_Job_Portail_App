@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/admin/test")
+@RequestMapping("/api/v1/auth/test")
+// @RequestMapping("/api/v1/admin/test")
 @RequiredArgsConstructor
 public class Controller {
 
@@ -43,9 +44,10 @@ public ResponseEntity<String> deleteUserByEmail(@RequestBody Map<String, String>
     return ResponseEntity.ok(adminService.deleteUserByEmail(email));
 }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(adminService.getAllUsers());
+    @GetMapping("all")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        List<UserDTO> users = adminService.getAllUserDTOs();
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/admins")

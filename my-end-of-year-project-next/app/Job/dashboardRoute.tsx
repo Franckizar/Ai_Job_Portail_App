@@ -28,7 +28,7 @@ export default function DashboardRedirect() {
     const dashboardRoute = {
       ADMIN: "/Admin",
       TECHNICIAN: "/Technician",
-      JOBSEEKER: "/JobSeeker",
+      JOBSEEKER: "/Job_Seeker",
       ENTERPRISE: "/Enterprise",
     }[role || ""] || "/";
 

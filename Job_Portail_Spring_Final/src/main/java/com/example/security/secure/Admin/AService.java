@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,9 +60,27 @@ public class AService {
 }
 
 
-    public List<User> getAllUsers() {
-        return adminRepository.findAll();
-    }
+    // public List<User> getAllUsers() {
+    //     return adminRepository.findAll();
+    // }
+
+public List<UserDTO> getAllUserDTOs() {
+    return adminRepository.findAll().stream().map(user -> new UserDTO(
+            user.getId(),
+            user.getFirstname(),
+            user.getLastname(),
+            user.getEmail(),
+            user.getRoles().stream().map(Enum::name).toList(),
+            user.getCurrentPlan().name(),
+            user.isEnabled(),
+            user.getUsername(),
+            user.isAccountNonLocked(),
+            user.isFreeSubscribed(),
+            user.isStandardSubscribed(),
+            user.isPremiumSubscribed()
+    )).collect(Collectors.toList());
+}
+
 
     public List<User> getUsersByRole(String roleName) {
         return adminRepository.findByRole(roleName);
