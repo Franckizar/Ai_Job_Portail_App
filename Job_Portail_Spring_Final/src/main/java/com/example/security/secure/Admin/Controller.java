@@ -59,4 +59,8 @@ public ResponseEntity<String> deleteUserByEmail(@RequestBody Map<String, String>
     public ResponseEntity<List<User>> getAllClients() {
         return ResponseEntity.ok(adminService.getUsersByRole("USER")); // Change to "CLIENT" if needed
     }
+     @GetMapping("/total-users")
+    public ResponseEntity<Long> getTotalUsers() {
+        return ResponseEntity.ok(adminService.getTotalUserCount());
+    }
 }

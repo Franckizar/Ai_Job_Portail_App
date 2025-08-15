@@ -123,4 +123,8 @@ public Application createApplication(ApplicationRequest request) {
         return applicationRepository.save(application);
     }
 
+ public long getSubmittedApplicationsCount() {
+        return applicationRepository.countSubmittedApplications();
+    }
+
 }

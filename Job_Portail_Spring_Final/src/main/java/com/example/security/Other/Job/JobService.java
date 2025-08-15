@@ -1,12 +1,11 @@
 package com.example.security.Other.Job;
 
-import com.example.security.Other.Job.Job.JobStatus;
-import com.example.security.Other.Job.Job.JobType;
 import com.example.security.Other.JobSkill.CreateJobSkillDto;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.JobSkill.JobSkillRepository;
 import com.example.security.Other.Skill.Skill;
 import com.example.security.Other.Skill.SkillRepository;
+import com.example.security.user.User;
 import com.example.security.user.Enterprise.Enterprise;
 import com.example.security.user.Enterprise.EnterpriseRepository;
 import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
@@ -14,13 +13,11 @@ import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,94 +28,78 @@ public class JobService {
     private final JobSkillRepository jobSkillRepository;
     private final EnterpriseRepository enterpriseRepository;
     private final PersonalEmployerProfileRepository personalEmployerProfileRepository;
+    private final JobCategoryRepository jobCategoryRepository;
 
-  public JobResponse createJob(CreateJobRequest request) {
-    Job job = buildJobFromRequest(request);
+    // ---------------- CREATE JOB ----------------
+    public JobResponse createJob(CreateJobRequest request) {
+        Job job = buildJobFromRequest(request);
+        associateEmployer(job, request.getEnterpriseId(), request.getPersonalEmployerId());
 
-    // Associate Enterprise or PersonalEmployer
-    if (request.getEnterpriseId() != null) {
-        Enterprise enterprise = enterpriseRepository.findById(request.getEnterpriseId())
-                .orElseThrow(() -> new IllegalArgumentException("Enterprise not found with id: " + request.getEnterpriseId()));
-        job.setEnterprise(enterprise);
-        job.setPersonalEmployer(null);  // clear other association
-    } else if (request.getPersonalEmployerId() != null) {
-        PersonalEmployerProfile personalEmployer = personalEmployerProfileRepository.findById(request.getPersonalEmployerId())
-                .orElseThrow(() -> new IllegalArgumentException("PersonalEmployer not found with id: " + request.getPersonalEmployerId()));
-        job.setPersonalEmployer(personalEmployer);
-        job.setEnterprise(null);  // clear other association
-    } else {
-        throw new IllegalArgumentException("Either enterpriseId or personalEmployerId must be provided.");
+        if (request.getCategoryId() != null) {
+            JobCategory category = jobCategoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+            job.setCategory(category);
+        }
+
+        job = jobRepository.save(job);
+
+        List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
+        return buildResponse(job, jobSkills);
     }
 
-    job = jobRepository.save(job);
-    
-    List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
-    return buildResponse(job, jobSkills);
-}
-
-
+    // ---------------- GET ALL JOBS ----------------
     public List<JobResponse> getAllJobs() {
-        List<Job> jobs = jobRepository.findAll();
-        return jobs.stream().map(this::buildResponseFromJob).collect(Collectors.toList());
+        return jobRepository.findAll().stream()
+                .map(this::buildResponseFromJob)
+                .collect(Collectors.toList());
     }
 
+    // ---------------- GET JOB BY ID ----------------
     public JobResponse getJobById(Integer id) {
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Job not found"));
+        Job job = jobRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Job not found"));
         return buildResponseFromJob(job);
     }
 
-public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
-    Job job = jobRepository.findById(jobId)
-            .orElseThrow(() -> new NoSuchElementException("Job not found"));
+    // ---------------- UPDATE JOB ----------------
+    public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
+        Job job = jobRepository.findById(jobId).orElseThrow(() -> new NoSuchElementException("Job not found"));
 
-    job.setTitle(request.getTitle());
-    job.setDescription(request.getDescription());
-    job.setType(request.getType());
-    job.setSalaryMin(request.getSalaryMin());
-    job.setSalaryMax(request.getSalaryMax());
-    job.setAddressLine1(request.getAddressLine1());
-    job.setAddressLine2(request.getAddressLine2());
-    job.setCity(request.getCity());
-    job.setState(request.getState());
-    job.setPostalCode(request.getPostalCode());
-    job.setCountry(request.getCountry());
-    job.setType(request.getType());  
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setType(request.getType());
+        job.setSalaryMin(request.getSalaryMin());
+        job.setSalaryMax(request.getSalaryMax());
+        job.setAddressLine1(request.getAddressLine1());
+        job.setAddressLine2(request.getAddressLine2());
+        job.setCity(request.getCity());
+        job.setState(request.getState());
+        job.setPostalCode(request.getPostalCode());
+        job.setCountry(request.getCountry());
 
-    // Handle association update
-    if (request.getEnterpriseId() != null) {
-        Enterprise enterprise = enterpriseRepository.findById(request.getEnterpriseId())
-                .orElseThrow(() -> new IllegalArgumentException("Enterprise not found with id: " + request.getEnterpriseId()));
-        job.setEnterprise(enterprise);
-        job.setPersonalEmployer(null);
-    } else if (request.getPersonalEmployerId() != null) {
-        PersonalEmployerProfile personalEmployer = personalEmployerProfileRepository.findById(request.getPersonalEmployerId())
-                .orElseThrow(() -> new IllegalArgumentException("PersonalEmployer not found with id: " + request.getPersonalEmployerId()));
-        job.setPersonalEmployer(personalEmployer);
-        job.setEnterprise(null);
-    } else {
-        // Optionally, you can decide to clear both or keep existing relationship
-        // For safety, throw error or keep current associations
-        throw new IllegalArgumentException("Either enterpriseId or personalEmployerId must be provided.");
+        associateEmployer(job, request.getEnterpriseId(), request.getPersonalEmployerId());
+
+        if (request.getCategoryId() != null) {
+            JobCategory category = jobCategoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+            job.setCategory(category);
+        } else {
+            job.setCategory(null);
+        }
+
+        jobSkillRepository.deleteAll(job.getJobSkills());
+        List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
+        job.setJobSkills(jobSkills);
+
+        return buildResponse(job, jobSkills);
     }
 
-    // Update job skills
-    jobSkillRepository.deleteAll(job.getJobSkills());
-    List<JobSkill> jobSkills = saveJobSkills(job, request.getSkills());
-    job.setJobSkills(jobSkills);
-
-    return buildResponse(job, jobSkills);
-}
-/////////////////////////////////////////////
-
+    // ---------------- DELETE JOB ----------------
     public void deleteJob(Integer id) {
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Job not found"));
+        Job job = jobRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Job not found"));
         jobRepository.delete(job);
     }
 
-    // --------- Private helpers -----------
-
+    // ---------------- HELPERS ----------------
     private Job buildJobFromRequest(CreateJobRequest request) {
         return Job.builder()
                 .title(request.getTitle())
@@ -136,32 +117,40 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
                 .build();
     }
 
-    private List<JobSkill> saveJobSkills(Job job, List<CreateJobSkillDto> skillDtos) {
-        List<Integer> skillIds = skillDtos.stream()
-                .map(CreateJobSkillDto::getSkillId)
-                .collect(Collectors.toList());
+    private void associateEmployer(Job job, Integer enterpriseId, Integer personalEmployerId) {
+        if (enterpriseId != null) {
+            Enterprise enterprise = enterpriseRepository.findById(enterpriseId)
+                    .orElseThrow(() -> new IllegalArgumentException("Enterprise not found"));
+            job.setEnterprise(enterprise);
+            job.setPersonalEmployer(null);
+        } else if (personalEmployerId != null) {
+            PersonalEmployerProfile personalEmployer = personalEmployerProfileRepository.findById(personalEmployerId)
+                    .orElseThrow(() -> new IllegalArgumentException("PersonalEmployer not found"));
+            job.setPersonalEmployer(personalEmployer);
+            job.setEnterprise(null);
+        } else {
+            throw new IllegalArgumentException("Either enterpriseId or personalEmployerId must be provided");
+        }
+    }
 
+    private List<JobSkill> saveJobSkills(Job job, List<CreateJobSkillDto> skillDtos) {
+        List<Integer> skillIds = skillDtos.stream().map(CreateJobSkillDto::getSkillId).collect(Collectors.toList());
         List<Skill> skills = skillRepository.findAllById(skillIds);
+
         if (skills.size() != skillDtos.size()) {
             throw new IllegalArgumentException("Invalid skill ID in request");
         }
 
         List<JobSkill> jobSkills = new ArrayList<>();
         for (CreateJobSkillDto dto : skillDtos) {
-            Skill skill = skills.stream()
-                    .filter(s -> s.getId().equals(dto.getSkillId()))
-                    .findFirst()
-                    .orElseThrow();
-
+            Skill skill = skills.stream().filter(s -> s.getId().equals(dto.getSkillId())).findFirst().orElseThrow();
             JobSkill jobSkill = JobSkill.builder()
                     .job(job)
                     .skill(skill)
                     .required(dto.getRequired() != null ? dto.getRequired() : true)
                     .build();
-
             jobSkills.add(jobSkill);
         }
-
         return jobSkillRepository.saveAll(jobSkills);
     }
 
@@ -170,21 +159,47 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
         response.setId(job.getId());
         response.setTitle(job.getTitle());
         response.setDescription(job.getDescription());
-        // response.setType(job.getType());
-        // response.setSalaryMin(job.getSalaryMin());
-        // response.setSalaryMax(job.getSalaryMax());
+        response.setType(job.getType());
+        response.setSalaryMin(job.getSalaryMin() != null ? job.getSalaryMin().intValue() : null);
+        response.setSalaryMax(job.getSalaryMax() != null ? job.getSalaryMax().intValue() : null);
         response.setCity(job.getCity());
+        response.setState(job.getState());
+        response.setPostalCode(job.getPostalCode());
         response.setCountry(job.getCountry());
+        response.setAddressLine1(job.getAddressLine1());
+        response.setAddressLine2(job.getAddressLine2());
+        response.setStatus(job.getStatus());
+        response.setCreatedAt(job.getCreatedAt() != null ? job.getCreatedAt().toString() : null);
 
+        // Employer
+        if (job.getEnterprise() != null) {
+            response.setEnterpriseId(job.getEnterprise().getId());
+            response.setEmployerName(job.getEnterprise().getName());
+        } else if (job.getPersonalEmployer() != null && job.getPersonalEmployer().getUser() != null) {
+            response.setPersonalEmployerId(job.getPersonalEmployer().getId());
+            User user = job.getPersonalEmployer().getUser();
+            response.setEmployerName(user.getFirstname() + " " + user.getLastname());
+        }
+
+        // Category
+        if (job.getCategory() != null) {
+            JobResponse.JobCategoryDto categoryDto = new JobResponse.JobCategoryDto();
+            categoryDto.setId(job.getCategory().getId());
+            categoryDto.setName(job.getCategory().getName());
+            categoryDto.setDescription(job.getCategory().getDescription());
+            response.setCategory(categoryDto);
+        }
+
+        // Skills
         List<JobResponse.JobSkillDto> skillDtos = jobSkills.stream().map(js -> {
             JobResponse.JobSkillDto dto = new JobResponse.JobSkillDto();
-            // dto.setSkillId(js.getSkill().getId());
+            dto.setSkillId(js.getSkill().getId());
             dto.setSkillName(js.getSkill().getName());
             dto.setRequired(js.getRequired());
             return dto;
         }).collect(Collectors.toList());
-
         response.setSkills(skillDtos);
+
         return response;
     }
 
@@ -192,29 +207,27 @@ public JobResponse updateJob(Integer jobId, CreateJobRequest request) {
         return buildResponse(job, job.getJobSkills());
     }
 
-
-////////////////////////
-/// Filtering Jobs
-    //    public List<Job> findJobsByFilters(JobStatus status, String skill, String city) {
-    //     Specification<Job> spec = Specification.where(JobSpecification.hasStatus(status))
-    //                                           .and(JobSpecification.hasSkill(skill))
-    //                                           .and(JobSpecification.inLocation(city));
-    //     return jobRepository.findAll(spec);
-    // }
-
-    // In service
-public List<Job> findJobsByFilters(JobStatus status, String skill, String city, List<JobType> types) {
+    public List<JobResponse> findJobsByFilters(Job.JobStatus status, String skill, String city, List<Job.JobType> types) {
     Specification<Job> spec = Specification.where(JobSpecification.hasStatus(status))
-                                          .and(JobSpecification.hasSkill(skill))
-                                          .and(JobSpecification.inLocation(city));
+            .and(JobSpecification.hasSkill(skill))
+            .and(JobSpecification.inLocation(city));
 
     if (types != null && !types.isEmpty()) {
         spec = spec.and(JobSpecification.hasAnyType(types));
     }
 
-    return jobRepository.findAll(spec);
+    List<Job> jobs = jobRepository.findAll(spec);
+
+    // Convert to JobResponse DTOs
+    return jobs.stream()
+            .map(this::buildResponseFromJob)
+            .collect(Collectors.toList());
 }
 
 
+// ---------------- COUNT ACTIVE JOBS ----------------
+public long getActiveJobCount() {
+    return jobRepository.countByStatus(Job.JobStatus.ACTIVE);
+}
 
 }

@@ -85,4 +85,8 @@ public List<UserDTO> getAllUserDTOs() {
     public List<User> getUsersByRole(String roleName) {
         return adminRepository.findByRole(roleName);
     }
+
+    public long getTotalUserCount() {
+        return adminRepository.countTotalUsers();
+    }
 }

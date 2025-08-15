@@ -137,40 +137,32 @@ public ResponseEntity<JobResponse> updateJob(@PathVariable Integer id, @RequestB
     //     List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
     //     return ResponseEntity.ok(filteredJobs);
 @GetMapping("/filter")
-public ResponseEntity<List<Job>> getJobs(
-    @RequestParam(required = false) String status,
-    @RequestParam(required = false) String skill,
-    @RequestParam(required = false) String city,
-    @RequestParam(required = false) String type
-) {
-    System.out.println("Received city parameter: " + city); // <-- Add this line
+public ResponseEntity<List<JobResponse>> filterJobs(
+        @RequestParam(required = false) Job.JobStatus jobStatus,
+        @RequestParam(required = false) String skill,
+        @RequestParam(required = false) String city,
+        @RequestParam(required = false) List<Job.JobType> jobTypes) {
 
-    JobStatus jobStatus = null;
-    if (status != null && !status.isEmpty()) {
-        try {
-            jobStatus = JobStatus.valueOf(status.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    List<JobType> jobTypes = null;
-    if (type != null && !type.isEmpty()) {
-        try {
-            jobTypes = Arrays.stream(type.split(","))
-                             .map(String::trim)
-                             .map(String::toUpperCase)
-                             .map(JobType::valueOf)
-                             .toList();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
+    List<JobResponse> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
     return ResponseEntity.ok(filteredJobs);
 }
 
-
-
+@GetMapping("/active/count")
+public ResponseEntity<Long> getActiveJobCount() {
+    long count = jobService.getActiveJobCount();
+    return ResponseEntity.ok(count);
 }
+
+//     List<Job> filteredJobs = jobService.findJobsByFilters(jobStatus, skill, city, jobTypes);
+//     return ResponseEntity.ok(filteredJobs);
+// }
+
+
+
+//   @GetMapping("/active/count")
+//     public ResponseEntity<Long> getActiveJobCount() {
+//         long count = jobService.getActiveJobCount();
+//         return ResponseEntity.ok(count);
+    }
+
+// }

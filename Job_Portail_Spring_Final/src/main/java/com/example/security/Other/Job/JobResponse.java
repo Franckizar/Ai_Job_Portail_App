@@ -13,13 +13,25 @@ public class JobResponse {
     private Integer salaryMin;
     private Integer salaryMax;
     private String city;
+    private String state;
+    private String postalCode;
     private String country;
-    private List<JobSkillDto> skills;
+    private String addressLine1;
+    private String addressLine2;
+    private String employerName;
     private Integer enterpriseId;
     private Integer personalEmployerId;
-    private String employerName;     // add this field!
-    
+    private JobCategoryDto category;
+    private List<JobSkillDto> skills;
+    private Job.JobStatus status;
+    private String createdAt; // formatted as string for frontend
 
+    @Data
+    public static class JobCategoryDto {
+        private Integer id;
+        private String name;
+        private String description;
+    }
     // Lombok @Data provides getter/setter automatically
 
     @Data

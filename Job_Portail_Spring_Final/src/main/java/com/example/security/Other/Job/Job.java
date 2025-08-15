@@ -5,9 +5,6 @@ import com.example.security.Other.AiJobMatch.AiJobMatch;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.user.Enterprise.Enterprise;
 import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
-// import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,18 +22,12 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "jobs")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Job {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "job_id")
     private Integer id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enterprise_id", referencedColumnName = "id")
-    @JsonIgnore
-    private Enterprise enterprise;
 
     private String title;
 
@@ -59,12 +50,6 @@ public class Job {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(precision = 10, scale = 7)
-    private BigDecimal latitude;
-
-    @Column(precision = 10, scale = 7)
-    private BigDecimal longitude;
-
     @Column(name = "address_line1")
     private String addressLine1;
 
@@ -72,63 +57,33 @@ public class Job {
     private String addressLine2;
 
     private String city;
-
     private String state;
-    private String employerName;
-
-    @Column(name = "postal_code")
     private String postalCode;
-
     private String country;
 
-    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enterprise_id")
+    private Enterprise enterprise;
 
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @JsonIgnore
-    private List<Application> applications = new ArrayList<>();
-
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    @JsonIgnore
-    private List<AiJobMatch> aiJobMatches = new ArrayList<>();
-
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    // @JsonBackReference
-    // @JsonIgnore
-    @JsonIgnore
-    private List<JobSkill> jobSkills = new ArrayList<>();
-
-        @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "personal_employer_id")
-    @JsonIgnore
     private PersonalEmployerProfile personalEmployer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private JobCategory category;
+
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<JobSkill> jobSkills = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
-        log.info("Job pre-persist called, createdAt set to {}", createdAt);
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        log.info("Job pre-update called for job id {}", id);
-    }
-
-    @PostLoad
-    protected void onLoad() {
-        log.info("Job loaded with id {}", id);
     }
 
     public enum JobType {
-         FULL_TIME,
-    PART_TIME,
-    INTERNSHIP,
-    REMOTE,
-    CONTRACT,
-    FREELANCE
+        FULL_TIME, PART_TIME, INTERNSHIP, REMOTE, CONTRACT, FREELANCE
     }
 
     public enum JobStatus {

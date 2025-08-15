@@ -1,6 +1,7 @@
 package com.example.security.Other.Application;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 // import jakarta.persistence.criteria.CriteriaBuilder.In;
@@ -18,4 +19,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Intege
 
      List<Application> findByStatus(Application.ApplicationStatus status);
     //    List<Application> findByStatus(Application.ApplicationStatus status);
+
+     @Query("SELECT COUNT(a) FROM Application a WHERE a.status = com.example.security.Other.Application.Application.ApplicationStatus.SUBMITTED")
+    long countSubmittedApplications();
+// }
+
 }

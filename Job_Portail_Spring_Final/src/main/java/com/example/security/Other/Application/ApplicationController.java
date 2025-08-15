@@ -112,6 +112,9 @@ public class ApplicationController {
     
 }
 
-
+   @GetMapping("/submitted/count")
+    public ResponseEntity<Long> getSubmittedApplicationsCount() {
+        return ResponseEntity.ok(applicationService.getSubmittedApplicationsCount());
+    }
 
 }

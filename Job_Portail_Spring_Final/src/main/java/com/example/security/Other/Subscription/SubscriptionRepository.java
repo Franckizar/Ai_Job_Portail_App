@@ -29,4 +29,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Inte
     
     // @Query("SELECT s FROM Subscription s WHERE s.endDate < :now AND s.su/bscriptionStatus = 'ACTIVE'")
     // List<Subscription> findExpiredSubscriptions(LocalDateTime now);
+
+    
+    //   @Query("SELECT SUM(p.amount) FROM Payment p")
+    // Double getTotalPaymentsAmount();
+      @Query("SELECT SUM(p.amount) FROM Subscription p")
+    Double getTotalPaymentsAmount();
 }

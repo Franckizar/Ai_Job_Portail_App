@@ -57,4 +57,9 @@ public class SubscriptionController {
         boolean canApply = subscriptionService.canUserApply(userId);
         return ResponseEntity.ok(canApply);
     }
+
+     @GetMapping("/total-amount")
+    public ResponseEntity<Double> getTotalPaymentsAmount() {
+        return ResponseEntity.ok(subscriptionService.getTotalPaymentsAmount());
+    }
 }

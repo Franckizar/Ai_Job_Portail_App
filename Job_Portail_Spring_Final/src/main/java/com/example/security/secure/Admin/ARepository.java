@@ -17,4 +17,8 @@ public interface ARepository extends JpaRepository<User, Long> {
    @Query("SELECT u FROM User u JOIN u.roles r WHERE r = :role")
     List<User> findByRole(@Param("role") String role);
 
+        // Count all users
+    @Query("SELECT COUNT(u) FROM User u")
+    long countTotalUsers();
+
 }

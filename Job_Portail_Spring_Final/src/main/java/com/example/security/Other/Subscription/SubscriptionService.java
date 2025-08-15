@@ -294,4 +294,9 @@ public void activateSubscription(Subscription subscription) {
         userRepository.save(user);
         log.info("Updated user {} to FREE subscription", userId);
     }
+
+     public double getTotalPaymentsAmount() {
+        Double total = subscriptionRepository.getTotalPaymentsAmount();
+        return total != null ? total : 0.0;
+    }
 }
