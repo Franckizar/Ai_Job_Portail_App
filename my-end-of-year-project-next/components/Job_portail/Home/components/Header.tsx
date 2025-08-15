@@ -64,7 +64,7 @@ export function Header() {
       case 'JOB_SEEKER': return '/Job/Job_Seeker';
       case 'TECHNICIAN': return '/Job/Technician';
       case 'ENTERPRISE': return '/Job/Enterprise';
-      case 'PERSONAL_EMPLOYER': return '/Job/Personal_Employer';
+      case 'PERSONAL_EMPLOYER': return '/Job/PersonalEmployer';
       default: return '/Job/Home';
     }
   };

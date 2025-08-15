@@ -84,6 +84,13 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
+      label: "Jobs",
+      href: "/Job/list/PERSONAL_EMPLOYER_JOB",
+      visible: ["PERSONAL_EMPLOYER"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
       label: "Test A",
       href: "/Job/list/dash",
       visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
