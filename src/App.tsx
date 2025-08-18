@@ -6,6 +6,9 @@
 +import { AuthProvider } from './components/auth/AuthContext';
 +import { Layout } from './components/layout/Layout';
 +import { Home } from './pages/Home';
+import { Companies } from './pages/Companies';
+import { Resume } from './pages/Resume';
+import { Analytics } from './pages/Analytics';
 +import { Jobs } from './pages/Jobs';
  import './App.css';
  
@@ -18,6 +21,9 @@
 -        </h1>
 -        <AuthModal isOpen={true} onClose={() => {}} />
 -      </div>
+              <Route path="companies" element={<Companies />} />
+              <Route path="resume" element={<Resume />} />
+              <Route path="analytics" element={<Analytics />} />
 -    </div>
 +    <ThemeProvider>
 +      <AuthProvider>
