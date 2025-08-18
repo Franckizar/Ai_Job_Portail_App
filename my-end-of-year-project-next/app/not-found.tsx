@@ -26,7 +26,7 @@ export default function NotFound() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)]">
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/Job_portail/Home" className="flex items-center gap-2">
                 <Home className="h-4 w-4" />
                 Return Home
               </Link>
