@@ -43,7 +43,7 @@ export default function JobCard({ job }: { job: Job }) {
     // Technology-related keywords
     if (title.includes('developer') || title.includes('programmer') || title.includes('engineer') ||
         title.includes('software') || title.includes('java') || title.includes('python') ||
-        skills.some(skill => ['java', 'python', 'javascript', 'react', 'node', 'docker', 'kubernetes'].includes(skill))) {
+        skills.some(skill => ['java', 'python', 'javascript', 'react', 'node', 'docker', 'kubernetes','docker',].includes(skill))) {
       return 'Technology';
     }
     

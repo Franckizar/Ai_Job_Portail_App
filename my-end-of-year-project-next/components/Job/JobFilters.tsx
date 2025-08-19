@@ -1,10 +1,28 @@
 'use client'
-import { useEffect } from "react";
 import { cameroonTowns } from "@/lib/cameroonTowns";
 
-const jobTypes = ["", "Full-Time", "Part-Time", "Internship"];
-const categories = ["", "Engineering", "Design", "Marketing"];
-const locations = ["", ...cameroonTowns];
+// Updated job types to match your API data format
+const jobTypes = [
+  { value: "", label: "All Job Types" },
+  { value: "Full-Time", label: "Full-Time" },
+  { value: "Part-Time", label: "Part-Time" },
+  { value: "Contract", label: "Contract" },
+  { value: "Internship", label: "Internship" },
+  { value: "Temporary", label: "Temporary" }
+];
+
+// Updated categories to match the categories in your system
+const categories = [
+  { value: "", label: "All Categories" },
+  { value: "Technology", label: "Technology" },
+  { value: "Engineering", label: "Engineering" },
+  { value: "Design", label: "Design" },
+  { value: "Business", label: "Business" },
+  { value: "Marketing", label: "Marketing" },
+  { value: "Customer Service", label: "Customer Service" },
+  { value: "General", label: "General" }
+];
+
 const companies = ["", "TechCorp", "DesignHub", "MarketMakers"];
 
 export default function JobFilters({
@@ -14,13 +32,12 @@ export default function JobFilters({
   filters: any;
   setFilters: (filters: any) => void;
 }) {
-  // When any filter changes, update parent state immediately
   const handleChange = (key: string, value: string) => {
     setFilters({ ...filters, [key]: value });
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       {/* Job Type */}
       <div className="relative">
         <select
@@ -29,8 +46,8 @@ export default function JobFilters({
           className="border border-[var(--color-border-light)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-3 rounded-lg w-full focus:ring-2 focus:ring-[var(--color-lamaSky)] focus:border-transparent appearance-none"
         >
           {jobTypes.map((typeOption) => (
-            <option key={typeOption} value={typeOption}>
-              {typeOption || "All Job Types"}
+            <option key={typeOption.value} value={typeOption.value}>
+              {typeOption.label}
             </option>
           ))}
         </select>
@@ -49,8 +66,8 @@ export default function JobFilters({
           className="border border-[var(--color-border-light)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] p-3 rounded-lg w-full focus:ring-2 focus:ring-[var(--color-lamaPurple)] focus:border-transparent appearance-none"
         >
           {categories.map((categoryOption) => (
-            <option key={categoryOption} value={categoryOption}>
-              {categoryOption || "All Categories"}
+            <option key={categoryOption.value} value={categoryOption.value}>
+              {categoryOption.label}
             </option>
           ))}
         </select>
