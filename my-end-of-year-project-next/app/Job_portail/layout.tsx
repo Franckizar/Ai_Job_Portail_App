@@ -1,4 +1,4 @@
-// app/layout.tsx
+// app/Job_portail/layout.tsx
 import { Header } from '@/components/Job_portail/Home/components/Header';
 import { Footer } from '@/components/Job_portail/Home/components/Footer';
 import { AuthProvider } from '@/components/Job_portail/Home/components/auth/AuthContext';
@@ -6,35 +6,29 @@ import { AppRouterProvider } from '@/components/Job_portail/Home/components/AppR
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CookieConsentBanner from '@/components/Job_portail/Home/components/CookieConsentBanner';
-// import ClientContent from './ClientContent';
-import ClientContent from './ClientContent';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function JobPortailLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-background min-h-screen">
-        <AuthProvider>
-          <AppRouterProvider>
-            <ClientContent>
-              <Header />
-              {children}
-              <Footer />
-              <CookieConsentBanner />
-            </ClientContent>
-            <ToastContainer 
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </AppRouterProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <AuthProvider>
+      <AppRouterProvider>
+        <Header />
+        <main className="min-h-screen bg-background">
+          {children}
+        </main>
+        <Footer />
+        <CookieConsentBanner />
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </AppRouterProvider>
+    </AuthProvider>
   );
 }

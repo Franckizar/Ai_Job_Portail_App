@@ -1,4 +1,4 @@
-import JobFilters from "@/components/Job/JobFilters";
+
 import JobList from "@/components/Job/JobList";
 
 export default function JobsPage() {
@@ -22,7 +22,7 @@ export default function JobsPage() {
           </div>
         </div>
 
-        {/* <JobFilters /> */}
+     
         <JobList />
       </main>
     </div>

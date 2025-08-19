@@ -26,22 +26,68 @@ type Job = {
   category: string | null;
   skills: JobSkill[];
   status: string;
-  createdAt?: string; // Made optional since it might be undefined
+  createdAt?: string;
 };
 
 export default function JobCard({ job }: { job: Job }) {
+  // Enhanced category detection based on job title and skills
+  const detectCategory = (job: Job): string => {
+    const title = job.title.toLowerCase();
+    const skills = job.skills?.map(s => s.skillName.toLowerCase()) || [];
+    
+    // If category is explicitly set, use it
+    if (job.category && job.category !== 'General') {
+      return job.category;
+    }
+    
+    // Technology-related keywords
+    if (title.includes('developer') || title.includes('programmer') || title.includes('engineer') ||
+        title.includes('software') || title.includes('java') || title.includes('python') ||
+        skills.some(skill => ['java', 'python', 'javascript', 'react', 'node', 'docker', 'kubernetes'].includes(skill))) {
+      return 'Technology';
+    }
+    
+    // Design-related keywords
+    if (title.includes('designer') || title.includes('ui/ux') || title.includes('graphic') ||
+        skills.some(skill => ['photoshop', 'figma', 'sketch', 'illustrator'].includes(skill))) {
+      return 'Design';
+    }
+    
+    // Marketing-related keywords
+    if (title.includes('marketing') || title.includes('seo') || title.includes('social media') ||
+        title.includes('content') || title.includes('digital marketing')) {
+      return 'Marketing';
+    }
+    
+    // Business-related keywords
+    if (title.includes('manager') || title.includes('analyst') || title.includes('business') ||
+        title.includes('consultant') || title.includes('director')) {
+      return 'Business';
+    }
+    
+    // Customer service keywords
+    if (title.includes('support') || title.includes('service') || title.includes('customer') ||
+        title.includes('representative')) {
+      return 'Customer Service';
+    }
+    
+    return 'General';
+  };
+
   // Function to generate a consistent color based on job category
   const getCategoryColor = (category: string | null) => {
+    const detectedCategory = detectCategory(job);
+    
     const colorMap: Record<string, { bg: string, text: string }> = {
       'Technology': { bg: 'bg-[var(--color-lamaSky)]', text: 'text-[var(--color-text-primary)]' },
       'Design': { bg: 'bg-[var(--color-lamaPurple)]', text: 'text-[var(--color-text-primary)]' },
       'Business': { bg: 'bg-[var(--color-lamaGreen)]', text: 'text-[var(--color-text-primary)]' },
       'Marketing': { bg: 'bg-[var(--color-lamaOrange)]', text: 'text-[var(--color-text-primary)]' },
       'Customer Service': { bg: 'bg-[var(--color-lamaRed)]', text: 'text-[var(--color-text-primary)]' },
-      'Default': { bg: 'bg-[var(--color-lamaYellow)]', text: 'text-[var(--color-text-primary)]' }
+      'General': { bg: 'bg-[var(--color-lamaYellow)]', text: 'text-[var(--color-text-primary)]' }
     };
     
-    return colorMap[category || 'Default'] || colorMap['Default'];
+    return colorMap[detectedCategory] || colorMap['General'];
   };
 
   // Format salary range
@@ -68,25 +114,21 @@ export default function JobCard({ job }: { job: Job }) {
     return type.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  // Calculate days since posting
-  const getDaysAgo = (createdAt: string) => {
+  // Calculate days since posting - Enhanced with better error handling
+  const getDaysAgo = (createdAt?: string) => {
+    if (!createdAt) return 'Recently posted';
+    
     try {
-      console.log('Parsing date:', createdAt); // Debug log
       const created = new Date(createdAt);
       const now = new Date();
       
-      console.log('Created date:', created, 'Now:', now); // Debug log
-      
       // Check if date is valid
       if (isNaN(created.getTime())) {
-        console.log('Invalid date detected'); // Debug log
         return 'Recently posted';
       }
       
       const diffTime = now.getTime() - created.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
-      console.log('Diff in days:', diffDays); // Debug log
       
       if (diffDays === 0) return 'Posted today';
       if (diffDays === 1) return 'Posted 1 day ago';
@@ -99,22 +141,19 @@ export default function JobCard({ job }: { job: Job }) {
     }
   };
 
-  // Format location
+  // Format location - Enhanced to handle missing data better
   const formatLocation = () => {
-    console.log('Full job object:', job); // Debug log to see complete job data
-    
     const parts = [];
     
-    if (job.city) parts.push(job.city);
-    if (job.state) parts.push(job.state);
-    if (job.country && job.country !== 'USA') parts.push(job.country);
+    if (job.city && job.city.trim()) parts.push(job.city);
+    if (job.state && job.state.trim()) parts.push(job.state);
+    if (job.country && job.country !== 'USA' && job.country.trim()) parts.push(job.country);
     
     const location = parts.join(', ');
-    console.log('Formatted location:', location, 'from parts:', parts); // Debug log
-    
     return location || 'Remote / Location TBD';
   };
 
+  const detectedCategory = detectCategory(job);
   const categoryColors = getCategoryColor(job.category);
   const location = formatLocation();
   const salary = formatSalary(job.salaryMin, job.salaryMax);
@@ -134,25 +173,21 @@ export default function JobCard({ job }: { job: Job }) {
           </h3>
           <p className="text-md text-[var(--color-text-secondary)] mt-1">{job.employerName}</p>
         </div>
-        {job.category && (
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text} ml-4 flex-shrink-0`}>
-            {job.category}
-          </span>
-        )}
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${categoryColors.bg} ${categoryColors.text} ml-4 flex-shrink-0`}>
+          {detectedCategory}
+        </span>
       </div>
 
       {/* Job details */}
       <div className="mt-4 ml-3">
         <div className="flex flex-wrap gap-2 mb-3">
-          {location && (
-            <span className="inline-flex items-center gap-1 text-sm text-[var(--color-text-secondary)] bg-[var(--color-lamaSkyLight)] px-3 py-1 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-lamaSkyDark)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {location}
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1 text-sm text-[var(--color-text-secondary)] bg-[var(--color-lamaSkyLight)] px-3 py-1 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-lamaSkyDark)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {location}
+          </span>
           <span className="inline-flex items-center gap-1 text-sm text-[var(--color-text-secondary)] bg-[var(--color-lamaPurpleLight)] px-3 py-1 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-lamaPurpleDark)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
