@@ -20,14 +20,18 @@ public class CVController {
         this.cvService = cvService;
     }
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+      @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadCV(
             @RequestParam("file") MultipartFile file,
             @RequestParam("userId") Integer userId,
             @RequestParam("userType") String userType) {
         try {
-            cvService.uploadCV(file, userId, userType);
-            return ResponseEntity.ok("CV uploaded successfully");
+            CV cv = cvService.uploadCV(file, userId, userType);
+            String message = cv.getJobSeeker() != null && cv.getJobSeeker().getCv() != null 
+                || cv.getTechnician() != null && cv.getTechnician().getCv() != null
+                ? "CV updated successfully"
+                : "CV uploaded successfully";
+            return ResponseEntity.ok(message);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
         } catch (IllegalArgumentException e) {

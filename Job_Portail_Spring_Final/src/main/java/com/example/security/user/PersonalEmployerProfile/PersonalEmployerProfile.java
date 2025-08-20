@@ -3,6 +3,8 @@ package com.example.security.user.PersonalEmployerProfile;
 import com.example.security.Other.Job.Job;
 import com.example.security.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "personal_employer_profiles")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PersonalEmployerProfile {
 
     @Id

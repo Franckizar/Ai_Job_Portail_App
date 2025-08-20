@@ -32,50 +32,83 @@ public class CVService {
     }
 
 ///////////////////////
+ public CV uploadCV(MultipartFile file, Integer userId, String userType) throws IOException {
+        if (!file.getContentType().equals("application/pdf")) {
+            throw new IOException("Only PDF files are allowed");
+        }
 
-public CV uploadCV(MultipartFile file, Integer userId, String userType) throws IOException {
-    if (!file.getContentType().equals("application/pdf")) {
-        throw new IOException("Only PDF files are allowed");
+        byte[] bytes = file.getBytes();
+        Tika tika = new Tika();
+        String extractedText;
+        try {
+            extractedText = tika.parseToString(new ByteArrayInputStream(bytes));
+        } catch (TikaException e) {
+            extractedText = "";
+            e.printStackTrace();
+        }
+
+        CV cv;
+        boolean isUpdate = false;
+
+        // Check for existing CV based on userType and userId
+        if (userType.equalsIgnoreCase("jobseeker")) {
+            JobSeeker jobSeeker = jobSeekerRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("JobSeeker not found"));
+            cv = jobSeeker.getCv();
+            if (cv != null) {
+                // Update existing CV
+                isUpdate = true;
+                cv.setFileName(file.getOriginalFilename());
+                cv.setFileType(file.getContentType());
+                cv.setContent(bytes);
+                cv.setCvText(extractedText);
+            } else {
+                // Create new CV
+                cv = new CV();
+                cv.setFileName(file.getOriginalFilename());
+                cv.setFileType(file.getContentType());
+                cv.setContent(bytes);
+                cv.setCvText(extractedText);
+                cv.setJobSeeker(jobSeeker);
+                jobSeeker.setCv(cv);
+            }
+        } else if (userType.equalsIgnoreCase("technician")) {
+            Technician technician = technicianRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
+            cv = technician.getCv();
+            if (cv != null) {
+                // Update existing CV
+                isUpdate = true;
+                cv.setFileName(file.getOriginalFilename());
+                cv.setFileType(file.getContentType());
+                cv.setContent(bytes);
+                cv.setCvText(extractedText);
+            } else {
+                // Create new CV
+                cv = new CV();
+                cv.setFileName(file.getOriginalFilename());
+                cv.setFileType(file.getContentType());
+                cv.setContent(bytes);
+                cv.setCvText(extractedText);
+                cv.setTechnician(technician);
+                technician.setCv(cv);
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid user type");
+        }
+
+        // Save the CV (create or update)
+        cv = cvRepository.save(cv);
+
+        // Optionally, update the user entity to ensure the relationship is persisted
+        if (userType.equalsIgnoreCase("jobseeker")) {
+            jobSeekerRepository.save(cv.getJobSeeker());
+        } else if (userType.equalsIgnoreCase("technician")) {
+            technicianRepository.save(cv.getTechnician());
+        }
+
+        return cv;
     }
-
-    CV cv = new CV();
-    cv.setFileName(file.getOriginalFilename());
-    cv.setFileType(file.getContentType());
-
-    byte[] bytes = file.getBytes();
-    cv.setContent(bytes);
-
-    Tika tika = new Tika();
-    String extractedText;
-    try {
-        extractedText = tika.parseToString(new ByteArrayInputStream(bytes));
-    } catch (TikaException e) {
-        // Handle the exception (log, fallback, or rethrow as runtime)
-        extractedText = ""; // or null or some fallback
-        e.printStackTrace();
-        // Optionally, rethrow as IOException if you want:
-        // throw new IOException("Error extracting text from PDF", e);
-    }
-
-    cv.setCvText(extractedText);
-
-    // Link CV to user as before...
-    if (userType.equalsIgnoreCase("jobseeker")) {
-        JobSeeker jobSeeker = jobSeekerRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("JobSeeker not found"));
-        cv.setJobSeeker(jobSeeker);
-        jobSeeker.setCv(cv);
-    } else if (userType.equalsIgnoreCase("technician")) {
-        Technician technician = technicianRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
-        cv.setTechnician(technician);
-        technician.setCv(cv);
-    } else {
-        throw new IllegalArgumentException("Invalid user type");
-    }
-
-    return cvRepository.save(cv);
-}
 
 
 //////////////////////////////////////////////////////////////

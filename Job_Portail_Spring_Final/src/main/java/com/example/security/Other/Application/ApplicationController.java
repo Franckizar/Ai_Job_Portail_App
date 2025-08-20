@@ -54,15 +54,16 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getApplicationsByJobId(jobId));
     }
 
-    @GetMapping("/by-jobseeker/{jobSeekerId}")
-    public ResponseEntity<List<Application>> getByJobSeeker(@PathVariable Integer jobSeekerId) {
-        return ResponseEntity.ok(applicationService.getApplicationsByJobSeekerId(jobSeekerId));
-    }
+@GetMapping("/by-jobseeker/{jobSeekerId}")
+public ResponseEntity<List<ApplicationDTO>> getByJobSeeker(@PathVariable Integer jobSeekerId) {
+    return ResponseEntity.ok(applicationService.getApplicationsByJobSeekerId(jobSeekerId));
+}
 
-    @GetMapping("/by-technician/{technicianId}")
-    public ResponseEntity<List<Application>> getByTechnician(@PathVariable Integer technicianId) {
-        return ResponseEntity.ok(applicationService.getApplicationsByTechnicianId(technicianId));
-    }
+@GetMapping("/by-technician/{technicianId}")
+public ResponseEntity<List<ApplicationDTO>> getByTechnician(@PathVariable Integer technicianId) {
+    return ResponseEntity.ok(applicationService.getApplicationsByTechnicianId(technicianId));
+}
+
 
 
     @GetMapping("/all")

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,13 +91,19 @@ public Application createApplication(ApplicationRequest request) {
         return applicationRepository.findByJob_Id(jobId);
     }
 
-    public List<Application> getApplicationsByJobSeekerId(Integer jobSeekerId) {
-        return applicationRepository.findByJobSeeker_Id(jobSeekerId);
-    }
+  public List<ApplicationDTO> getApplicationsByJobSeekerId(Integer jobSeekerId) {
+    return applicationRepository.findByJobSeeker_Id(jobSeekerId)
+            .stream()
+            .map(ApplicationDTO::new)
+            .collect(Collectors.toList());
+}
 
-    public List<Application> getApplicationsByTechnicianId(Integer technicianId) {
-        return applicationRepository.findByTechnician_Id(technicianId);
-    }
+public List<ApplicationDTO> getApplicationsByTechnicianId(Integer technicianId) {
+    return applicationRepository.findByTechnician_Id(technicianId)
+            .stream()
+            .map(ApplicationDTO::new)
+            .collect(Collectors.toList());
+}
 
     public void deleteApplication(Integer id) {
         if (!applicationRepository.existsById(id)) {

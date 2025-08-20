@@ -1,4 +1,4 @@
-
+// app/Job_portail/Find_Jobs/page.tsx
 import JobList from "@/components/Job/JobList";
 
 export default function JobsPage() {
@@ -21,8 +21,6 @@ export default function JobsPage() {
             </button>
           </div>
         </div>
-
-     
         <JobList />
       </main>
     </div>

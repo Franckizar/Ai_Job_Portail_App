@@ -18,7 +18,7 @@ function getJwtToken(): string | null {
 const protectedEndpoints = [
   "/api/user/profile",
   "/api/jobs",
-  "/api/applications",
+  // "/api/applications",
   "/api/v1/auth/verify-user",
   "/api/v1/auth/logout",
   "/api/v1/auth/profile",
