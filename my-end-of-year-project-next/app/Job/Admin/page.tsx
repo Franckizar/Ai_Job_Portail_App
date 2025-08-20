@@ -120,8 +120,8 @@ const AdminDashboard = () => {
         />
         <UserCard
           type="Revenue"
-          endpoint="http://localhost:8080/api/v1/auth/subscriptions/total-amount"
-          isCurrency={true}
+          endpoint="http://localhost:8088/api/v1/auth/subscriptions/total-amount"
+          // isCurrency={true}
           key="revenue"
         />
       </div>
