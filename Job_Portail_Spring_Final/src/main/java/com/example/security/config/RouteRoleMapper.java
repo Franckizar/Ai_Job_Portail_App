@@ -20,7 +20,7 @@ public class RouteRoleMapper {
         "/api/v1/JOB_SEEKER/**", Set.of("JOB_SEEKER"),
         "/api/v1/ENTERPRISE/**", Set.of("ENTERPRISE"),
         "/api/v1/shared/**", Set.of("TECHNICIAN", "ENTERPRISE"),
-        "/api/v1/sharedPlus/**", Set.of("ENTERPRISE", "ADMIN", "JOB_SEEKER", "PERSONAL_EMPLOYER")
+        "/api/v1/sharedPlus/**", Set.of("ENTERPRISE", "ADMIN", "JOB_SEEKER", "PERSONAL_EMPLOYER","TECHNICIAN")
 
     );
 

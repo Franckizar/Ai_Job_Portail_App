@@ -71,7 +71,6 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("enterpriseId", Integer.class));
     }
 
-    // << Added extractor for Personal Employer >>
     public Integer extractPersonalEmployerId(String token) {
         return extractClaim(token, claims -> claims.get("personalEmployerId", Integer.class));
     }
@@ -121,7 +120,6 @@ public class JwtService {
             if (user.getEnterpriseProfile() != null) {
                 extraClaims.put("enterpriseId", user.getEnterpriseProfile().getId());
             }
-            // Added Personal Employer profile ID claim
             if (user.getPersonalEmployerProfile() != null) {
                 extraClaims.put("personalEmployerId", user.getPersonalEmployerProfile().getId());
             }
