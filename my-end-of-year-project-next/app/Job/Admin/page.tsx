@@ -152,28 +152,33 @@ const AdminDashboard = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <ActionButton
-                icon={<Users className="h-5 w-5" />}
-                label="Manage Users"
-                color="bg-blue-100 text-blue-600"
-              />
-              <ActionButton
-                icon={<Briefcase className="h-5 w-5" />}
-                label="Approve Jobs"
-                color="bg-green-100 text-green-600"
-              />
-              <ActionButton
-                icon={<DollarSign className="h-5 w-5" />}
-                label="View Payments"
-                color="bg-purple-100 text-purple-600"
-              />
-              <ActionButton
-                icon={<Shield className="h-5 w-5" />}
-                label="Settings"
-                color="bg-gray-100 text-gray-600"
-              />
-            </div>
+           {/* // In your AdminDashboard component, update the ActionButton sections: */}
+<div className="grid grid-cols-2 gap-3">
+  <ActionButton
+    icon={<Users className="h-5 w-5" />}
+    label="Manage Users"
+    color="bg-blue-100 text-blue-600"
+    href="/Job/User" // Add the appropriate route
+  />
+  <ActionButton
+    icon={<Briefcase className="h-5 w-5" />}
+    label="Approve Jobs"
+    color="bg-green-100 text-green-600"
+    href="/admin/jobs-approval" // Add the appropriate route
+  />
+  <ActionButton
+    icon={<DollarSign className="h-5 w-5" />}
+    label="View Payments"
+    color="bg-purple-100 text-purple-600"
+    href="/admin/payments" // Add the appropriate route
+  />
+  <ActionButton
+    icon={<Shield className="h-5 w-5" />}
+    label="Settings"
+    color="bg-gray-100 text-gray-600"
+    href="/admin/settings" // Add the appropriate route
+  />
+</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

@@ -31,7 +31,7 @@ public class JobSkill {
     @Id
     // @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    // @JsonIgnore
+    @JsonIgnore
     @JoinColumn(name = "skill_id", referencedColumnName = "skill_id")
     private Skill skill;
 

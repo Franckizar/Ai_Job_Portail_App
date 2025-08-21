@@ -46,6 +46,12 @@ const protectedRoutes: Record<string, string[]> = {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Redirect root path to Job_portail/Home
+  if (pathname === '/') {
+    console.log('🔀 Middleware: Redirecting root path to /Job_portail/Home');
+    return NextResponse.redirect(new URL('/Job_portail/Home', request.url));
+  }
+
   for (const route in protectedRoutes) {
     if (pathname === route || pathname.startsWith(route + '/')) {
       console.log(`🔒 Middleware: Protecting route ${pathname}`);
@@ -115,6 +121,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/Job",
     "/Job/:path*"
   ],
