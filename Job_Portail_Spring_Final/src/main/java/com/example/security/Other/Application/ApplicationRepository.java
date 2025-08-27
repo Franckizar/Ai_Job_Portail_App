@@ -22,6 +22,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Intege
 
      @Query("SELECT COUNT(a) FROM Application a WHERE a.status = com.example.security.Other.Application.Application.ApplicationStatus.SUBMITTED")
     long countSubmittedApplications();
+
+    long countByStatus(Application.ApplicationStatus status);
 // }
 
 }

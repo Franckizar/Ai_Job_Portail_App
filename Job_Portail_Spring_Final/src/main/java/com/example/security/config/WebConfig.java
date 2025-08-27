@@ -1,50 +1,30 @@
-// package com.example.security.config;
+package com.example.security.config;
 
-// import org.springframework.context.annotation.Bean;
-// import org.springframework.context.annotation.Configuration;
-// import org.springframework.web.servlet.config.annotation.CorsRegistry;
-// import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-// @Configuration
-// public class WebConfig {
-//     @Bean
-//     public WebMvcConfigurer corsConfigurer() {
-//         return new WebMvcConfigurer() {
-//             @Override
-//             public void addCorsMappings(CorsRegistry registry) {
-//                 registry.addMapping("/**")
-//                     // ✅ Use specific origins instead of "*" when allowCredentials is true
-//                     .allowedOrigins(
-//                         "http://localhost:3000",    // React development server
-//                         "http://localhost:3001",    // Alternative React port
-//                         "http://127.0.0.1:3000"     // Alternative localhost format
-//                     )
-//                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-//                     .allowedHeaders("*")
-//                     .allowCredentials(true)
-//                     .maxAge(3600); // Cache preflight response for 1 hour
-//             }
-//         };
-//     }
-// }
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
 
-// // Alternative: Environment-based configuration
-// // @Configuration
-// // public class WebConfig {
-// //     @Value("${app.cors.allowed-origins:http://localhost:3000}")
-// //     private String[] allowedOrigins;
-// //     
-// //     @Bean
-// //     public WebMvcConfigurer corsConfigurer() {
-// //         return new WebMvcConfigurer() {
-// //             @Override
-// //             public void addCorsMappings(CorsRegistry registry) {
-// //                 registry.addMapping("/**")
-// //                     .allowedOrigins(allowedOrigins)
-// //                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-// //                     .allowedHeaders("*")
-// //                     .allowCredentials(true);
-// //             }
-// //         };
-// //     }
-// // }
+    private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        log.info("=== CONFIGURING STATIC RESOURCE HANDLERS ===");
+        
+        String uploadPath = "file:H:/END OF YEAR PROJECT/Job_Portail_App/uploads/";
+        log.info("Configuring static resource handler:");
+        log.info("  - URL Pattern: /uploads/**");
+        log.info("  - File Location: {}", uploadPath);
+        
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadPath)
+                .setCachePeriod(3600); // Cache for 1 hour
+        
+        log.info("Static resource handler configured successfully");
+        log.info("Files will be accessible at: http://your-domain/uploads/posts/filename");
+    }
+}

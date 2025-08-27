@@ -134,4 +134,11 @@ public List<ApplicationDTO> getApplicationsByTechnicianId(Integer technicianId) 
         return applicationRepository.countSubmittedApplications();
     }
 
+    public long getApplicationsCountByStatus(Application.ApplicationStatus status) {
+    if (status == null) {
+        throw new IllegalArgumentException("Status parameter is required");
+    }
+    return applicationRepository.countByStatus(status);
+}
+
 }

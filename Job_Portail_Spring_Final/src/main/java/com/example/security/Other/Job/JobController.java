@@ -163,6 +163,20 @@ public ResponseEntity<Long> getActiveJobCount() {
 //     public ResponseEntity<Long> getActiveJobCount() {
 //         long count = jobService.getActiveJobCount();
 //         return ResponseEntity.ok(count);
-    }
 
+
+    // }
+
+@GetMapping("/count/{status}")
+public ResponseEntity<Long> getJobCountByStatus(@PathVariable String status) {
+    try {
+        Job.JobStatus jobStatus = Job.JobStatus.valueOf(status.toUpperCase());
+        long count = jobService.countJobsByStatus(jobStatus);
+        return ResponseEntity.ok(count);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().build();
+    }
 // }
+}
+
+}

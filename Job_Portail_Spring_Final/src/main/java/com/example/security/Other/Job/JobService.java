@@ -230,4 +230,11 @@ public long getActiveJobCount() {
     return jobRepository.countByStatus(Job.JobStatus.ACTIVE);
 }
 
+public long countJobsByStatus(Job.JobStatus status) {
+    if (status == null) {
+        throw new IllegalArgumentException("Status parameter is required");
+    }
+    return jobRepository.countByStatus(status);
+}
+
 }

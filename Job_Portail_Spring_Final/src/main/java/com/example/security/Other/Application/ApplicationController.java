@@ -118,4 +118,15 @@ public ResponseEntity<List<ApplicationDTO>> getByTechnician(@PathVariable Intege
         return ResponseEntity.ok(applicationService.getSubmittedApplicationsCount());
     }
 
+    @GetMapping("/count/{status}")
+public ResponseEntity<Long> getApplicationsCountByStatus(@PathVariable String status) {
+    try {
+        Application.ApplicationStatus applicationStatus = Application.ApplicationStatus.valueOf(status.toUpperCase());
+        long count = applicationService.getApplicationsCountByStatus(applicationStatus);
+        return ResponseEntity.ok(count);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().build();
+    }
+}
+
 }
