@@ -1,10 +1,8 @@
 'use client';
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
 import { Home, Users } from "lucide-react";
-// import Loader from "@/components/Job_portail/Home/components/Loader"; // Import your Loader component
-import Loader from "@/components/Loader"; // Import your Loader component
+import Loader from "@/components/Loader";
 
 // Cookie reading util (same as in navbar)
 function getCookieValue(name: string): string | null {
@@ -84,10 +82,80 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
+      label: "Pending User",
+      href: "/Job/Users",
+      visible: ["ADMIN"],
+      onClick: () => handleNavigation("/Job/User"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Jobs",
+      href: "/Job/list/dashL",
+      visible: ["ADMIN"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Applications",
+      href: "/Job/list/dashL",
+      visible: ["ADMIN"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Payments",
+      href: "/Job/list/dashL",
+      visible: ["ADMIN"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Subscriptions",
+      href: "/Job/list/dashL",
+      visible: ["ADMIN"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Applications",
+      href: "/Job/list/dashL",
+      visible: ["JOB_SEEKER"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Posts",
+      href: "/Job/list/dashL",
+      visible: ["JOB_SEEKER"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Subscriptions",
+      href: "/Job/list/dashL",
+      visible: ["JOB_SEEKER"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Favorite",
+      href: "/Job/list/dashL",
+      visible: ["JOB_SEEKER"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
       label: "Jobs",
       href: "/Job/list/PERSONAL_EMPLOYER_JOB",
       visible: ["PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "chat",
+      href: "/Job/list/dash",
+      visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
+      onClick: () => handleNavigation("/Job/list/dash"),
     },
     {
       icon: <Users className="w-4 h-4" />,
@@ -98,9 +166,23 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
+      label: "Jobs",
+      href: "/Job/list/dash",
+      visible: ["PERSONAL_EMPLOYER"],
+      onClick: () => handleNavigation("/Job/list/dash"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "Applications",
+      href: "/Job/list/dash",
+      visible: ["PERSONAL_EMPLOYER"],
+      onClick: () => handleNavigation("/Job/list/dash"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
       label: "Test B",
       href: "/Job/list/dashL",
-      visible: ["ADMIN", "TECHNICIAN"],
+      visible: ["TECHNICIAN"],
       onClick: () => handleNavigation("/Job/list/dashL"),
     },
   ];
@@ -118,7 +200,7 @@ const ModernMenu = () => {
   return (
     <>
       <nav className="flex items-center gap-1 bg-gray-100/80 rounded-full p-1 backdrop-blur-sm">
-        {visibleItems.map((item) => {
+        {visibleItems.map((item, index) => {
           const isActive =
             item.href
               ? activeRoute === item.href
@@ -132,7 +214,7 @@ const ModernMenu = () => {
 
           return (
             <button
-              key={item.label}
+              key={`${item.label}-${item.href}-${index}`}
               onClick={item.onClick || (() => item.href && handleNavigation(item.href))}
               className={`relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300
                     ${isActive

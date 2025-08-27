@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Briefcase } from 'lucide-react'; // Added Briefcase import
+import { Briefcase } from 'lucide-react';
 import { useSearch } from '../../../components/Job_portail/Home/context/SearchContext';
 import { Skeleton } from '../../../components/Job_portail/Home/components/ui/skeleton';
-import { Button } from '../../../components/Job_portail/Home/components/ui/button'; // Added Button import
+import { Button } from '../../../components/Job_portail/Home/components/ui/button';
 import JobCard from "../../../components/Job/JobCard";
 
 type Job = {
@@ -22,7 +22,7 @@ type Job = {
 };
 
 export function SearchResults() {
-  const { filters, triggerSearch, searchTriggered } = useSearch();
+  const { filters, searchTriggered } = useSearch();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,14 +76,18 @@ export function SearchResults() {
       }
 
       const data = await response.json();
-      setJobs(data.map((job: Job) => ({
+      
+      // LIMIT TO 3 RESULTS ONLY
+      const limitedJobs = data.slice(0, 3).map((job: Job) => ({
         ...job,
         location: job.city || 'Location not specified',
         type: job.jobType ? job.jobType.replace('_', ' ') : 'Type not specified',
         postedDate: job.createdAt ? formatDate(job.createdAt) : 'Posted date not available',
         category: job.category || 'General',
         tags: job.tags || [],
-      })));
+      }));
+      
+      setJobs(limitedJobs);
       setHasSearched(true);
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -111,6 +115,11 @@ export function SearchResults() {
       clearTimeout(debounceTimeout.current);
     }
 
+    // Only trigger search when searchTriggered is true
+    if (!searchTriggered) {
+      return;
+    }
+
     if (
       !filters.skill?.trim() &&
       !filters.city?.trim() &&
@@ -135,11 +144,20 @@ export function SearchResults() {
     };
   }, [filters, searchTriggered]);
 
+  // Don't show anything if search hasn't been triggered
+  if (!searchTriggered) {
+    return null;
+  }
+
   if (loading) {
     return (
       <section className="container mx-auto px-4 py-12 max-w-6xl">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Searching...</h2>
+          <p className="text-gray-600">Finding the best matches for you</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(3)].map((_, i) => (
             <div 
               key={i}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300"
@@ -193,7 +211,7 @@ export function SearchResults() {
           </div>
           <h3 className="text-2xl font-bold text-gray-800 mb-3">No Jobs Found</h3>
           <p className="text-gray-600 mb-6">
-            We couldn't find any jobs matching your search criteria.
+            We couldn&apos;t find any jobs matching your search criteria.
           </p>
           <div className="bg-gray-50 rounded-lg p-4 text-left max-w-md mx-auto">
             <h4 className="font-medium text-gray-800 mb-2">Search Tips:</h4>
@@ -221,10 +239,10 @@ export function SearchResults() {
     <section className="container mx-auto px-4 py-12 max-w-7xl">
       <div className="mb-8 text-center">
         <h2 className="text-3xl font-bold text-gray-800 mb-2">
-          {jobs.length} {jobs.length === 1 ? 'Job' : 'Jobs'} Found
+          Top {jobs.length} Job{jobs.length === 1 ? '' : 's'} Found
         </h2>
         <p className="text-gray-600">
-          Matching your search criteria
+          Showing best matches for your search criteria
         </p>
       </div>
 

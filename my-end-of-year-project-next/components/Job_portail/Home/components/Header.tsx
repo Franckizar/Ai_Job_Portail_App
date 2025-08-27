@@ -37,6 +37,7 @@ export function Header() {
 
   const navigationItems = [
     { key: 'jobs', label: 'Find Jobs', icon: Briefcase, href: '/Job_portail/Find_Jobs' },
+    { key: 'community', label: 'Community', href: '/Job_portail/Community' },
     { key: 'about', label: 'About Us', href: '/Job_portail/About_Us' },
   ];
 
