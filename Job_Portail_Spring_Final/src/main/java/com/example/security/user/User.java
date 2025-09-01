@@ -15,7 +15,8 @@
     import com.example.security.user.JobSeeker.JobSeeker;    // Add this import for PersonalEmployer entity
     import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
     import com.example.security.user.Technicien.Technician;
-    import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.example.security.user.connection.Connection;
+import com.fasterxml.jackson.annotation.JsonBackReference;
     import com.fasterxml.jackson.annotation.JsonIgnore;
     import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
     import jakarta.persistence.*;
@@ -168,6 +169,7 @@
         // Subscription flags (Only one should be true at a time)
         // @Builder.Default
         @Column(name = "is_free_subscribed", nullable = false)
+        
         private boolean isFreeSubscribed;
 
         @Column(name = "is_standard_subscribed", nullable = false)
@@ -218,5 +220,16 @@
             public Integer getApplicationLimit() { return applicationLimit; }
             public String getDescription() { return description; }
         }
+
+
+ // inside class User
+@OneToMany(mappedBy = "requester", cascade = CascadeType.ALL, orphanRemoval = true)
+@ToString.Exclude
+private java.util.Set<Connection> sentConnections = new java.util.HashSet<>();
+
+@OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+@ToString.Exclude
+private java.util.Set<Connection> receivedConnections = new java.util.HashSet<>();
+
 
     }

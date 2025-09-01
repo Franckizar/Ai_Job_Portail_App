@@ -1,6 +1,7 @@
 package com.example.security.Other.Job;
 
 import com.example.security.Other.Application.Application;
+import com.example.security.Other.Job.category.JobCategory;
 import com.example.security.Other.AiJobMatch.AiJobMatch;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.user.Enterprise.Enterprise;

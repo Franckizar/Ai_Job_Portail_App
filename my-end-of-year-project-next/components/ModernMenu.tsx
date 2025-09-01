@@ -153,9 +153,9 @@ const ModernMenu = () => {
     {
       icon: <Users className="w-4 h-4" />,
       label: "chat",
-      href: "/Job/list/dash",
+      href: "/Job/chat",
       visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
-      onClick: () => handleNavigation("/Job/list/dash"),
+      onClick: () => handleNavigation("/Job/chat"),
     },
     {
       icon: <Users className="w-4 h-4" />,

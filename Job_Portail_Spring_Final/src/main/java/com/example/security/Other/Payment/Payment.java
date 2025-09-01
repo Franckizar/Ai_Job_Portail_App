@@ -1,6 +1,7 @@
 // Payment.java
 package com.example.security.Other.Payment;
 
+import com.example.security.Other.Subscription.Subscription;
 import com.example.security.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -52,7 +53,7 @@ public class Payment {
     }
     @ManyToOne
 @JoinColumn(name = "subscription_id")
-private com.example.security.Other.Subscription.Subscription subscription;
+private Subscription subscription;
 
 @Enumerated(EnumType.STRING)
 private PaymentType paymentType;

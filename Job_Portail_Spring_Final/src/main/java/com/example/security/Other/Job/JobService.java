@@ -1,5 +1,7 @@
 package com.example.security.Other.Job;
 
+import com.example.security.Other.Job.category.JobCategory;
+import com.example.security.Other.Job.category.JobCategoryRepository;
 import com.example.security.Other.JobSkill.CreateJobSkillDto;
 import com.example.security.Other.JobSkill.JobSkill;
 import com.example.security.Other.JobSkill.JobSkillRepository;
