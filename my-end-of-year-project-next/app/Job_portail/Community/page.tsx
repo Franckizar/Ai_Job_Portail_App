@@ -1,37 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// import { useAuth } from '@/contexts/AuthContext'; // Adjust path to your AuthContext
 import { useAuth } from '@/components/Job_portail/Home/components/auth/AuthContext';
+import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import { fetchWithAuth } from '@/fetchWithAuth'; // Adjust path to your fetchWithAuth utility
+import { fetchWithAuth } from '@/fetchWithAuth';
 
 // Data types
-type User = {
-  id: number;
-  name: string;
-  avatar?: string;
-  title?: string;
-};
-
-type Comment = {
-  commentId: number;
-  content: string;
-  user: User;
-  createdAt: string;
-};
-
-type Post = {
-  postId: number;
-  content: string;
-  mediaUrl?: string | null;
-  user: User;
-  createdAt: string;
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-};
-
 type ApiUser = {
   id: number;
   firstname: string;
@@ -49,9 +24,9 @@ type ApiComment = {
 
 type ApiPost = {
   postId: number;
-  user: ApiUser;
   content: string;
   mediaUrl: string | null;
+  user: ApiUser;
   createdAt: string;
   updatedAt: string;
   comments: ApiComment[];
@@ -59,8 +34,37 @@ type ApiPost = {
   commentCount: number;
 };
 
+type Post = {
+  postId: number;
+  content: string;
+  mediaUrl?: string;
+  user: {
+    id: number;
+    name: string;
+    avatar?: string;
+    title?: string;
+  };
+  createdAt: string;
+  likes: number;
+  comments: number;
+  isLiked: boolean;
+};
+
+type Comment = {
+  commentId: number;
+  content: string;
+  user: {
+    id: number;
+    name: string;
+    avatar?: string;
+    title?: string;
+  };
+  createdAt: string;
+};
+
 export default function CommunityFeed() {
-  const { user, isAuthenticated } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [activePost, setActivePost] = useState<number | null>(null);
@@ -72,9 +76,14 @@ export default function CommunityFeed() {
     const fetchPosts = async () => {
       try {
         const response = await fetchWithAuth('http://localhost:8088/api/v1/auth/community/posts');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const apiPosts: ApiPost[] = await response.json();
+        console.log('Fetched posts:', apiPosts);
 
-        // Map API posts to component Post type
         const mappedPosts: Post[] = apiPosts.map(post => ({
           postId: post.postId,
           content: post.content,
@@ -82,15 +91,17 @@ export default function CommunityFeed() {
           user: {
             id: post.user.id,
             name: `${post.user.firstname} ${post.user.lastname}`,
-            title: post.user.roles.includes('ADMIN') ? 'Administrator' : undefined,
+            title: post.user.roles.includes('ADMIN') ? 'Administrator' : 
+                   post.user.roles.includes('ENTERPRISE') ? 'Enterprise' :
+                   post.user.roles.includes('JOB_SEEKER') ? 'Job Seeker' :
+                   post.user.roles.includes('TECHNICIAN') ? 'Technician' : 'Member',
           },
           createdAt: post.createdAt,
           likes: post.likeCount,
           comments: post.commentCount,
-          isLiked: false, // Initialize as false since GET is not supported
+          isLiked: false,
         }));
 
-        // Initialize comments from API
         const initialComments: Record<number, Comment[]> = {};
         apiPosts.forEach(post => {
           initialComments[post.postId] = post.comments.map(comment => ({
@@ -99,7 +110,10 @@ export default function CommunityFeed() {
             user: {
               id: comment.user.id,
               name: `${comment.user.firstname} ${comment.user.lastname}`,
-              title: comment.user.roles.includes('ADMIN') ? 'Administrator' : undefined,
+              title: comment.user.roles.includes('ADMIN') ? 'Administrator' : 
+                     comment.user.roles.includes('ENTERPRISE') ? 'Enterprise' :
+                     comment.user.roles.includes('JOB_SEEKER') ? 'Job Seeker' :
+                     comment.user.roles.includes('TECHNICIAN') ? 'Technician' : 'Member',
             },
             createdAt: comment.createdAt,
           }));
@@ -116,10 +130,10 @@ export default function CommunityFeed() {
     };
 
     fetchPosts();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, authUser]);
 
   const handleLike = async (postId: number) => {
-    if (!isAuthenticated || !user?.userId) {
+    if (!isAuthenticated || !authUser?.userId) {
       toast.error('Please log in to like posts.');
       return;
     }
@@ -129,7 +143,7 @@ export default function CommunityFeed() {
       if (!post) return;
 
       const response = await fetchWithAuth(
-        `http://localhost:8088/api/v1/auth/community/likes/${postId}?userId=${user.userId}`,
+        `http://localhost:8088/api/v1/auth/community/likes/${postId}?userId=${authUser.userId}`,
         {
           method: post.isLiked ? 'DELETE' : 'POST',
         }
@@ -159,7 +173,7 @@ export default function CommunityFeed() {
   };
 
   const handleComment = async (postId: number) => {
-    if (!isAuthenticated || !user?.userId) {
+    if (!isAuthenticated || !authUser?.userId) {
       toast.error('Please log in to comment.');
       return;
     }
@@ -175,7 +189,7 @@ export default function CommunityFeed() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId,
-          userId: user.userId,
+          userId: authUser.userId,
           content: commentText.trim(),
         }),
       });
@@ -194,11 +208,14 @@ export default function CommunityFeed() {
             commentId: newComment.commentId,
             content: newComment.content,
             user: {
-              id: user.userId!,
-              name: user.name || `${user.firstname} ${user.lastname}`,
-              title: user.role === 'ADMIN' ? 'Administrator' : undefined,
+              id: authUser.userId!,
+              name: authUser.name || `${authUser.firstname} ${authUser.lastname}`,
+              title: authUser.role === 'ADMIN' ? 'Administrator' : 
+                     authUser.role === 'ENTERPRISE' ? 'Enterprise' :
+                     authUser.role === 'JOB_SEEKER' ? 'Job Seeker' :
+                     authUser.role === 'TECHNICIAN' ? 'Technician' : 'Member',
             },
-            createdAt: newComment.createdAt || new Date().toISOString(),
+            createdAt: newComment.createdAt,
           },
         ],
       }));
@@ -232,18 +249,16 @@ export default function CommunityFeed() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        {/* Feed Header */}
         <header className="mb-10 text-center">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Community Hub</h1>
           <p className="mt-2 text-lg text-gray-600">Connect, share, and engage with the community!</p>
         </header>
 
-        {/* Create Post Card */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 transform transition-all hover:shadow-xl">
           <div className="flex items-center space-x-4 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <span className="text-white text-lg font-semibold">
-                {user?.name?.charAt(0) || user?.firstname?.charAt(0) || 'U'}
+                {authUser?.name?.charAt(0) || authUser?.firstname?.charAt(0) || 'U'}
               </span>
             </div>
             <textarea
@@ -274,7 +289,6 @@ export default function CommunityFeed() {
           </div>
         </div>
 
-        {/* Posts List */}
         {posts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl shadow-md">
             <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,16 +299,20 @@ export default function CommunityFeed() {
         ) : (
           posts.map(post => (
             <div key={post.postId} className="bg-white rounded-2xl shadow-md p-6 mb-6 transform transition-all hover:shadow-xl">
-              {/* Post Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-lg font-semibold">{post.user.name.charAt(0)}</span>
                   </div>
                   <div>
-                    <h3 className="text-gray-900 font-semibold text-lg">{post.user.name}</h3>
+                    <h3 
+                      className="text-gray-900 font-semibold text-lg cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                      onClick={() => router.push(`/profile/${post.user.id}`)}
+                    >
+                      {post.user.name}
+                    </h3>
                     <p className="text-gray-500 text-sm">
-                      {new Date(post.createdAt).toLocaleString()} • {post.user.title || 'Member'}
+                      {new Date(post.createdAt).toLocaleString()} • {post.user.title}
                     </p>
                   </div>
                 </div>
@@ -304,15 +322,22 @@ export default function CommunityFeed() {
                   </svg>
                 </button>
               </div>
-              {/* Post Content */}
+              
               <div className="mb-4 text-gray-800 text-base leading-relaxed">{post.content}</div>
-              {/* Post Media */}
+              
               {post.mediaUrl && (
                 <div className="mb-4 rounded-xl overflow-hidden">
-                  <img src={post.mediaUrl} alt="Post media" className="w-full h-auto max-h-[400px] object-cover" />
+                  <img 
+                    src={post.mediaUrl} 
+                    alt="Post media" 
+                    className="w-full h-auto max-h-[400px] object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 </div>
               )}
-              {/* Post Stats */}
+              
               <div className="flex items-center justify-between text-sm text-gray-500 mb-4 border-b border-gray-200 pb-3">
                 <div className="flex space-x-4">
                   <span>{post.likes} likes</span>
@@ -322,7 +347,7 @@ export default function CommunityFeed() {
                   View all
                 </button>
               </div>
-              {/* Post Actions */}
+              
               <div className="flex justify-between mb-4 space-x-2">
                 <button
                   onClick={() => handleLike(post.postId)}
@@ -351,14 +376,13 @@ export default function CommunityFeed() {
                   <span>Share</span>
                 </button>
               </div>
-              {/* Comments Section */}
+              
               {activePost === post.postId && (
                 <div className="border-t border-gray-200 pt-4">
-                  {/* Comment Input */}
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-lg font-semibold">
-                        {user?.name?.charAt(0) || user?.firstname?.charAt(0) || 'U'}
+                        {authUser?.name?.charAt(0) || authUser?.firstname?.charAt(0) || 'U'}
                       </span>
                     </div>
                     <div className="flex-1 bg-gray-100 rounded-xl px-4 py-3">
@@ -382,7 +406,6 @@ export default function CommunityFeed() {
                       </svg>
                     </button>
                   </div>
-                  {/* Comments List */}
                   {comments[post.postId]?.length ? (
                     <div className="space-y-4">
                       {comments[post.postId].map(comment => (
@@ -392,7 +415,12 @@ export default function CommunityFeed() {
                           </div>
                           <div className="flex-1 bg-gray-50 rounded-xl p-4 transition-all duration-200 hover:bg-gray-100">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-gray-900">{comment.user.name}</span>
+                              <span 
+                                className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                                onClick={() => router.push(`/profile/${comment.user.id}`)}
+                              >
+                                {comment.user.name}
+                              </span>
                               <span className="text-xs text-gray-500">
                                 {new Date(comment.createdAt).toLocaleString()}
                               </span>

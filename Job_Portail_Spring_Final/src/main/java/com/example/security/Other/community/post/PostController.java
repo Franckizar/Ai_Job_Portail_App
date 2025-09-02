@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class PostController {
-
     private static final Logger log = LoggerFactory.getLogger(PostController.class);
     private final PostService postService;
 
@@ -26,62 +24,62 @@ public class PostController {
             @RequestParam Integer userId,
             @RequestParam String content,
             @RequestParam(value = "file", required = true) MultipartFile file) {
-        
+       
         log.info("=== POST CREATE REQUEST START ===");
         log.info("Received POST request to create post");
         log.info("Parameters received:");
-        log.info("  - userId: {}", userId);
-        log.info("  - content: '{}'", content);
-        log.info("  - file parameter name: 'file'");
-        
+        log.info(" - userId: {}", userId);
+        log.info(" - content: '{}'", content);
+        log.info(" - file parameter name: 'file'");
+       
         if (file == null) {
             log.error("ERROR: File parameter is null");
             return ResponseEntity.badRequest().body(createErrorResponse("File is required"));
         }
-        
+       
         if (file.isEmpty()) {
             log.error("ERROR: File is empty");
             return ResponseEntity.badRequest().body(createErrorResponse("File cannot be empty"));
         }
-        
+       
         log.info("File details:");
-        log.info("  - Original filename: '{}'", file.getOriginalFilename());
-        log.info("  - Content type: '{}'", file.getContentType());
-        log.info("  - Size: {} bytes ({} KB)", file.getSize(), file.getSize() / 1024);
-        log.info("  - Is empty: {}", file.isEmpty());
-        
+        log.info(" - Original filename: '{}'", file.getOriginalFilename());
+        log.info(" - Content type: '{}'", file.getContentType());
+        log.info(" - Size: {} bytes ({} KB)", file.getSize(), file.getSize() / 1024);
+        log.info(" - Is empty: {}", file.isEmpty());
+       
         // Additional validation
         if (userId == null) {
             log.error("ERROR: UserId is null");
             return ResponseEntity.badRequest().body(createErrorResponse("UserId is required"));
         }
-        
+       
         if (content == null || content.trim().isEmpty()) {
             log.warn("WARNING: Content is empty or null");
             content = ""; // Allow empty content but log it
         }
-        
+       
         try {
             log.info("Calling postService.create()...");
             Post savedPost = postService.create(userId, content, file);
-            
+           
             log.info("Post created successfully!");
             log.info("Created post details:");
-            log.info("  - Post ID: {}", savedPost.getPostId());
-            log.info("  - User ID: {}", savedPost.getUser().getId());
-            log.info("  - Content: '{}'", savedPost.getContent());
-            log.info("  - Media URL: '{}'", savedPost.getMediaUrl());
-            log.info("  - Created at: {}", savedPost.getCreatedAt());
-            
+            log.info(" - Post ID: {}", savedPost.getPostId());
+            log.info(" - User ID: {}", savedPost.getUser().getId());
+            log.info(" - Content: '{}'", savedPost.getContent());
+            log.info(" - Media URL: '{}'", savedPost.getMediaUrl());
+            log.info(" - Created at: {}", savedPost.getCreatedAt());
+           
             log.info("=== POST CREATE REQUEST END (SUCCESS) ===");
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPost);
-            
+           
         } catch (IllegalArgumentException e) {
             log.error("ERROR: Validation failed during post creation", e);
             log.error("Error message: {}", e.getMessage());
             log.info("=== POST CREATE REQUEST END (VALIDATION ERROR) ===");
             return ResponseEntity.badRequest().body(createErrorResponse(e.getMessage()));
-            
+           
         } catch (Exception e) {
             log.error("ERROR: Unexpected error during post creation", e);
             log.error("Error type: {}", e.getClass().getSimpleName());
@@ -95,30 +93,12 @@ public class PostController {
     /* --------------------- READ --------------------- */
     @GetMapping
     public ResponseEntity<?> listAll() {
-        log.info("=== GET ALL POSTS REQUEST START ===");
-        log.info("Received GET request to list all posts");
-        
         try {
-            List<Post> posts = postService.listAll();
-            log.info("Successfully retrieved {} posts", posts.size());
-            
-            // Log details of each post
-            for (int i = 0; i < posts.size(); i++) {
-                Post post = posts.get(i);
-                log.info("Post {}: ID={}, MediaUrl='{}', Content='{}'", 
-                        i + 1, post.getPostId(), post.getMediaUrl(), 
-                        post.getContent().length() > 50 ? 
-                        post.getContent().substring(0, 50) + "..." : post.getContent());
-            }
-            
-            log.info("=== GET ALL POSTS REQUEST END (SUCCESS) ===");
+            List<PostResponseDTO> posts = postService.getAllPostsAsDTO();
             return ResponseEntity.ok(posts);
-            
         } catch (Exception e) {
-            log.error("ERROR: Failed to retrieve posts", e);
-            log.info("=== GET ALL POSTS REQUEST END (ERROR) ===");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(createErrorResponse("Failed to retrieve posts: " + e.getMessage()));
+                    .body("Failed to retrieve posts");
         }
     }
 
@@ -126,23 +106,23 @@ public class PostController {
     public ResponseEntity<?> getById(@PathVariable Integer postId) {
         log.info("=== GET POST BY ID REQUEST START ===");
         log.info("Received GET request for post ID: {}", postId);
-        
+       
         try {
             Post post = postService.getById(postId);
             log.info("Successfully retrieved post:");
-            log.info("  - Post ID: {}", post.getPostId());
-            log.info("  - Media URL: '{}'", post.getMediaUrl());
-            log.info("  - Content: '{}'", post.getContent());
-            
+            log.info(" - Post ID: {}", post.getPostId());
+            log.info(" - Media URL: '{}'", post.getMediaUrl());
+            log.info(" - Content: '{}'", post.getContent());
+           
             log.info("=== GET POST BY ID REQUEST END (SUCCESS) ===");
             return ResponseEntity.ok(post);
-            
+           
         } catch (IllegalArgumentException e) {
             log.warn("WARNING: Post not found with ID: {}", postId);
             log.info("=== GET POST BY ID REQUEST END (NOT FOUND) ===");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(createErrorResponse("Post not found with ID: " + postId));
-            
+           
         } catch (Exception e) {
             log.error("ERROR: Failed to retrieve post with ID: {}", postId, e);
             log.info("=== GET POST BY ID REQUEST END (ERROR) ===");
@@ -150,6 +130,32 @@ public class PostController {
                     .body(createErrorResponse("Failed to retrieve post: " + e.getMessage()));
         }
     }
+
+    // @GetMapping("/user/{userId}")
+    // public ResponseEntity<?> getPostsByUserId(@PathVariable Integer userId) {
+    //     log.info("=== GET POSTS BY USER ID REQUEST START ===");
+    //     log.info("Received GET request for posts by user ID: {}", userId);
+       
+    //     try {
+    //         List<PostResponseDTO> posts = postService.getPostsByUserId(userId);
+    //         log.info("Successfully retrieved {} posts for user ID: {}", posts.size(), userId);
+           
+    //         log.info("=== GET POSTS BY USER ID REQUEST END (SUCCESS) ===");
+    //         return ResponseEntity.ok(posts);
+           
+    //     } catch (IllegalArgumentException e) {
+    //         log.warn("WARNING: No posts found for user ID: {}", userId);
+    //         log.info("=== GET POSTS BY USER ID REQUEST END (NOT FOUND) ===");
+    //         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+    //                 .body(createErrorResponse("No posts found for user ID: " + userId));
+           
+    //     } catch (Exception e) {
+    //         log.error("ERROR: Failed to retrieve posts for user ID: {}", userId, e);
+    //         log.info("=== GET POSTS BY USER ID REQUEST END (ERROR) ===");
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .body(createErrorResponse("Failed to retrieve posts: " + e.getMessage()));
+    //     }
+    // }
 
     /* --------------------- UPDATE --------------------- */
     @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -159,42 +165,42 @@ public class PostController {
             @RequestParam String content,
             @RequestParam(value = "file", required = false) MultipartFile newFile,
             @RequestParam(value = "removeFile", defaultValue = "false") boolean removeExistingFile) {
-        
+       
         log.info("=== POST UPDATE REQUEST START ===");
         log.info("Received PUT request to update post");
         log.info("Parameters:");
-        log.info("  - postId: {}", postId);
-        log.info("  - userId: {}", userId);
-        log.info("  - content: '{}'", content);
-        log.info("  - hasNewFile: {}", newFile != null && !newFile.isEmpty());
-        log.info("  - removeFile: {}", removeExistingFile);
-        
+        log.info(" - postId: {}", postId);
+        log.info(" - userId: {}", userId);
+        log.info(" - content: '{}'", content);
+        log.info(" - hasNewFile: {}", newFile != null && !newFile.isEmpty());
+        log.info(" - removeFile: {}", removeExistingFile);
+       
         if (newFile != null && !newFile.isEmpty()) {
             log.info("New file details:");
-            log.info("  - Filename: '{}'", newFile.getOriginalFilename());
-            log.info("  - Size: {} bytes", newFile.getSize());
-            log.info("  - Content type: '{}'", newFile.getContentType());
+            log.info(" - Filename: '{}'", newFile.getOriginalFilename());
+            log.info(" - Size: {} bytes", newFile.getSize());
+            log.info(" - Content type: '{}'", newFile.getContentType());
         }
-        
+       
         try {
             Post updatedPost = postService.update(postId, userId, content, newFile, removeExistingFile);
             log.info("Post updated successfully!");
             log.info("Updated post MediaUrl: '{}'", updatedPost.getMediaUrl());
-            
+           
             log.info("=== POST UPDATE REQUEST END (SUCCESS) ===");
             return ResponseEntity.ok(updatedPost);
-            
+           
         } catch (SecurityException e) {
             log.warn("WARNING: Unauthorized update attempt for post {} by user {}", postId, userId);
             log.info("=== POST UPDATE REQUEST END (FORBIDDEN) ===");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(createErrorResponse("Not authorized to update this post"));
-            
+           
         } catch (IllegalArgumentException e) {
             log.warn("WARNING: Invalid request for post update: {}", e.getMessage());
             log.info("=== POST UPDATE REQUEST END (BAD REQUEST) ===");
             return ResponseEntity.badRequest().body(createErrorResponse(e.getMessage()));
-            
+           
         } catch (Exception e) {
             log.error("ERROR: Failed to update post {}", postId, e);
             log.info("=== POST UPDATE REQUEST END (ERROR) ===");
@@ -208,29 +214,29 @@ public class PostController {
     public ResponseEntity<?> delete(
             @PathVariable Integer postId,
             @RequestParam Integer userId) {
-        
+       
         log.info("=== POST DELETE REQUEST START ===");
         log.info("Received DELETE request for post {} by user {}", postId, userId);
-        
+       
         try {
             postService.delete(postId, userId);
             log.info("Post deleted successfully!");
-            
+           
             log.info("=== POST DELETE REQUEST END (SUCCESS) ===");
             return ResponseEntity.noContent().build();
-            
+           
         } catch (SecurityException e) {
             log.warn("WARNING: Unauthorized delete attempt for post {} by user {}", postId, userId);
             log.info("=== POST DELETE REQUEST END (FORBIDDEN) ===");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(createErrorResponse("Not authorized to delete this post"));
-            
+           
         } catch (IllegalArgumentException e) {
             log.warn("WARNING: Post not found for deletion: {}", postId);
             log.info("=== POST DELETE REQUEST END (NOT FOUND) ===");
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(createErrorResponse("Post not found with ID: " + postId));
-            
+           
         } catch (Exception e) {
             log.error("ERROR: Failed to delete post {}", postId, e);
             log.info("=== POST DELETE REQUEST END (ERROR) ===");

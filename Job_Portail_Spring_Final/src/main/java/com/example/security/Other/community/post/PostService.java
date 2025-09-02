@@ -14,6 +14,7 @@ import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.Arrays;
 
 @Service
@@ -25,6 +26,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+       private final PostMapper postMapper; 
 
     // File storage configuration
     private static final String BASE_UPLOAD_DIR = "H:/END OF YEAR PROJECT/Job_Portail_App/uploads/posts/";
@@ -88,20 +90,27 @@ public class PostService {
     }
 
     /* --------------------- READ --------------------- */
-    @Transactional(readOnly = true)
-    public List<Post> listAll() {
-        log.info("=== LISTING ALL POSTS ===");
-        List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
-        log.info("Retrieved {} posts from database", posts.size());
+    // @Transactional(readOnly = true)
+    // public List<Post> listAll() {
+    //     log.info("=== LISTING ALL POSTS ===");
+    //     List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+    //     log.info("Retrieved {} posts from database", posts.size());
         
-        // Log media URLs for debugging
-        posts.forEach(post -> {
-            log.debug("Post {}: MediaUrl='{}', Content length: {}", 
-                    post.getPostId(), post.getMediaUrl(), post.getContent().length());
-        });
+    //     // Log media URLs for debugging
+    //     posts.forEach(post -> {
+    //         log.debug("Post {}: MediaUrl='{}', Content length: {}", 
+    //                 post.getPostId(), post.getMediaUrl(), post.getContent().length());
+    //     });
         
-        return posts;
-    }
+    //     return posts;
+    // }
+    // In PostService.java - add this method
+public List<PostResponseDTO> getAllPostsAsDTO() {
+    List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+    return posts.stream()
+            .map(postMapper::toResponseDTO)
+            .collect(Collectors.toList());
+}
 
     @Transactional(readOnly = true)
     public Post getById(Integer postId) {
