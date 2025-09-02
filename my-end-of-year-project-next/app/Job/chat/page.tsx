@@ -1,44 +1,16 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/Job_portail/Home/components/auth/AuthContext';
 import { toast } from 'react-toastify';
-import { fetchWithAuth } from '@/fetchWithAuth';
-import { Send, Plus, Users } from 'lucide-react';
+import { Send, Plus, Users, MessageSquare, User, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Job_portail/Home/components/ui/card';
 import { Input } from '@/components/Job_portail/Home/components/ui/input';
 import { Button } from '@/components/Job_portail/Home/components/ui/button';
 import { ScrollArea } from '@/components/Job_portail/Home/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/Job_portail/Home/components/ui/select';
-
-interface Connection {
-  id: number;
-  requesterId: number;
-  requesterName: string;
-  requesterEmail: string;
-  receiverId: number;
-  receiverName: string;
-  receiverEmail: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'BLOCKED';
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Conversation {
-  id: number;
-  participants: { user: { id: number; firstname: string; lastname: string; email: string } }[];
-}
-
-interface Message {
-  id: number;
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-  isFromCurrentUser: boolean;
-  messageType: string;
-  sender: { id: number; firstname: string; lastname: string; email: string };
-}
-
-const BASE_URL = 'http://localhost:8088';
+import { messagingApi, Connection, Conversation, Message } from '@/components/Job_portail/Home/context/messagingApi';
+import { Avatar, AvatarFallback } from '@/components/Job_portail/Home/components/ui/avatar';
+import { Badge } from '@/components/Job_portail/Home/components/ui/badge';
 
 const MessagingPage: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -47,655 +19,607 @@ const MessagingPage: React.FC = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [newConversationUserId, setNewConversationUserId] = useState<string>('');
-  const [addParticipantId, setAddParticipantId] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isConnectionsLoading, setIsConnectionsLoading] = useState(false);
-  const [isConversationsLoading, setIsConversationsLoading] = useState(false);
-  const [connectionsError, setConnectionsError] = useState<string | null>(null);
-  const [conversationsError, setConversationsError] = useState<string | null>(null);
+  const [selectedFriendId, setSelectedFriendId] = useState<string>('');
+  const [modalMessage, setModalMessage] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const [isLoadingState, setIsLoadingState] = useState({
+    connections: false,
+    conversations: false,
+    messages: false,
+    sendingMessage: false,
+    creatingConversation: false
+  });
+  
+  const [errors, setErrors] = useState({
+    connections: '',
+    conversations: '',
+    messages: ''
+  });
 
-  // Fetch user's accepted connections (friends)
-  const fetchConnections = useCallback(async () => {
-    if (!user?.userId) {
-      console.log('No userId available, skipping fetchConnections');
-      return;
-    }
-    setIsConnectionsLoading(true);
-    setConnectionsError(null);
-    const url = `${BASE_URL}/api/v1/auth/connections/user/${user.userId}/friends`;
-    console.log(`Sending request: ${url}, Method: GET`);
-    try {
-      const response = await fetchWithAuth(url, { method: 'GET' });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        setConnections(data);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to fetch connections from ${url}:`, errorData);
-        setConnectionsError('Failed to fetch friends');
-        toast.error('Failed to fetch friends');
-      }
-    } catch (error) {
-      console.error(`Error fetching connections from ${url}:`, error);
-      setConnectionsError('Error fetching friends');
-      toast.error('Error fetching friends');
-    } finally {
-      setIsConnectionsLoading(false);
-    }
-  }, [user?.userId]);
+  // Auto-scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  // Fetch user's conversations
-  const fetchConversations = useCallback(async () => {
-    if (!user?.userId) {
-      console.log('No userId available, skipping fetchConversations');
-      return;
-    }
-    setIsConversationsLoading(true);
-    setConversationsError(null);
-    const url = `${BASE_URL}/api/v1/auth/conversations/user/${user.userId}`;
-    console.log(`Sending request: ${url}, Method: GET`);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Fetch data with error handling
+  const fetchData = useCallback(async () => {
+    if (!user?.userId) return;
+
     try {
-      const response = await fetchWithAuth(url, { method: 'GET' });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        setConversations(data);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to fetch conversations from ${url}:`, errorData);
-        setConversationsError('Failed to fetch conversations');
-        toast.error('Failed to fetch conversations');
-      }
+      // Fetch connections
+      setIsLoadingState(prev => ({ ...prev, connections: true }));
+      setErrors(prev => ({ ...prev, connections: '' }));
+      const connectionsData = await messagingApi.getConnections(user.userId);
+      setConnections(connectionsData);
     } catch (error) {
-      console.error(`Error fetching conversations from ${url}:`, error);
-      setConversationsError('Error fetching conversations');
-      toast.error('Error fetching conversations');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load friends';
+      setErrors(prev => ({ ...prev, connections: errorMessage }));
+      toast.error('Failed to load friends');
     } finally {
-      setIsConversationsLoading(false);
+      setIsLoadingState(prev => ({ ...prev, connections: false }));
+    }
+
+    try {
+      // Fetch conversations
+      setIsLoadingState(prev => ({ ...prev, conversations: true }));
+      setErrors(prev => ({ ...prev, conversations: '' }));
+      const conversationsData = await messagingApi.getConversations(user.userId);
+      setConversations(conversationsData);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations';
+      setErrors(prev => ({ ...prev, conversations: errorMessage }));
+      toast.error('Failed to load conversations');
+    } finally {
+      setIsLoadingState(prev => ({ ...prev, conversations: false }));
     }
   }, [user?.userId]);
 
   // Fetch messages for selected conversation
   const fetchMessages = useCallback(async (conversationId: number) => {
-    if (!user?.userId) {
-      console.log('No userId available, skipping fetchMessages');
-      return;
-    }
-    const url = `${BASE_URL}/api/v1/auth/messages/conversations/${conversationId}/messages?userId=${user.userId}`;
-    console.log(`Sending request: ${url}, Method: GET`);
+    if (!user?.userId) return;
+    
     try {
-      const response = await fetchWithAuth(url, { method: 'GET' });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        setMessages(data);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to fetch messages from ${url}:`, errorData);
-        toast.error('Failed to fetch messages');
-      }
+      setIsLoadingState(prev => ({ ...prev, messages: true }));
+      setErrors(prev => ({ ...prev, messages: '' }));
+      const messagesData = await messagingApi.getMessages(conversationId, user.userId);
+      setMessages(messagesData);
     } catch (error) {
-      console.error(`Error fetching messages from ${url}:`, error);
-      toast.error('Error fetching messages');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load messages';
+      setErrors(prev => ({ ...prev, messages: errorMessage }));
+      toast.error('Failed to load messages');
+    } finally {
+      setIsLoadingState(prev => ({ ...prev, messages: false }));
     }
   }, [user?.userId]);
 
-  // Auto-refresh messages every 5 seconds when a conversation is selected
+  // Auto-refresh messages every 5 seconds
   useEffect(() => {
     if (!selectedConversation) return;
+    
     const interval = setInterval(() => {
-      console.log(`Auto-refreshing messages for conversation ${selectedConversation.id}`);
       fetchMessages(selectedConversation.id);
     }, 5000);
+    
     return () => clearInterval(interval);
   }, [selectedConversation, fetchMessages]);
 
-  // Create new conversation with connected users
-  const handleCreateConversation = async () => {
-    if (!newConversationUserId.trim()) {
-      console.log('No user selected for new conversation');
-      toast.error('Please select a user');
-      return;
-    }
-    const selectedUserId = parseInt(newConversationUserId);
-    if (isNaN(selectedUserId)) {
-      console.log('Invalid user ID for new conversation:', newConversationUserId);
-      toast.error('Invalid user ID');
-      return;
-    }
-    // Check if user is a connection
-    const isConnected = connections.some(
-      conn =>
-        (conn.requesterId === user?.userId && conn.receiverId === selectedUserId) ||
-        (conn.receiverId === user?.userId && conn.requesterId === selectedUserId)
-    );
-    if (!isConnected) {
-      console.log(`User ${selectedUserId} is not a connection for user ${user?.userId}`);
-      toast.error('You can only start conversations with connected users');
-      return;
-    }
-    const userIds = [user?.userId, selectedUserId].filter((id): id is number => id !== undefined);
-    const url = `${BASE_URL}/api/v1/auth/conversations`;
-    console.log(`Sending request: ${url}, Method: POST, Body:`, JSON.stringify({ userIds }, null, 2));
-    try {
-      const response = await fetchWithAuth(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIds }),
-      });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        toast.success('Conversation created');
-        setNewConversationUserId('');
-        setNewMessage('');
-        setIsModalOpen(false);
-        await fetchConversations();
-        setSelectedConversation(data);
-        setMessages([]);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to create conversation at ${url}:`, errorData);
-        toast.error(errorData.error || 'Failed to create conversation');
-      }
-    } catch (error) {
-      console.error(`Error creating conversation at ${url}:`, error);
-      toast.error('Error creating conversation');
-    }
-  };
-
-  // Add participant to conversation
-  const handleAddParticipant = async () => {
-    if (!selectedConversation || !addParticipantId.trim()) {
-      console.log('No conversation or user selected for adding participant');
-      toast.error('Please select a user');
-      return;
-    }
-    const userId = parseInt(addParticipantId);
-    if (isNaN(userId)) {
-      console.log('Invalid user ID for adding participant:', addParticipantId);
-      toast.error('Invalid user ID');
-      return;
-    }
-    // Check if user is a connection
-    const isConnected = connections.some(
-      conn =>
-        (conn.requesterId === user?.userId && conn.receiverId === userId) ||
-        (conn.receiverId === user?.userId && conn.requesterId === userId)
-    );
-    if (!isConnected) {
-      console.log(`User ${userId} is not a connection for user ${user?.userId}`);
-      toast.error('You can only add connected users to conversations');
-      return;
-    }
-    const url = `${BASE_URL}/api/v1/auth/conversations/${selectedConversation.id}/participants/${userId}`;
-    console.log(`Sending request: ${url}, Method: POST`);
-    try {
-      const response = await fetchWithAuth(url, { method: 'POST' });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        toast.success('Participant added');
-        setAddParticipantId('');
-        await fetchConversations();
-      } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to add participant at ${url}:`, errorData);
-        toast.error(errorData.error || 'Failed to add participant');
-      }
-    } catch (error) {
-      console.error(`Error adding participant at ${url}:`, error);
-      toast.error('Error adding participant');
-    }
-  };
-
-  // Send message
+  // Handle sending messages to existing conversation
   const handleSendMessage = async () => {
-    if (!selectedConversation || !newMessage.trim() || !user?.userId) {
-      console.log('Missing data for sending message:', { selectedConversation, newMessage, userId: user?.userId });
-      return;
-    }
-    // Verify all participants are connected
-    const participants = selectedConversation.participants.map(p => p.user.id);
-    const areAllConnected = participants.every(participantId =>
-      participantId === user.userId ||
-      connections.some(
-        conn =>
-          (conn.requesterId === user.userId && conn.receiverId === participantId) ||
-          (conn.receiverId === user.userId && conn.requesterId === participantId)
-      )
-    );
-    if (!areAllConnected) {
-      console.log('Not all participants are connected:', participants);
-      toast.error('Cannot send message: Not all participants are connected');
-      return;
-    }
-    const url = `${BASE_URL}/api/v1/auth/conversations/${selectedConversation.id}/messages`;
-    console.log(`Sending request: ${url}, Method: POST, Body:`, JSON.stringify({ senderId: user.userId, messageText: newMessage }, null, 2));
+    if (!selectedConversation || !newMessage.trim() || !user?.userId) return;
+
     try {
-      const response = await fetchWithAuth(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderId: user.userId, messageText: newMessage }),
-      });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        setNewMessage('');
-        await fetchMessages(selectedConversation.id);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to send message at ${url}:`, errorData);
-        toast.error(errorData.error || 'Failed to send message');
-      }
+      setIsLoadingState(prev => ({ ...prev, sendingMessage: true }));
+      await messagingApi.sendMessage(selectedConversation.id, user.userId, newMessage);
+      setNewMessage('');
+      // Immediately fetch messages to show the new message
+      await fetchMessages(selectedConversation.id);
+      toast.success('Message sent successfully');
     } catch (error) {
-      console.error(`Error sending message at ${url}:`, error);
-      toast.error('Error sending message');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoadingState(prev => ({ ...prev, sendingMessage: false }));
     }
   };
 
-  // Send direct message
-  const handleSendDirectMessage = async () => {
-    if (!newConversationUserId.trim() || !newMessage.trim() || !user?.userId) {
-      console.log('Missing data for sending direct message:', { newConversationUserId, newMessage, userId: user?.userId });
-      toast.error('Please select a user and enter a message');
-      return;
-    }
-    const receiverId = parseInt(newConversationUserId);
-    if (isNaN(receiverId)) {
-      console.log('Invalid receiver ID for direct message:', newConversationUserId);
-      toast.error('Invalid receiver ID');
-      return;
-    }
-    // Check if user is a connection
-    const isConnected = connections.some(
-      conn =>
-        (conn.requesterId === user?.userId && conn.receiverId === receiverId) ||
-        (conn.receiverId === user?.userId && conn.requesterId === receiverId)
-    );
-    if (!isConnected) {
-      console.log(`User ${receiverId} is not a connection for user ${user?.userId}`);
-      toast.error('You can only send direct messages to connected users');
-      return;
-    }
-    const url = `${BASE_URL}/api/v1/auth/conversations/direct`;
-    console.log(`Sending request: ${url}, Method: POST, Body:`, JSON.stringify({ senderId: user.userId, receiverId, messageText: newMessage }, null, 2));
+  // Handle creating conversation with friend (via modal)
+  const handleCreateConversation = async () => {
+    if (!user?.userId || !selectedFriendId) return;
+
     try {
-      const response = await fetchWithAuth(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderId: user.userId, receiverId, messageText: newMessage }),
-      });
-      console.log(`Response status for ${url}: ${response.status}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-        toast.success('Direct message sent');
-        setNewMessage('');
-        setNewConversationUserId('');
-        setIsModalOpen(false);
-        await fetchConversations();
-        // Find the new conversation and select it
-        const newConversation = conversations.find(conv =>
-          conv.participants.some(p => p.user.id === receiverId)
-        );
-        if (newConversation) {
-          setSelectedConversation(newConversation);
-          await fetchMessages(newConversation.id);
-        }
+      setIsLoadingState(prev => ({ ...prev, creatingConversation: true }));
+      
+      const friendId = parseInt(selectedFriendId);
+      
+      // Check if conversation already exists
+      const existingConversation = await messagingApi.findConversationBetweenUsers(user.userId, friendId);
+      
+      if (existingConversation) {
+        // Select existing conversation
+        setSelectedConversation(existingConversation);
+        await fetchMessages(existingConversation.id);
+        toast.info('Conversation already exists');
       } else {
-        const errorData = await response.json().catch(() => ({ error: response.statusText }));
-        console.error(`Failed to send direct message at ${url}:`, errorData);
-        toast.error(errorData.error || 'Failed to send direct message');
-      }
-    } catch (error) {
-      console.error(`Error sending direct message at ${url}:`, error);
-      toast.error('Error sending direct message');
-    }
-  };
-
-  // Select conversation or start new one when clicking a friend
-  const handleSelectFriend = async (friendId: number) => {
-    console.log(`Selected friend: ${friendId}`);
-    setNewConversationUserId(friendId.toString());
-    
-    // Check for existing conversation with this friend
-    const existingConversation = conversations.find(conv =>
-      conv.participants.length === 2 &&
-      conv.participants.some(p => p.user.id === friendId) &&
-      conv.participants.some(p => p.user.id === user?.userId)
-    );
-
-    if (existingConversation) {
-      console.log(`Found existing conversation with friend ${friendId}:`, JSON.stringify(existingConversation, null, 2));
-      setSelectedConversation(existingConversation);
-      await fetchMessages(existingConversation.id);
-    } else {
-      console.log(`No existing conversation with friend ${friendId}, creating new one`);
-      const userIds = [user?.userId, friendId].filter((id): id is number => id !== undefined);
-      const url = `${BASE_URL}/api/v1/auth/conversations`;
-      console.log(`Sending request: ${url}, Method: POST, Body:`, JSON.stringify({ userIds }, null, 2));
-      try {
-        const response = await fetchWithAuth(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userIds }),
-        });
-        console.log(`Response status for ${url}: ${response.status}`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Response data for ${url}:`, JSON.stringify(data, null, 2));
-          setSelectedConversation(data);
-          setMessages([]);
-          await fetchConversations();
+        // Create new conversation
+        if (modalMessage.trim()) {
+          // Send direct message (creates conversation automatically)
+          await messagingApi.sendDirectMessage(user.userId, friendId, modalMessage);
+          toast.success('Message sent successfully');
         } else {
-          const errorData = await response.json().catch(() => ({ error: response.statusText }));
-          console.error(`Failed to create conversation at ${url}:`, errorData);
-          toast.error(errorData.error || 'Failed to create conversation');
+          // Create empty conversation
+          const conversation = await messagingApi.createConversation([user.userId, friendId]);
+          setSelectedConversation(conversation);
+          setMessages([]);
+          toast.success('Conversation created successfully');
         }
-      } catch (error) {
-        console.error(`Error creating conversation at ${url}:`, error);
-        toast.error('Error creating conversation');
+        
+        // Refresh conversations list
+        await fetchData();
       }
+      
+      // Close modal and reset form
+      setIsModalOpen(false);
+      setSelectedFriendId('');
+      setModalMessage('');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create conversation';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoadingState(prev => ({ ...prev, creatingConversation: false }));
     }
   };
 
-  // Select conversation
-  const handleSelectConversation = (conversation: Conversation) => {
-    console.log('Selected conversation:', JSON.stringify(conversation, null, 2));
-    setSelectedConversation(conversation);
-    fetchMessages(conversation.id);
+  // Handle starting conversation with friend (from friends list)
+  const handleStartConversation = async (friendId: number) => {
+    if (!user?.userId) return;
+
+    try {
+      // Check if conversation already exists
+      const existingConversation = await messagingApi.findConversationBetweenUsers(user.userId, friendId);
+      
+      if (existingConversation) {
+        // Select existing conversation
+        setSelectedConversation(existingConversation);
+        await fetchMessages(existingConversation.id);
+      } else {
+        // Create new conversation
+        const conversation = await messagingApi.createConversation([user.userId, friendId]);
+        setSelectedConversation(conversation);
+        setMessages([]);
+        await fetchData(); // Refresh conversations list
+        toast.success('Conversation started');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start conversation';
+      toast.error(errorMessage);
+    }
   };
 
-  // Fetch connections and conversations on mount
+  // Handle selecting conversation
+  const handleSelectConversation = async (conversation: Conversation) => {
+    setSelectedConversation(conversation);
+    await fetchMessages(conversation.id);
+  };
+
+  // Get user avatar initials
+  const getAvatarInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Format message time
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  // Get conversation display name (excluding current user)
+  const getConversationName = (conversation: Conversation) => {
+    const otherParticipants = conversation.participants.filter(p => p.user.id !== user?.userId);
+    return otherParticipants.map(p => `${p.user.firstname} ${p.user.lastname}`).join(', ');
+  };
+
+  // Load data on mount
   useEffect(() => {
     if (isAuthenticated && user?.userId) {
-      console.log('User authenticated, userId:', user.userId);
-      fetchConnections();
-      fetchConversations();
-    } else {
-      console.log('User not authenticated or no userId');
+      fetchData();
     }
-  }, [isAuthenticated, user?.userId, fetchConnections, fetchConversations]);
+  }, [isAuthenticated, user?.userId, fetchData]);
 
   if (isLoading) {
-    console.log('Auth context is loading');
-    return <div className="text-center py-16 text-[var(--color-text-primary)]">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-lamaSkyDark)]"></div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
-    console.log('User is not authenticated');
-    return <div className="text-center py-16 text-[var(--color-text-primary)]">Please log in to access messaging.</div>;
+    return (
+      <div className="text-center py-16 text-[var(--color-text-primary)]">
+        Please log in to access messaging.
+      </div>
+    );
   }
 
   return (
-    <section className="py-16 bg-[var(--color-bg-primary)] min-h-screen">
-      <div className="container mx-auto px-4">
+    <section className="py-8 bg-[var(--color-bg-primary)] min-h-screen">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-[var(--color-text-primary)]">
-            Messages
-          </h2>
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
+              Messages
+            </h1>
+            <p className="text-[var(--color-text-secondary)] mt-2">
+              Connect and chat with your friends
+            </p>
+          </div>
           <Button
-            onClick={() => {
-              console.log('Opening new conversation modal');
-              setIsModalOpen(true);
-            }}
-            className="bg-[var(--color-lamaSkyDark)] text-white hover:bg-[var(--color-lamaSky)]"
+            onClick={() => setIsModalOpen(true)}
+            className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)] text-white"
+            disabled={connections.length === 0}
           >
-            <Plus className="mr-2 h-4 w-4" /> New Conversation
+            <Plus className="mr-2 h-4 w-4" />
+            New Chat
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Connections List */}
-          <Card className="md:col-span-1 border-[var(--color-border-light)]">
-            <CardHeader>
-              <CardTitle className="text-[var(--color-text-primary)]">Friends</CardTitle>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Friends Sidebar */}
+          <Card className="lg:col-span-1 border-[var(--color-border-light)]">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center">
+                <User className="mr-2 h-5 w-5" />
+                Friends ({connections.length})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[300px]">
-                {isConnectionsLoading ? (
-                  <div className="text-center text-[var(--color-text-primary)]">Loading friends...</div>
-                ) : connectionsError ? (
-                  <div className="text-center text-[var(--color-text-primary)]">{connectionsError}</div>
+              <ScrollArea className="h-[500px]">
+                {isLoadingState.connections ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--color-lamaSkyDark)]"></div>
+                  </div>
+                ) : errors.connections ? (
+                  <div className="text-center text-red-500 py-8 text-sm">
+                    {errors.connections}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2" 
+                      onClick={fetchData}
+                    >
+                      Retry
+                    </Button>
+                  </div>
                 ) : connections.length > 0 ? (
-                  connections.map(connection => {
-                    const connectedUser = connection.requesterId === user?.userId
-                      ? { id: connection.receiverId, name: connection.receiverName, email: connection.receiverEmail }
-                      : { id: connection.requesterId, name: connection.requesterName, email: connection.requesterEmail };
+                  connections.map((connection) => {
+                    const friend = connection.requesterId === user?.userId
+                      ? { id: connection.receiverId, name: connection.receiverName }
+                      : { id: connection.requesterId, name: connection.requesterName };
+
                     return (
                       <div
                         key={connection.id}
-                        onClick={() => handleSelectFriend(connectedUser.id)}
-                        className={`p-4 mb-2 cursor-pointer rounded-lg hover:bg-[var(--color-lamaPurpleLight)] ${
-                          newConversationUserId === connectedUser.id.toString()
-                            ? 'bg-[var(--color-lamaPurpleLight)]'
-                            : ''
-                        }`}
+                        onClick={() => handleStartConversation(friend.id)}
+                        className="flex items-center p-3 mb-2 rounded-lg hover:bg-[var(--color-bg-secondary)] cursor-pointer transition-colors"
                       >
-                        <p className="font-semibold text-[var(--color-text-primary)]">
-                          {connectedUser.name}
-                        </p>
-                        <p className="text-sm text-[var(--color-text-secondary)]">
-                          {connectedUser.email}
-                        </p>
+                        <Avatar className="h-10 w-10 mr-3">
+                          <AvatarFallback className="bg-[var(--color-lamaSkyLight)] text-[var(--color-lamaSkyDark)]">
+                            {getAvatarInitials(friend.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[var(--color-text-primary)] truncate">
+                            {friend.name}
+                          </p>
+                          <p className="text-sm text-[var(--color-text-secondary)]">
+                            Online
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="ml-2">
+                          Friend
+                        </Badge>
                       </div>
                     );
                   })
                 ) : (
-                  <p className="text-center text-[var(--color-text-primary)]">No friends found</p>
+                  <div className="text-center text-[var(--color-text-secondary)] py-8">
+                    No friends yet
+                  </div>
                 )}
               </ScrollArea>
             </CardContent>
           </Card>
 
-          {/* Conversations and Messages */}
-          <Card className="md:col-span-2 border-[var(--color-border-light)]">
-            <CardHeader>
-              <CardTitle className="text-[var(--color-text-primary)]">Conversations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px] mb-4">
-                {isConversationsLoading ? (
-                  <div className="text-center text-[var(--color-text-primary)]">Loading conversations...</div>
-                ) : conversationsError ? (
-                  <div className="text-center text-[var(--color-text-primary)]">{conversationsError}</div>
-                ) : conversations.length > 0 ? (
-                  conversations.map(conversation => (
-                    <div
-                      key={conversation.id}
-                      onClick={() => handleSelectConversation(conversation)}
-                      className={`p-4 mb-2 cursor-pointer rounded-lg hover:bg-[var(--color-lamaSkyLight)] ${
-                        selectedConversation?.id === conversation.id
-                          ? 'bg-[var(--color-lamaSkyLight)]'
-                          : ''
-                      }`}
-                    >
-                      <p className="font-semibold text-[var(--color-text-primary)]">
-                        {conversation.participants
-                          .filter(p => p.user.id !== user?.userId)
-                          .map(p => `${p.user.firstname} ${p.user.lastname}`)
-                          .join(', ')}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-[var(--color-text-primary)]">No conversations found</p>
-                )}
-              </ScrollArea>
-              {selectedConversation && (
-                <>
-                  <CardHeader>
-                    <CardTitle className="text-[var(--color-text-primary)]">
-                      <div className="flex justify-between items-center">
-                        <span>
-                          {selectedConversation.participants
-                            .filter(p => p.user.id !== user?.userId)
-                            .map(p => `${p.user.firstname} ${p.user.lastname}`)
-                            .join(', ')}
-                        </span>
-                        <Button
-                          onClick={() => {
-                            console.log('Opening add participant select');
-                            setAddParticipantId('');
-                          }}
-                          className="bg-[var(--color-lamaPurpleDark)] text-white hover:bg-[var(--color-lamaPurple)]"
-                        >
-                          <Users className="mr-2 h-4 w-4" /> Add Participant
-                        </Button>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <ScrollArea className="h-[300px] mb-4">
-                    {messages.length > 0 ? (
-                      messages.map(message => (
-                        <div
-                          key={message.id}
-                          className={`mb-4 flex ${
-                            message.isFromCurrentUser ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
-                          <div
-                            className={`max-w-[70%] p-3 rounded-lg ${
-                              message.isFromCurrentUser
-                                ? 'bg-[var(--color-lamaSkyDark)] text-white'
-                                : 'bg-[var(--color-lamaSkyLight)] text-[var(--color-text-primary)]'
-                            }`}
+          {/* Conversations and Chat */}
+          <div className="lg:col-span-3">
+            <Card className="border-[var(--color-border-light)] h-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center">
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Conversations ({conversations.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
+                  {/* Conversations List */}
+                  <div className="lg:col-span-1">
+                    <ScrollArea className="h-full">
+                      {isLoadingState.conversations ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--color-lamaSkyDark)]"></div>
+                        </div>
+                      ) : errors.conversations ? (
+                        <div className="text-center text-red-500 py-8 text-sm">
+                          {errors.conversations}
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2" 
+                            onClick={fetchData}
                           >
-                            <p className="text-sm">{message.content}</p>
-                            <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                              {new Date(message.timestamp).toLocaleString()}
-                            </p>
+                            Retry
+                          </Button>
+                        </div>
+                      ) : conversations.length > 0 ? (
+                        conversations.map((conversation) => {
+                          const conversationName = getConversationName(conversation);
+                          const otherParticipants = conversation.participants.filter(p => p.user.id !== user?.userId);
+
+                          return (
+                            <div
+                              key={conversation.id}
+                              onClick={() => handleSelectConversation(conversation)}
+                              className={`flex items-center p-3 mb-2 rounded-lg cursor-pointer transition-colors ${
+                                selectedConversation?.id === conversation.id
+                                  ? 'bg-[var(--color-lamaSkyLight)] border border-[var(--color-lamaSky)]'
+                                  : 'hover:bg-[var(--color-bg-secondary)]'
+                              }`}
+                            >
+                              <Avatar className="h-10 w-10 mr-3">
+                                <AvatarFallback className="bg-[var(--color-lamaPurpleLight)] text-[var(--color-lamaPurpleDark)]">
+                                  {getAvatarInitials(conversationName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-[var(--color-text-primary)] truncate">
+                                  {conversationName}
+                                </p>
+                                <p className="text-sm text-[var(--color-text-secondary)] truncate">
+                                  {otherParticipants.length} participant{otherParticipants.length !== 1 ? 's' : ''}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-center text-[var(--color-text-secondary)] py-8">
+                          No conversations yet
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+
+                  {/* Chat Area */}
+                  <div className="lg:col-span-2 border-l border-[var(--color-border-light)] pl-6">
+                    {selectedConversation ? (
+                      <div className="h-full flex flex-col">
+                        {/* Chat Header */}
+                        <div className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--color-border-light)]">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarFallback className="bg-[var(--color-lamaPurpleLight)] text-[var(--color-lamaPurpleDark)]">
+                                {getAvatarInitials(getConversationName(selectedConversation))}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="font-semibold text-[var(--color-text-primary)]">
+                                {getConversationName(selectedConversation)}
+                              </h3>
+                              <p className="text-sm text-[var(--color-text-secondary)]">
+                                Online
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      ))
+
+                        {/* Messages */}
+                        <ScrollArea className="flex-1 mb-4">
+                          {isLoadingState.messages ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[var(--color-lamaSkyDark)]"></div>
+                            </div>
+                          ) : errors.messages ? (
+                            <div className="text-center text-red-500 py-8 text-sm">
+                              {errors.messages}
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-2" 
+                                onClick={() => selectedConversation && fetchMessages(selectedConversation.id)}
+                              >
+                                Retry
+                              </Button>
+                            </div>
+                          ) : messages.length > 0 ? (
+                            <div className="space-y-4">
+                              {messages.map((message) => (
+                                <div
+                                  key={message.id}
+                                  className={`flex ${message.isFromCurrentUser ? 'justify-end' : 'justify-start'}`}
+                                >
+                                  <div className={`flex items-end space-x-2 max-w-[70%] ${
+                                    message.isFromCurrentUser ? 'flex-row-reverse space-x-reverse' : ''
+                                  }`}>
+                                    {!message.isFromCurrentUser && (
+                                      <Avatar className="h-6 w-6">
+                                        <AvatarFallback className="bg-[var(--color-lamaPurpleLight)] text-[var(--color-lamaPurpleDark)] text-xs">
+                                          {getAvatarInitials(`${message.sender.firstname} ${message.sender.lastname}`)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    )}
+                                    <div
+                                      className={`p-3 rounded-2xl ${
+                                        message.isFromCurrentUser
+                                          ? 'bg-[var(--color-lamaSkyDark)] text-white'
+                                          : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]'
+                                      }`}
+                                    >
+                                      <p className="text-sm">{message.content}</p>
+                                      <p className="text-xs opacity-70 mt-1">
+                                        {formatTime(message.timestamp)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              <div ref={messagesEndRef} />
+                            </div>
+                          ) : (
+                            <div className="text-center text-[var(--color-text-secondary)] py-8">
+                              No messages yet. Start the conversation!
+                            </div>
+                          )}
+                        </ScrollArea>
+
+                        {/* Message Input */}
+                        <div className="flex gap-2">
+                          <Input
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type a message..."
+                            className="flex-1 border-[var(--color-border-light)]"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !isLoadingState.sendingMessage) {
+                                handleSendMessage();
+                              }
+                            }}
+                            disabled={isLoadingState.sendingMessage}
+                          />
+                          <Button
+                            onClick={handleSendMessage}
+                            disabled={!newMessage.trim() || isLoadingState.sendingMessage}
+                            className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)] text-white"
+                          >
+                            {isLoadingState.sendingMessage ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
-                      <p className="text-center text-[var(--color-text-primary)]">No messages in this conversation</p>
+                      <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
+                        <div className="text-center">
+                          <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>Select a conversation to start chatting</p>
+                        </div>
+                      </div>
                     )}
-                  </ScrollArea>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      className="border-[var(--color-border-light)] text-[var(--color-text-primary)]"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      className="bg-[var(--color-lamaSkyDark)] text-white hover:bg-[var(--color-lamaSky)]"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
                   </div>
-                  <div className="mt-4">
-                    <Select
-                      value={addParticipantId}
-                      onValueChange={value => {
-                        console.log('Selected participant ID:', value);
-                        setAddParticipantId(value);
-                      }}
-                    >
-                      <SelectTrigger className="border-[var(--color-border-light)] mb-2 text-[var(--color-text-primary)]">
-                        <SelectValue placeholder="Select a user to add" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {connections.map(connection => {
-                          const connectedUser = connection.requesterId === user?.userId
-                            ? { id: connection.receiverId, name: connection.receiverName, email: connection.receiverEmail }
-                            : { id: connection.requesterId, name: connection.requesterName, email: connection.requesterEmail };
-                          return (
-                            <SelectItem
-                              key={connectedUser.id}
-                              value={connectedUser.id.toString()}
-                            >
-                              {connectedUser.name}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={handleAddParticipant}
-                      className="bg-[var(--color-lamaPurpleDark)] text-white hover:bg-[var(--color-lamaPurple)]"
-                    >
-                      Add Participant
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* New Conversation Modal */}
         {isModalOpen && (
-          <div className="modal-backdrop flex justify-center items-center">
-            <div className="modal-content max-w-md w-full">
-              <div className="modal-body">
-                <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                   Start New Conversation
                 </h3>
-                <Select
-                  value={newConversationUserId}
-                  onValueChange={value => {
-                    console.log('Selected user for new conversation:', value);
-                    setNewConversationUserId(value);
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedFriendId('');
+                    setModalMessage('');
                   }}
                 >
-                  <SelectTrigger className="border-[var(--color-border-light)] mb-4 text-[var(--color-text-primary)]">
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {connections.map(connection => {
-                      const connectedUser = connection.requesterId === user?.userId
-                        ? { id: connection.receiverId, name: connection.receiverName, email: connection.receiverEmail }
-                        : { id: connection.requesterId, name: connection.requesterName, email: connection.requesterEmail };
-                      return (
-                        <SelectItem
-                          key={connectedUser.id}
-                          value={connectedUser.id.toString()}
-                        >
-                          {connectedUser.name}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  placeholder="Type an initial message (optional)"
-                  className="border-[var(--color-border-light)] mb-4 text-[var(--color-text-primary)]"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleCreateConversation}
-                    className="bg-[var(--color-lamaSkyDark)] text-white hover:bg-[var(--color-lamaSky)]"
-                  >
-                    Create Conversation
-                  </Button>
-                  <Button
-                    onClick={handleSendDirectMessage}
-                    className="bg-[var(--color-lamaPurpleDark)] text-white hover:bg-[var(--color-lamaPurple)]"
-                  >
-                    Send Direct Message
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      console.log('Closing new conversation modal');
-                      setIsModalOpen(false);
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                    Select a friend
+                  </label>
+                  <Select value={selectedFriendId} onValueChange={setSelectedFriendId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a friend to chat with" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {connections.map((connection) => {
+                        const friend = connection.requesterId === user?.userId
+                          ? { id: connection.receiverId, name: connection.receiverName }
+                          : { id: connection.requesterId, name: connection.requesterName };
+                        
+                        return (
+                          <SelectItem key={friend.id} value={friend.id.toString()}>
+                            {friend.name}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                    Message (optional)
+                  </label>
+                  <Input
+                    value={modalMessage}
+                    onChange={(e) => setModalMessage(e.target.value)}
+                    placeholder="Type your first message..."
+                    className="w-full"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && selectedFriendId && !isLoadingState.creatingConversation) {
+                        handleCreateConversation();
+                      }
                     }}
-                    className="bg-[var(--color-lamaRedLight)] text-[var(--color-lamaRedDark)] hover:bg-[var(--color-lamaRed)]"
+                  />
+                </div>
+                
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setSelectedFriendId('');
+                      setModalMessage('');
+                    }}
+                    disabled={isLoadingState.creatingConversation}
                   >
                     Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCreateConversation}
+                    disabled={!selectedFriendId || isLoadingState.creatingConversation}
+                    className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)] text-white"
+                  >
+                    {isLoadingState.creatingConversation ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      'Start Chat'
+                    )}
                   </Button>
                 </div>
               </div>

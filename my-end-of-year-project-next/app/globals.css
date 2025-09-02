@@ -223,3 +223,32 @@ body {
 .modal-body {
   padding: 1.5rem;
 }
+/* Custom scrollbar for messages */
+.scroll-area-thumb {
+  background: var(--color-border-light) !important;
+}
+
+.scroll-area-thumb:hover {
+  background: var(--color-border) !important;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Message bubble animation */
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-bubble {
+  animation: messageSlide 0.2s ease-out;
+}
