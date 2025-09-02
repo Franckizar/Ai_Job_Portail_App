@@ -1,4 +1,5 @@
-'use client';
+"use client";
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/components/Job_portail/Home/components/auth/AuthContext';
 import { toast } from 'react-toastify';
@@ -29,13 +30,13 @@ const MessagingPage: React.FC = () => {
     conversations: false,
     messages: false,
     sendingMessage: false,
-    creatingConversation: false
+    creatingConversation: false,
   });
   
   const [errors, setErrors] = useState({
     connections: '',
     conversations: '',
-    messages: ''
+    messages: '',
   });
 
   // Auto-scroll to bottom of messages
@@ -47,34 +48,58 @@ const MessagingPage: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Fix: Safe getAvatarInitials with fallback
+  const getAvatarInitials = (name: string | null | undefined) => {
+    if (!name || typeof name !== 'string') {
+      console.warn('Invalid name for avatar initials:', name);
+      return '?';
+    }
+    return name.split(' ').filter(n => n).map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Format message time
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Get conversation display name
+  const getConversationName = (conversation: Conversation) => {
+    if (!user?.userId) return 'Unknown';
+    const otherParticipants = conversation.participants.filter(p => p.user.id !== user.userId);
+    return otherParticipants.map(p => `${p.user.firstname || ''} ${p.user.lastname || ''}`.trim() || 'Unknown').join(', ');
+  };
+
   // Fetch data with error handling
   const fetchData = useCallback(async () => {
-    if (!user?.userId) return;
+    if (!user?.userId) {
+      console.log('No userId available for fetching data');
+      return;
+    }
 
     try {
-      // Fetch connections
       setIsLoadingState(prev => ({ ...prev, connections: true }));
       setErrors(prev => ({ ...prev, connections: '' }));
       const connectionsData = await messagingApi.getConnections(user.userId);
+      console.log('Fetched connections:', connectionsData);
       setConnections(connectionsData);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load friends';
       setErrors(prev => ({ ...prev, connections: errorMessage }));
-      toast.error('Failed to load friends');
+      toast.error(errorMessage);
     } finally {
       setIsLoadingState(prev => ({ ...prev, connections: false }));
     }
 
     try {
-      // Fetch conversations
       setIsLoadingState(prev => ({ ...prev, conversations: true }));
       setErrors(prev => ({ ...prev, conversations: '' }));
       const conversationsData = await messagingApi.getConversations(user.userId);
+      console.log('Fetched conversations:', conversationsData);
       setConversations(conversationsData);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load conversations';
       setErrors(prev => ({ ...prev, conversations: errorMessage }));
-      toast.error('Failed to load conversations');
+      toast.error(errorMessage);
     } finally {
       setIsLoadingState(prev => ({ ...prev, conversations: false }));
     }
@@ -83,16 +108,17 @@ const MessagingPage: React.FC = () => {
   // Fetch messages for selected conversation
   const fetchMessages = useCallback(async (conversationId: number) => {
     if (!user?.userId) return;
-    
+
     try {
       setIsLoadingState(prev => ({ ...prev, messages: true }));
       setErrors(prev => ({ ...prev, messages: '' }));
       const messagesData = await messagingApi.getMessages(conversationId, user.userId);
+      console.log('Fetched messages for conversation', conversationId, ':', messagesData);
       setMessages(messagesData);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load messages';
       setErrors(prev => ({ ...prev, messages: errorMessage }));
-      toast.error('Failed to load messages');
+      toast.error(errorMessage);
     } finally {
       setIsLoadingState(prev => ({ ...prev, messages: false }));
     }
@@ -101,15 +127,15 @@ const MessagingPage: React.FC = () => {
   // Auto-refresh messages every 5 seconds
   useEffect(() => {
     if (!selectedConversation) return;
-    
+
     const interval = setInterval(() => {
       fetchMessages(selectedConversation.id);
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [selectedConversation, fetchMessages]);
 
-  // Handle sending messages to existing conversation
+  // Handle sending messages
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim() || !user?.userId) return;
 
@@ -117,7 +143,6 @@ const MessagingPage: React.FC = () => {
       setIsLoadingState(prev => ({ ...prev, sendingMessage: true }));
       await messagingApi.sendMessage(selectedConversation.id, user.userId, newMessage);
       setNewMessage('');
-      // Immediately fetch messages to show the new message
       await fetchMessages(selectedConversation.id);
       toast.success('Message sent successfully');
     } catch (error) {
@@ -128,42 +153,33 @@ const MessagingPage: React.FC = () => {
     }
   };
 
-  // Handle creating conversation with friend (via modal)
+  // Handle creating conversation
   const handleCreateConversation = async () => {
     if (!user?.userId || !selectedFriendId) return;
 
     try {
       setIsLoadingState(prev => ({ ...prev, creatingConversation: true }));
-      
       const friendId = parseInt(selectedFriendId);
-      
-      // Check if conversation already exists
+
       const existingConversation = await messagingApi.findConversationBetweenUsers(user.userId, friendId);
-      
+
       if (existingConversation) {
-        // Select existing conversation
         setSelectedConversation(existingConversation);
         await fetchMessages(existingConversation.id);
         toast.info('Conversation already exists');
       } else {
-        // Create new conversation
         if (modalMessage.trim()) {
-          // Send direct message (creates conversation automatically)
           await messagingApi.sendDirectMessage(user.userId, friendId, modalMessage);
           toast.success('Message sent successfully');
         } else {
-          // Create empty conversation
           const conversation = await messagingApi.createConversation([user.userId, friendId]);
           setSelectedConversation(conversation);
           setMessages([]);
           toast.success('Conversation created successfully');
         }
-        
-        // Refresh conversations list
         await fetchData();
       }
-      
-      // Close modal and reset form
+
       setIsModalOpen(false);
       setSelectedFriendId('');
       setModalMessage('');
@@ -175,24 +191,21 @@ const MessagingPage: React.FC = () => {
     }
   };
 
-  // Handle starting conversation with friend (from friends list)
+  // Handle starting conversation
   const handleStartConversation = async (friendId: number) => {
     if (!user?.userId) return;
 
     try {
-      // Check if conversation already exists
       const existingConversation = await messagingApi.findConversationBetweenUsers(user.userId, friendId);
-      
+
       if (existingConversation) {
-        // Select existing conversation
         setSelectedConversation(existingConversation);
         await fetchMessages(existingConversation.id);
       } else {
-        // Create new conversation
         const conversation = await messagingApi.createConversation([user.userId, friendId]);
         setSelectedConversation(conversation);
         setMessages([]);
-        await fetchData(); // Refresh conversations list
+        await fetchData();
         toast.success('Conversation started');
       }
     } catch (error) {
@@ -205,25 +218,6 @@ const MessagingPage: React.FC = () => {
   const handleSelectConversation = async (conversation: Conversation) => {
     setSelectedConversation(conversation);
     await fetchMessages(conversation.id);
-  };
-
-  // Get user avatar initials
-  const getAvatarInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-
-  // Format message time
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
-
-  // Get conversation display name (excluding current user)
-  const getConversationName = (conversation: Conversation) => {
-    const otherParticipants = conversation.participants.filter(p => p.user.id !== user?.userId);
-    return otherParticipants.map(p => `${p.user.firstname} ${p.user.lastname}`).join(', ');
   };
 
   // Load data on mount
@@ -252,15 +246,10 @@ const MessagingPage: React.FC = () => {
   return (
     <section className="py-8 bg-[var(--color-bg-primary)] min-h-screen">
       <div className="container mx-auto px-4 max-w-7xl">
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
-              Messages
-            </h1>
-            <p className="text-[var(--color-text-secondary)] mt-2">
-              Connect and chat with your friends
-            </p>
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Messages</h1>
+            <p className="text-[var(--color-text-secondary)] mt-2">Connect and chat with your friends</p>
           </div>
           <Button
             onClick={() => setIsModalOpen(true)}
@@ -273,7 +262,6 @@ const MessagingPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Friends Sidebar */}
           <Card className="lg:col-span-1 border-[var(--color-border-light)]">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center">
@@ -290,20 +278,15 @@ const MessagingPage: React.FC = () => {
                 ) : errors.connections ? (
                   <div className="text-center text-red-500 py-8 text-sm">
                     {errors.connections}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2" 
-                      onClick={fetchData}
-                    >
+                    <Button variant="outline" size="sm" className="mt-2" onClick={fetchData}>
                       Retry
                     </Button>
                   </div>
                 ) : connections.length > 0 ? (
                   connections.map((connection) => {
                     const friend = connection.requesterId === user?.userId
-                      ? { id: connection.receiverId, name: connection.receiverName }
-                      : { id: connection.requesterId, name: connection.requesterName };
+                      ? { id: connection.receiverId, name: connection.receiverName || 'Unknown' }
+                      : { id: connection.requesterId, name: connection.requesterName || 'Unknown' };
 
                     return (
                       <div
@@ -317,16 +300,10 @@ const MessagingPage: React.FC = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-[var(--color-text-primary)] truncate">
-                            {friend.name}
-                          </p>
-                          <p className="text-sm text-[var(--color-text-secondary)]">
-                            Online
-                          </p>
+                          <p className="font-medium text-[var(--color-text-primary)] truncate">{friend.name}</p>
+                          <p className="text-sm text-[var(--color-text-secondary)]">Online</p>
                         </div>
-                        <Badge variant="secondary" className="ml-2">
-                          Friend
-                        </Badge>
+                        <Badge variant="secondary" className="ml-2">Friend</Badge>
                       </div>
                     );
                   })
@@ -339,7 +316,6 @@ const MessagingPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Conversations and Chat */}
           <div className="lg:col-span-3">
             <Card className="border-[var(--color-border-light)] h-full">
               <CardHeader className="pb-4">
@@ -350,7 +326,6 @@ const MessagingPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
-                  {/* Conversations List */}
                   <div className="lg:col-span-1">
                     <ScrollArea className="h-full">
                       {isLoadingState.conversations ? (
@@ -360,46 +335,34 @@ const MessagingPage: React.FC = () => {
                       ) : errors.conversations ? (
                         <div className="text-center text-red-500 py-8 text-sm">
                           {errors.conversations}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-2" 
-                            onClick={fetchData}
-                          >
+                          <Button variant="outline" size="sm" className="mt-2" onClick={fetchData}>
                             Retry
                           </Button>
                         </div>
                       ) : conversations.length > 0 ? (
-                        conversations.map((conversation) => {
-                          const conversationName = getConversationName(conversation);
-                          const otherParticipants = conversation.participants.filter(p => p.user.id !== user?.userId);
-
-                          return (
-                            <div
-                              key={conversation.id}
-                              onClick={() => handleSelectConversation(conversation)}
-                              className={`flex items-center p-3 mb-2 rounded-lg cursor-pointer transition-colors ${
-                                selectedConversation?.id === conversation.id
-                                  ? 'bg-[var(--color-lamaSkyLight)] border border-[var(--color-lamaSky)]'
-                                  : 'hover:bg-[var(--color-bg-secondary)]'
-                              }`}
-                            >
-                              <Avatar className="h-10 w-10 mr-3">
-                                <AvatarFallback className="bg-[var(--color-lamaPurpleLight)] text-[var(--color-lamaPurpleDark)]">
-                                  {getAvatarInitials(conversationName)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-[var(--color-text-primary)] truncate">
-                                  {conversationName}
-                                </p>
-                                <p className="text-sm text-[var(--color-text-secondary)] truncate">
-                                  {otherParticipants.length} participant{otherParticipants.length !== 1 ? 's' : ''}
-                                </p>
-                              </div>
+                        conversations.map((conversation) => (
+                          <div
+                            key={conversation.id}
+                            onClick={() => handleSelectConversation(conversation)}
+                            className={`flex items-center p-3 mb-2 rounded-lg cursor-pointer transition-colors ${
+                              selectedConversation?.id === conversation.id
+                                ? 'bg-[var(--color-lamaSkyLight)] border border-[var(--color-lamaSky)]'
+                                : 'hover:bg-[var(--color-bg-secondary)]'
+                            }`}
+                          >
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarFallback className="bg-[var(--color-lamaPurpleLight)] text-[var(--color-lamaPurpleDark)]">
+                                {getAvatarInitials(getConversationName(conversation))}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-[var(--color-text-primary)] truncate">{getConversationName(conversation)}</p>
+                              <p className="text-sm text-[var(--color-text-secondary)] truncate">
+                                {conversation.participants.length - 1} participant{conversation.participants.length - 1 !== 1 ? 's' : ''}
+                              </p>
                             </div>
-                          );
-                        })
+                          </div>
+                        ))
                       ) : (
                         <div className="text-center text-[var(--color-text-secondary)] py-8">
                           No conversations yet
@@ -408,11 +371,9 @@ const MessagingPage: React.FC = () => {
                     </ScrollArea>
                   </div>
 
-                  {/* Chat Area */}
                   <div className="lg:col-span-2 border-l border-[var(--color-border-light)] pl-6">
                     {selectedConversation ? (
                       <div className="h-full flex flex-col">
-                        {/* Chat Header */}
                         <div className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--color-border-light)]">
                           <div className="flex items-center">
                             <Avatar className="h-10 w-10 mr-3">
@@ -421,17 +382,12 @@ const MessagingPage: React.FC = () => {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <h3 className="font-semibold text-[var(--color-text-primary)]">
-                                {getConversationName(selectedConversation)}
-                              </h3>
-                              <p className="text-sm text-[var(--color-text-secondary)]">
-                                Online
-                              </p>
+                              <h3 className="font-semibold text-[var(--color-text-primary)]">{getConversationName(selectedConversation)}</h3>
+                              <p className="text-sm text-[var(--color-text-secondary)]">Online</p>
                             </div>
                           </div>
                         </div>
 
-                        {/* Messages */}
                         <ScrollArea className="flex-1 mb-4">
                           {isLoadingState.messages ? (
                             <div className="flex items-center justify-center py-8">
@@ -440,10 +396,10 @@ const MessagingPage: React.FC = () => {
                           ) : errors.messages ? (
                             <div className="text-center text-red-500 py-8 text-sm">
                               {errors.messages}
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="mt-2" 
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2"
                                 onClick={() => selectedConversation && fetchMessages(selectedConversation.id)}
                               >
                                 Retry
@@ -462,7 +418,7 @@ const MessagingPage: React.FC = () => {
                                     {!message.isFromCurrentUser && (
                                       <Avatar className="h-6 w-6">
                                         <AvatarFallback className="bg-[var(--color-lamaPurpleLight)] text-[var(--color-lamaPurpleDark)] text-xs">
-                                          {getAvatarInitials(`${message.sender.firstname} ${message.sender.lastname}`)}
+                                          {getAvatarInitials(`${message.sender.firstname || ''} ${message.sender.lastname || ''}`.trim() || 'Unknown')}
                                         </AvatarFallback>
                                       </Avatar>
                                     )}
@@ -474,9 +430,7 @@ const MessagingPage: React.FC = () => {
                                       }`}
                                     >
                                       <p className="text-sm">{message.content}</p>
-                                      <p className="text-xs opacity-70 mt-1">
-                                        {formatTime(message.timestamp)}
-                                      </p>
+                                      <p className="text-xs opacity-70 mt-1">{formatTime(message.timestamp)}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -490,7 +444,6 @@ const MessagingPage: React.FC = () => {
                           )}
                         </ScrollArea>
 
-                        {/* Message Input */}
                         <div className="flex gap-2">
                           <Input
                             value={newMessage}
@@ -532,14 +485,11 @@ const MessagingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* New Conversation Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                  Start New Conversation
-                </h3>
+                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Start New Conversation</h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -552,12 +502,9 @@ const MessagingPage: React.FC = () => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                    Select a friend
-                  </label>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Select a friend</label>
                   <Select value={selectedFriendId} onValueChange={setSelectedFriendId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Choose a friend to chat with" />
@@ -565,9 +512,8 @@ const MessagingPage: React.FC = () => {
                     <SelectContent>
                       {connections.map((connection) => {
                         const friend = connection.requesterId === user?.userId
-                          ? { id: connection.receiverId, name: connection.receiverName }
-                          : { id: connection.requesterId, name: connection.requesterName };
-                        
+                          ? { id: connection.receiverId, name: connection.receiverName || 'Unknown' }
+                          : { id: connection.requesterId, name: connection.requesterName || 'Unknown' };
                         return (
                           <SelectItem key={friend.id} value={friend.id.toString()}>
                             {friend.name}
@@ -577,11 +523,8 @@ const MessagingPage: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                    Message (optional)
-                  </label>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Message (optional)</label>
                   <Input
                     value={modalMessage}
                     onChange={(e) => setModalMessage(e.target.value)}
@@ -594,7 +537,6 @@ const MessagingPage: React.FC = () => {
                     }}
                   />
                 </div>
-                
                 <div className="flex gap-2 justify-end">
                   <Button
                     variant="outline"
@@ -607,7 +549,7 @@ const MessagingPage: React.FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleCreateConversation}
                     disabled={!selectedFriendId || isLoadingState.creatingConversation}
                     className="bg-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSky)] text-white"

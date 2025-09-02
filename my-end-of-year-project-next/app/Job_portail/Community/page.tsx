@@ -70,6 +70,8 @@ export default function CommunityFeed() {
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [activePost, setActivePost] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [postContent, setPostContent] = useState('');
+  const [postFile, setPostFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch posts and connection statuses
@@ -287,7 +289,7 @@ export default function CommunityFeed() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send connection request');
+        throw new Error(errorData.message || 'Failed to send connection request');
       }
 
       setPosts(prevPosts =>
@@ -299,6 +301,83 @@ export default function CommunityFeed() {
     } catch (error) {
       console.error('Error sending connection request:', error);
       toast.error((error as Error).message || 'Failed to send connection request.');
+    }
+  };
+
+  const handlePostSubmit = async () => {
+    if (!isAuthenticated || !authUser?.userId) {
+      toast.error('Please log in to create a post.');
+      return;
+    }
+
+    if (!postContent.trim() && !postFile) {
+      toast.error('Post content or media is required.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('userId', authUser.userId.toString());
+      formData.append('content', postContent.trim());
+      if (postFile) {
+        formData.append('file', postFile);
+      }
+
+      const response = await fetchWithAuth('http://localhost:8088/api/v1/auth/community/posts', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create post');
+      }
+
+      const newPost: ApiPost = await response.json();
+      const mappedPost: Post = {
+        postId: newPost.postId,
+        content: newPost.content,
+        mediaUrl: newPost.mediaUrl ? `http://localhost:8088${newPost.mediaUrl}` : undefined,
+        user: {
+          id: newPost.user.id,
+          name: `${newPost.user.firstname} ${newPost.user.lastname}`,
+          title: newPost.user.roles.includes('ADMIN') ? 'Administrator' :
+                 newPost.user.roles.includes('ENTERPRISE') ? 'Enterprise' :
+                 newPost.user.roles.includes('JOB_SEEKER') ? 'Job Seeker' :
+                 newPost.user.roles.includes('TECHNICIAN') ? 'Technician' : 'Member',
+        },
+        createdAt: newPost.createdAt,
+        likes: newPost.likeCount,
+        comments: newPost.commentCount,
+        isLiked: false,
+        connectionStatus: 'none',
+      };
+
+      setPosts(prevPosts => [mappedPost, ...prevPosts]);
+      setPostContent('');
+      setPostFile(null);
+      toast.success('Post created successfully!');
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast.error((error as Error).message || 'Failed to create post.');
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/quicktime'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Invalid file type. Allowed types: images and videos.');
+        setPostFile(null);
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File size exceeds 10MB limit.');
+        setPostFile(null);
+        return;
+      }
+      setPostFile(file);
     }
   };
 
@@ -333,17 +412,24 @@ export default function CommunityFeed() {
               className="flex-1 text-gray-600 bg-gray-100 rounded-xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 resize-none"
               placeholder="What's on your mind?"
               rows={3}
-              onClick={() => alert('Create Post Clicked (mock)')}
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
             />
           </div>
           <div className="flex justify-between items-center border-t border-gray-200 pt-4">
             <div className="flex space-x-4">
-              <button className="flex items-center text-gray-600 hover:text-blue-600 transition-colors duration-200">
+              <label className="flex items-center text-gray-600 hover:text-blue-600 transition-colors duration-200 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 </svg>
                 Photo/Video
-              </button>
+              </label>
               <button className="flex items-center text-gray-600 hover:text-yellow-600 transition-colors duration-200">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -351,10 +437,24 @@ export default function CommunityFeed() {
                 Feeling/Activity
               </button>
             </div>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-200 font-medium">
+            <button
+              onClick={handlePostSubmit}
+              className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-200 font-medium"
+            >
               Post
             </button>
           </div>
+          {postFile && (
+            <div className="mt-2 text-sm text-gray-600">
+              Selected file: {postFile.name}
+              <button
+                onClick={() => setPostFile(null)}
+                className="ml-2 text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+          )}
         </div>
 
         {posts.length === 0 ? (

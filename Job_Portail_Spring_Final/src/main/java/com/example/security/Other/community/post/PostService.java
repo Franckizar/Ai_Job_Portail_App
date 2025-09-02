@@ -26,7 +26,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-       private final PostMapper postMapper; 
+    private final PostMapper postMapper;
 
     // File storage configuration
     private static final String BASE_UPLOAD_DIR = "H:/END OF YEAR PROJECT/Job_Portail_App/uploads/posts/";
@@ -47,16 +47,7 @@ public class PostService {
         log.info("Creating post for userId: {}", userId);
         log.info("Content length: {} characters", content != null ? content.length() : 0);
         
-        // Validate required file
-        if (file == null || file.isEmpty()) {
-            log.error("ERROR: No file provided - posts require a media file");
-            throw new IllegalArgumentException("Media file is required for creating a post");
-        }
-
-        log.info("File details - Name: '{}', Size: {} bytes, ContentType: '{}'", 
-                file.getOriginalFilename(), file.getSize(), file.getContentType());
-
-        // Find user
+        // Validate user
         log.info("Looking up user with ID: {}", userId);
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> {
@@ -65,10 +56,16 @@ public class PostService {
                 });
         log.info("User found: {} {}", author.getFirstname(), author.getLastname());
 
-        // Save file and get URL
-        log.info("Starting file save process...");
-        String mediaUrl = saveFile(file);
-        log.info("File saved successfully. MediaUrl: '{}'", mediaUrl);
+        // Handle optional file
+        String mediaUrl = null;
+        if (file != null && !file.isEmpty()) {
+            log.info("File details - Name: '{}', Size: {} bytes, ContentType: '{}'", 
+                    file.getOriginalFilename(), file.getSize(), file.getContentType());
+            mediaUrl = saveFile(file);
+            log.info("File saved successfully. MediaUrl: '{}'", mediaUrl);
+        } else {
+            log.info("No file provided for post creation");
+        }
 
         // Create and save post
         Post post = Post.builder()
@@ -83,51 +80,21 @@ public class PostService {
         Post savedPost = postRepository.save(post);
         
         log.info("Post created successfully with ID: {}", savedPost.getPostId());
-        log.info("Media accessible at: http://localhost:8088{}", savedPost.getMediaUrl());
+        if (mediaUrl != null) {
+            log.info("Media accessible at: http://localhost:8088{}", savedPost.getMediaUrl());
+        }
         log.info("=== POST CREATION END ===");
         
         return savedPost;
     }
 
     /* --------------------- READ --------------------- */
-    // @Transactional(readOnly = true)
-    // public List<Post> listAll() {
-    //     log.info("=== LISTING ALL POSTS ===");
-    //     List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
-    //     log.info("Retrieved {} posts from database", posts.size());
-        
-    //     // Log media URLs for debugging
-    //     posts.forEach(post -> {
-    //         log.debug("Post {}: MediaUrl='{}', Content length: {}", 
-    //                 post.getPostId(), post.getMediaUrl(), post.getContent().length());
-    //     });
-        
-    //     return posts;
-    // }
-    // In PostService.java - add this method
-  @Transactional(readOnly = true)
-    public List<PostResponseDTO> getPostsByUserId(Integer userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID must be provided");
-        }
-
-        List<Post> posts = postRepository.findByUserId(userId);
-        if (posts.isEmpty()) {
-            throw new IllegalArgumentException("No posts found for user ID: " + userId);
-        }
-
+    public List<PostResponseDTO> getAllPostsAsDTO() {
+        List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
         return posts.stream()
                 .map(postMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
-
-
-public List<PostResponseDTO> getAllPostsAsDTO() {
-    List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
-    return posts.stream()
-            .map(postMapper::toResponseDTO)
-            .collect(Collectors.toList());
-}
 
     @Transactional(readOnly = true)
     public Post getById(Integer postId) {
@@ -141,6 +108,22 @@ public List<PostResponseDTO> getAllPostsAsDTO() {
         
         log.info("Post found - MediaUrl: '{}'", post.getMediaUrl());
         return post;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostResponseDTO> getPostsByUserId(Integer userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must be provided");
+        }
+
+        List<Post> posts = postRepository.findByUserId(userId);
+        if (posts.isEmpty()) {
+            throw new IllegalArgumentException("No posts found for user ID: " + userId);
+        }
+
+        return posts.stream()
+                .map(postMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     /* --------------------- UPDATE --------------------- */

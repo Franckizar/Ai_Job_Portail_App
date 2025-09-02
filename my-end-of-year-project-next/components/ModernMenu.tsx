@@ -152,6 +152,20 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
+      label: "JobRecommendations",
+      href: "/Job/JobRecommendations",
+      visible: ["TECHNICIAN", "JOB_SEEKER",],
+      onClick: () => handleNavigation("/Job/JobRecommendations"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "connections",
+      href: "/Job/list/PERSONAL_EMPLOYER_JOB",
+      visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
+      onClick: () => handleNavigation("/Job/list/dashL"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
       label: "chat",
       href: "/Job/chat",
       visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],

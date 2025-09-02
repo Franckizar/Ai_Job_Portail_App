@@ -23,40 +23,25 @@ public class PostController {
     public ResponseEntity<?> create(
             @RequestParam Integer userId,
             @RequestParam String content,
-            @RequestParam(value = "file", required = true) MultipartFile file) {
+            @RequestParam(value = "file", required = false) MultipartFile file) {
        
         log.info("=== POST CREATE REQUEST START ===");
         log.info("Received POST request to create post");
         log.info("Parameters received:");
         log.info(" - userId: {}", userId);
         log.info(" - content: '{}'", content);
-        log.info(" - file parameter name: 'file'");
+        log.info(" - file parameter: {}", file != null ? file.getOriginalFilename() : "none");
        
-        if (file == null) {
-            log.error("ERROR: File parameter is null");
-            return ResponseEntity.badRequest().body(createErrorResponse("File is required"));
-        }
-       
-        if (file.isEmpty()) {
-            log.error("ERROR: File is empty");
-            return ResponseEntity.badRequest().body(createErrorResponse("File cannot be empty"));
-        }
-       
-        log.info("File details:");
-        log.info(" - Original filename: '{}'", file.getOriginalFilename());
-        log.info(" - Content type: '{}'", file.getContentType());
-        log.info(" - Size: {} bytes ({} KB)", file.getSize(), file.getSize() / 1024);
-        log.info(" - Is empty: {}", file.isEmpty());
-       
-        // Additional validation
+        // Validate userId
         if (userId == null) {
             log.error("ERROR: UserId is null");
             return ResponseEntity.badRequest().body(createErrorResponse("UserId is required"));
         }
        
+        // Allow empty content but log it
         if (content == null || content.trim().isEmpty()) {
             log.warn("WARNING: Content is empty or null");
-            content = ""; // Allow empty content but log it
+            content = "";
         }
        
         try {
@@ -98,7 +83,7 @@ public class PostController {
             return ResponseEntity.ok(posts);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to retrieve posts");
+                    .body(createErrorResponse("Failed to retrieve posts"));
         }
     }
 
