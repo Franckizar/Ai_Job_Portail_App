@@ -21,7 +21,7 @@ public class ConnectionService {
     private final UserRepository userRepository;
 
     /**
-     * Send a connection request between two users
+     * Send a connection request
      */
     public Connection sendRequest(Integer requesterId, Integer receiverId) {
         log.info("Sending connection request from user {} to user {}", requesterId, receiverId);
@@ -226,5 +226,30 @@ public class ConnectionService {
                 .findByRequesterAndReceiverAndStatus(user2, user1, ConnectionStatus.ACCEPTED);
         
         return connection1.isPresent() || connection2.isPresent();
+    }
+
+    /**
+     * Get connection status between two users
+     */
+    @Transactional(readOnly = true)
+    public String getConnectionStatus(Integer requesterId, Integer receiverId) {
+        log.info("Getting connection status between requester {} and receiver {}", requesterId, receiverId);
+        
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new IllegalArgumentException("Requester user not found with id: " + requesterId));
+        User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new IllegalArgumentException("Receiver user not found with id: " + receiverId));
+        
+        Optional<Connection> connection = connectionRepository.findByRequesterAndReceiver(requester, receiver);
+        if (connection.isPresent()) {
+            return connection.get().getStatus().name().toLowerCase();
+        }
+        
+        Optional<Connection> reverseConnection = connectionRepository.findByRequesterAndReceiver(receiver, requester);
+        if (reverseConnection.isPresent()) {
+            return reverseConnection.get().getStatus().name().toLowerCase();
+        }
+        
+        return "none";
     }
 }

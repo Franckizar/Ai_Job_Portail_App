@@ -105,6 +105,23 @@ public class PostService {
     //     return posts;
     // }
     // In PostService.java - add this method
+  @Transactional(readOnly = true)
+    public List<PostResponseDTO> getPostsByUserId(Integer userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID must be provided");
+        }
+
+        List<Post> posts = postRepository.findByUserId(userId);
+        if (posts.isEmpty()) {
+            throw new IllegalArgumentException("No posts found for user ID: " + userId);
+        }
+
+        return posts.stream()
+                .map(postMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+
 public List<PostResponseDTO> getAllPostsAsDTO() {
     List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
     return posts.stream()

@@ -8,16 +8,15 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
-import org.springframework.validation.annotation.Validated;
+import java.util.List;
+import java.util.Map;
 
 // import javax.validation.Valid;
 // import javax.validation.constraints.Positive;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/auth/connections")
 @RequiredArgsConstructor
-@Validated
 public class ConnectionController {
 
     private final ConnectionService connectionService;
@@ -33,7 +32,7 @@ public class ConnectionController {
             ConnectionResponseDTO response = ConnectionResponseDTO.fromConnection(connection);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(new ConnectionResponseDTO(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -183,6 +182,22 @@ public class ConnectionController {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get connection status between two users
+     * GET /api/v1/auth/connections/status
+     */
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, String>> getConnectionStatus(
+            @RequestParam Integer requesterId,
+            @RequestParam Integer receiverId) {
+        try {
+            String status = connectionService.getConnectionStatus(requesterId, receiverId);
+            return ResponseEntity.ok(Map.of("status", status));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

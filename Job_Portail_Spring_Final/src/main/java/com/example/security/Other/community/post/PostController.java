@@ -131,31 +131,31 @@ public class PostController {
         }
     }
 
-    // @GetMapping("/user/{userId}")
-    // public ResponseEntity<?> getPostsByUserId(@PathVariable Integer userId) {
-    //     log.info("=== GET POSTS BY USER ID REQUEST START ===");
-    //     log.info("Received GET request for posts by user ID: {}", userId);
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getPostsByUserId(@PathVariable Integer userId) {
+        log.info("=== GET POSTS BY USER ID REQUEST START ===");
+        log.info("Received GET request for posts by user ID: {}", userId);
        
-    //     try {
-    //         List<PostResponseDTO> posts = postService.getPostsByUserId(userId);
-    //         log.info("Successfully retrieved {} posts for user ID: {}", posts.size(), userId);
+        try {
+            List<PostResponseDTO> posts = postService.getPostsByUserId(userId);
+            log.info("Successfully retrieved {} posts for user ID: {}", posts.size(), userId);
            
-    //         log.info("=== GET POSTS BY USER ID REQUEST END (SUCCESS) ===");
-    //         return ResponseEntity.ok(posts);
+            log.info("=== GET POSTS BY USER ID REQUEST END (SUCCESS) ===");
+            return ResponseEntity.ok(posts);
            
-    //     } catch (IllegalArgumentException e) {
-    //         log.warn("WARNING: No posts found for user ID: {}", userId);
-    //         log.info("=== GET POSTS BY USER ID REQUEST END (NOT FOUND) ===");
-    //         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-    //                 .body(createErrorResponse("No posts found for user ID: " + userId));
+        } catch (IllegalArgumentException e) {
+            log.warn("WARNING: No posts found for user ID: {}", userId);
+            log.info("=== GET POSTS BY USER ID REQUEST END (NOT FOUND) ===");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(createErrorResponse("No posts found for user ID: " + userId));
            
-    //     } catch (Exception e) {
-    //         log.error("ERROR: Failed to retrieve posts for user ID: {}", userId, e);
-    //         log.info("=== GET POSTS BY USER ID REQUEST END (ERROR) ===");
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    //                 .body(createErrorResponse("Failed to retrieve posts: " + e.getMessage()));
-    //     }
-    // }
+        } catch (Exception e) {
+            log.error("ERROR: Failed to retrieve posts for user ID: {}", userId, e);
+            log.info("=== GET POSTS BY USER ID REQUEST END (ERROR) ===");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Failed to retrieve posts: " + e.getMessage()));
+        }
+    }
 
     /* --------------------- UPDATE --------------------- */
     @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

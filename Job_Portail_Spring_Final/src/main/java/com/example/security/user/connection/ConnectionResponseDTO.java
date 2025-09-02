@@ -1,43 +1,41 @@
-
-// ConnectionResponseDTO.java
+// ```java
 package com.example.security.user.connection;
 
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
 import java.time.LocalDateTime;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConnectionResponseDTO {
-    
     private Integer id;
     private Integer requesterId;
-    private String requesterName;
-    private String requesterEmail;
     private Integer receiverId;
-    private String receiverName;
-    private String receiverEmail;
-    private ConnectionStatus status;
+    private String status;
+    private String message; // Added for error messages
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
+    // Constructor for error messages
+    public ConnectionResponseDTO(String message) {
+        this.message = message;
+    }
+
+    // Factory method to create DTO from Connection entity
     public static ConnectionResponseDTO fromConnection(Connection connection) {
         return ConnectionResponseDTO.builder()
                 .id(connection.getId())
                 .requesterId(connection.getRequester().getId())
-                .requesterName(connection.getRequester().getFirstname() + " " + connection.getRequester().getLastname())
-                .requesterEmail(connection.getRequester().getEmail())
                 .receiverId(connection.getReceiver().getId())
-                .receiverName(connection.getReceiver().getFirstname() + " " + connection.getReceiver().getLastname())
-                .receiverEmail(connection.getReceiver().getEmail())
-                .status(connection.getStatus())
+                .status(connection.getStatus().name().toLowerCase())
                 .createdAt(connection.getCreatedAt())
                 .updatedAt(connection.getUpdatedAt())
                 .build();
     }
 }
+// ```

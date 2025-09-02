@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/Job_portail/Home/components/auth/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { fetchWithAuth } from '@/fetchWithAuth';
 
@@ -13,6 +13,7 @@ type ApiUser = {
   lastname: string;
   email: string;
   roles: string[];
+  createdAt?: string;
 };
 
 type ApiComment = {
@@ -48,7 +49,6 @@ type Post = {
   likes: number;
   comments: number;
   isLiked: boolean;
-  connectionStatus?: 'none' | 'pending' | 'accepted';
 };
 
 type Comment = {
@@ -63,26 +63,58 @@ type Comment = {
   createdAt: string;
 };
 
-export default function CommunityFeed() {
+export default function UserProfile() {
   const { user: authUser, isAuthenticated } = useAuth();
   const router = useRouter();
+  const { userId } = useParams();
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [activePost, setActivePost] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [profileUser, setProfileUser] = useState<ApiUser | null>(null);
 
-  // Fetch posts and connection statuses
+  // Fetch user profile and posts
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchUserAndPosts = async () => {
+      if (!userId) {
+        toast.error('Invalid user ID');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetchWithAuth('http://localhost:8088/api/v1/auth/community/posts');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // Fetch user profile from database using /api/v1/sharedPlus/me
+        const rolesToTry = ['ADMIN', 'TECHNICIAN', 'JOB_SEEKER', 'ENTERPRISE', 'PERSONAL_EMPLOYER'];
+        let userData: ApiUser | null = null;
+
+        // Try each role until we find the user
+        for (const role of rolesToTry) {
+          const userResponse = await fetchWithAuth(`http://localhost:8088/api/v1/sharedPlus/me`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: Number(userId), role }),
+          });
+
+          if (userResponse.ok) {
+            userData = await userResponse.json();
+            break;
+          }
         }
+
+        if (!userData) {
+          throw new Error('User not found');
+        }
+        setProfileUser(userData);
+
+        // Fetch posts by user ID
+        const postsResponse = await fetchWithAuth(`http://localhost:8088/api/v1/auth/community/posts/user/${userId}`);
         
-        const apiPosts: ApiPost[] = await response.json();
+        if (!postsResponse.ok) {
+          throw new Error(`HTTP error! status: ${postsResponse.status}`);
+        }
+
+        const apiPosts: ApiPost[] = await postsResponse.json();
         console.log('Fetched posts:', apiPosts);
 
         const mappedPosts: Post[] = apiPosts.map(post => ({
@@ -101,25 +133,7 @@ export default function CommunityFeed() {
           likes: post.likeCount,
           comments: post.commentCount,
           isLiked: false,
-          connectionStatus: 'none',
         }));
-
-        // Fetch connection statuses for all posts' users
-        if (isAuthenticated && authUser?.userId) {
-          for (const post of mappedPosts) {
-            try {
-              const statusResponse = await fetchWithAuth(
-                `http://localhost:8088/api/v1/auth/connections/status?requesterId=${authUser.userId}&receiverId=${post.user.id}`
-              );
-              if (statusResponse.ok) {
-                const statusData = await statusResponse.json();
-                post.connectionStatus = statusData.status || 'none';
-              }
-            } catch (error) {
-              console.error(`Error fetching connection status for user ${post.user.id}:`, error);
-            }
-          }
-        }
 
         const initialComments: Record<number, Comment[]> = {};
         apiPosts.forEach(post => {
@@ -142,14 +156,14 @@ export default function CommunityFeed() {
         setComments(initialComments);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching posts:', error);
-        toast.error('Failed to load posts.');
+        console.error('Error fetching user profile or posts:', error);
+        toast.error('Failed to load user profile or posts.');
         setLoading(false);
       }
     };
 
-    fetchPosts();
-  }, [isAuthenticated, authUser]);
+    fetchUserAndPosts();
+  }, [userId, isAuthenticated]);
 
   const handleLike = async (postId: number) => {
     if (!isAuthenticated || !authUser?.userId) {
@@ -253,55 +267,6 @@ export default function CommunityFeed() {
     }
   };
 
-  const handleConnect = async (postId: number) => {
-    if (!isAuthenticated || !authUser?.userId) {
-      toast.error('Please log in to send a connection request.');
-      return;
-    }
-
-    const post = posts.find(p => p.postId === postId);
-    if (!post) {
-      toast.error('Post not found.');
-      return;
-    }
-
-    if (post.user.id === authUser.userId) {
-      toast.error('You cannot send a connection request to yourself.');
-      return;
-    }
-
-    if (post.connectionStatus === 'pending' || post.connectionStatus === 'accepted') {
-      toast.info(`Connection status: ${post.connectionStatus}`);
-      return;
-    }
-
-    try {
-      const response = await fetchWithAuth('http://localhost:8088/api/v1/auth/connections/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requesterId: authUser.userId,
-          receiverId: post.user.id,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send connection request');
-      }
-
-      setPosts(prevPosts =>
-        prevPosts.map(p =>
-          p.postId === postId ? { ...p, connectionStatus: 'pending' } : p
-        )
-      );
-      toast.success('Connection request sent!');
-    } catch (error) {
-      console.error('Error sending connection request:', error);
-      toast.error((error as Error).message || 'Failed to send connection request.');
-    }
-  };
-
   const toggleComments = (postId: number) => {
     setActivePost(activePost === postId ? null : postId);
   };
@@ -314,55 +279,58 @@ export default function CommunityFeed() {
     );
   }
 
+  if (!profileUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8 text-center">
+        <p className="text-lg text-gray-600">User not found.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <header className="mb-10 text-center">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Community Hub</h1>
-          <p className="mt-2 text-lg text-gray-600">Connect, share, and engage with the community!</p>
-        </header>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 transform transition-all hover:shadow-xl">
+        {/* Profile Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-lg font-semibold">
-                {authUser?.name?.charAt(0) || authUser?.firstname?.charAt(0) || 'U'}
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-2xl font-semibold">
+                {profileUser.firstname.charAt(0)}
               </span>
             </div>
-            <textarea
-              className="flex-1 text-gray-600 bg-gray-100 rounded-xl px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 resize-none"
-              placeholder="What's on your mind?"
-              rows={3}
-              onClick={() => alert('Create Post Clicked (mock)')}
-            />
-          </div>
-          <div className="flex justify-between items-center border-t border-gray-200 pt-4">
-            <div className="flex space-x-4">
-              <button className="flex items-center text-gray-600 hover:text-blue-600 transition-colors duration-200">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                </svg>
-                Photo/Video
-              </button>
-              <button className="flex items-center text-gray-600 hover:text-yellow-600 transition-colors duration-200">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Feeling/Activity
-              </button>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {profileUser.firstname} {profileUser.lastname}
+              </h2>
+              <p className="text-gray-600">
+                {profileUser.roles.includes('ADMIN') ? 'Administrator' :
+                 profileUser.roles.includes('ENTERPRISE') ? 'Enterprise' :
+                 profileUser.roles.includes('JOB_SEEKER') ? 'Job Seeker' :
+                 profileUser.roles.includes('TECHNICIAN') ? 'Technician' : 'Member'}
+              </p>
+              <p className="text-gray-500">{profileUser.email}</p>
+              {authUser && Number(userId) === authUser.userId && (
+                <button
+                  onClick={() => router.push('/profile/edit')}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-200"
+                >
+                  Edit Profile
+                </button>
+              )}
             </div>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-200 font-medium">
-              Post
-            </button>
+          </div>
+          <div className="border-t border-gray-200 pt-4">
+            <p className="text-gray-600">Joined: {new Date(profileUser.createdAt || '').toLocaleDateString()}</p>
           </div>
         </div>
 
+        {/* Posts List */}
         {posts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl shadow-md">
             <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
             </svg>
-            <p className="mt-4 text-gray-500 text-lg">No posts yet. Start the conversation!</p>
+            <p className="mt-4 text-gray-500 text-lg">No posts yet.</p>
           </div>
         ) : (
           posts.map(post => (
@@ -373,7 +341,12 @@ export default function CommunityFeed() {
                     <span className="text-white text-lg font-semibold">{post.user.name.charAt(0)}</span>
                   </div>
                   <div>
-                    <h3 className="text-gray-900 font-semibold text-lg">{post.user.name}</h3>
+                    <h3 
+                      className="text-gray-900 font-semibold text-lg cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                      onClick={() => router.push(`/profile/${post.user.id}`)}
+                    >
+                      {post.user.name}
+                    </h3>
                     <p className="text-gray-500 text-sm">
                       {new Date(post.createdAt).toLocaleString()} • {post.user.title}
                     </p>
@@ -432,23 +405,11 @@ export default function CommunityFeed() {
                   </svg>
                   <span>Comment</span>
                 </button>
-                <button
-                  onClick={() => handleConnect(post.postId)}
-                  disabled={post.connectionStatus === 'pending' || post.connectionStatus === 'accepted' || post.user.id === authUser?.userId}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-full transition-all duration-200 ${
-                    post.connectionStatus === 'pending' || post.connectionStatus === 'accepted' || post.user.id === authUser?.userId
-                      ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                      : 'text-gray-600 hover:bg-blue-100'
-                  }`}
-                >
+                <button className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5c4.418 0 8 3.582 8 8s-3.582 8-8 8-8-3.582-8-8 3.582-8 8-8zm0 2c-3.314 0-6 2.686-6 6s2.686 6 6 6 6-2.686 6-6-2.686-6-6-6zm0 2c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
-                  <span>
-                    {post.connectionStatus === 'pending' ? 'Pending' : 
-                     post.connectionStatus === 'accepted' ? 'Connected' : 
-                     post.user.id === authUser?.userId ? 'You' : 'Connect'}
-                  </span>
+                  <span>Share</span>
                 </button>
               </div>
               
@@ -490,7 +451,12 @@ export default function CommunityFeed() {
                           </div>
                           <div className="flex-1 bg-gray-50 rounded-xl p-4 transition-all duration-200 hover:bg-gray-100">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-semibold text-gray-900">{comment.user.name}</span>
+                              <span 
+                                className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                                onClick={() => router.push(`/profile/${comment.user.id}`)}
+                              >
+                                {comment.user.name}
+                              </span>
                               <span className="text-xs text-gray-500">
                                 {new Date(comment.createdAt).toLocaleString()}
                               </span>
