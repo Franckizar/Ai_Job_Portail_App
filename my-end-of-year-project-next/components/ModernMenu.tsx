@@ -162,7 +162,7 @@ const ModernMenu = () => {
       label: "connections",
       href: "/Job/list/PERSONAL_EMPLOYER_JOB",
       visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
-      onClick: () => handleNavigation("/Job/list/dashL"),
+      onClick: () => handleNavigation("/Job/connection"),
     },
     {
       icon: <Users className="w-4 h-4" />,

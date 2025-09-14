@@ -23,7 +23,25 @@
   --color-lamaPurpleLight: #F1F0FF;
   --color-lamaYellow: #FAE27C;
   --color-lamaYellowLight: #FEFCE8;
-} 
+}
+
+/* Light Theme Variables */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --border-light: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --accent-primary: #3b82f6;
+  --accent-secondary: #6366f1;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --icon-color: #64748b;
+}
 
 /* REMOVED THE PROBLEMATIC COMMENTED SECTION ENTIRELY */
 
