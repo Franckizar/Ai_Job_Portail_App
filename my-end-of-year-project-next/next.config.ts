@@ -15,7 +15,16 @@ const nextConfig: NextConfig = {
   '192.168.*.*',        // Broader subnet
   'localhost',          // Hostname
   '*.local',
-],
+  ],
+  // Proxy API requests to backend
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8088/api/:path*',
+      },
+    ];
+  },
 
 };
 
