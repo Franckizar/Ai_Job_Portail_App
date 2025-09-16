@@ -3,9 +3,22 @@
 
 import { createContext, useContext, useState } from 'react';
 
+interface Job {
+  id?: number;
+  title: string;
+  description: string;
+  type: string;
+  salaryMin: number;
+  salaryMax: number;
+  city: string;
+  state: string;
+  status: string;
+}
+
 type JobModalContextType = {
   isOpen: boolean;
-  openModal: () => void;
+  currentJob: Job | null;
+  openModal: (job?: Job | null) => void;
   closeModal: () => void;
 };
 
@@ -13,12 +26,20 @@ const JobModalContext = createContext<JobModalContextType | undefined>(undefined
 
 export function JobModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [currentJob, setCurrentJob] = useState<Job | null>(null);
 
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => setIsOpen(false);
+  const openModal = (job: Job | null = null) => {
+    setCurrentJob(job);
+    setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+    setCurrentJob(null);
+  };
 
   return (
-    <JobModalContext.Provider value={{ isOpen, openModal, closeModal }}>
+    <JobModalContext.Provider value={{ isOpen, currentJob, openModal, closeModal }}>
       {children}
     </JobModalContext.Provider>
   );

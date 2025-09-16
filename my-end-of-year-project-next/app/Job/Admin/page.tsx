@@ -177,7 +177,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* User Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <UserCard 
           type="Total Users" 
           endpoint="/api/v1/admin/stats/users" 
@@ -195,7 +195,7 @@ const AdminDashboard = () => {
           endpoint="/api/v1/admin/stats/revenue" 
           isCurrency={true}
         />
-      </div>
+      </div> */}
 
     
       {/* Main Content */}

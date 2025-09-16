@@ -1,257 +1,517 @@
-// ```typescriptreact
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '../../../components/Job_portail/Dashboard/ui/button';
-import { Input } from '../../../components/Job_portail/Dashboard/ui/input';
-import { Select } from '../../../components/Job_portail/Dashboard/ui/select';
-import { UserModal } from '../../../components/Job_portail/Dashboard/ui/UserModal';
-import { DeleteConfirmationModal } from '../../../components/Job_portail/Dashboard/ui/DeleteConfirmationModal';
-import { fetchUsers } from '../../../components/Job_portail/Dashboard/ui/services/userService';
+import {
+  Users, Search, Filter, Download, Eye, CheckCircle, XCircle,
+  Clock, FileText, ExternalLink, ChevronLeft, ChevronRight,
+  Calendar, Mail, Phone, MapPin, Star, MoreVertical
+} from 'lucide-react';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  active: boolean;
-}
+const ApplicationsManagement = () => {
+  const [applications, setApplications] = useState([]);
+  const [filteredApplications, setFilteredApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalApplications, setTotalApplications] = useState(0);
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  
+  const itemsPerPage = 10;
+  const baseURL = 'http://localhost:8088';
 
-const Badge = ({ variant = 'primary', children }: { 
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger', 
-  children: React.ReactNode 
-}) => {
-  const variantClasses = {
-    primary: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-gray-100 text-gray-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    danger: 'bg-red-100 text-red-800',
+  // Fetch applications based on status
+  const fetchApplications = async (status = 'ALL', page = 1) => {
+    setLoading(true);
+    try {
+      let url;
+      if (status === 'ALL') {
+        url = `${baseURL}/api/v1/auth/applications/all?page=${page - 1}&size=${itemsPerPage}`;
+      } else {
+        url = `${baseURL}/api/v1/auth/applications/by-status/${status}?page=${page - 1}&size=${itemsPerPage}`;
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      // Simulate pagination if API doesn't support it
+      const startIndex = (page - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedData = Array.isArray(data) ? data.slice(startIndex, endIndex) : [];
+      
+      setApplications(paginatedData);
+      setFilteredApplications(paginatedData);
+      setTotalApplications(Array.isArray(data) ? data.length : 0);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      setApplications([]);
+      setFilteredApplications([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Update application status
+  const updateApplicationStatus = async (applicationId, newStatus) => {
+    try {
+      const response = await fetch(`${baseURL}/api/v1/auth/applications/${applicationId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (response.ok) {
+        // Refresh applications
+        fetchApplications(selectedStatus, currentPage);
+      }
+    } catch (error) {
+      console.error('Error updating application status:', error);
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Calculate time ago
+  const timeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} weeks ago`;
+  };
+
+  // Filter applications based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredApplications(applications);
+    } else {
+      const filtered = applications.filter(app => 
+        app.id.toString().includes(searchQuery.toLowerCase()) ||
+        (app.coverLetter && app.coverLetter.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredApplications(filtered);
+    }
+  }, [searchQuery, applications]);
+
+  // Initial load
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  // Handle status filter change
+  const handleStatusChange = (status) => {
+    setSelectedStatus(status);
+    setCurrentPage(1);
+    fetchApplications(status, 1);
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    fetchApplications(selectedStatus, newPage);
+  };
+
+  // Status badge component
+  const StatusBadge = ({ status }) => {
+    const statusConfig = {
+      SUBMITTED: { 
+        bg: 'bg-[var(--color-lamaYellowLight)]', 
+        text: 'text-[var(--color-lamaYellowDark)]',
+        icon: Clock
+      },
+      ACCEPTED: { 
+        bg: 'bg-[var(--color-lamaGreenLight)]', 
+        text: 'text-[var(--color-lamaGreenDark)]',
+        icon: CheckCircle
+      },
+      REJECTED: { 
+        bg: 'bg-[var(--color-lamaRedLight)]', 
+        text: 'text-[var(--color-lamaRedDark)]',
+        icon: XCircle
+      }
+    };
+
+    const config = statusConfig[status] || statusConfig.SUBMITTED;
+    const IconComponent = config.icon;
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        <IconComponent className="h-3 w-3" />
+        {status}
+      </span>
+    );
+  };
+
+  // Application detail modal
+  const ApplicationDetailModal = () => {
+    if (!selectedApplication) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-[var(--color-border-light)]">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
+                  Application #{selectedApplication.id}
+                </h2>
+                <p className="text-[var(--color-text-secondary)]">
+                  Applied {formatDate(selectedApplication.appliedAt)}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <StatusBadge status={selectedApplication.status} />
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                {timeAgo(selectedApplication.appliedAt)}
+              </span>
+            </div>
+
+            {selectedApplication.coverLetter && (
+              <div>
+                <h3 className="font-semibold text-[var(--color-text-primary)] mb-2">Cover Letter</h3>
+                <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
+                  <p className="text-[var(--color-text-primary)]">{selectedApplication.coverLetter}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedApplication.resumeUrl && (
+                <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
+                  <h4 className="font-medium text-[var(--color-text-primary)] mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Resume
+                  </h4>
+                  <a 
+                    href={selectedApplication.resumeUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-lamaSkyDark)] hover:text-[var(--color-lamaSky)] flex items-center gap-1"
+                  >
+                    View Resume <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+
+              {selectedApplication.portfolioUrl && (
+                <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
+                  <h4 className="font-medium text-[var(--color-text-primary)] mb-2 flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    Portfolio
+                  </h4>
+                  <a 
+                    href={selectedApplication.portfolioUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[var(--color-lamaSkyDark)] hover:text-[var(--color-lamaSky)] flex items-center gap-1"
+                  >
+                    View Portfolio <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {selectedApplication.status === 'SUBMITTED' && (
+              <div className="flex gap-3 pt-4 border-t border-[var(--color-border-light)]">
+                <button
+                  onClick={() => {
+                    updateApplicationStatus(selectedApplication.id, 'ACCEPTED');
+                    setShowDetailModal(false);
+                  }}
+                  className="flex-1 bg-[var(--color-lamaGreen)] hover:bg-[var(--color-lamaGreenDark)] text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Accept
+                </button>
+                <button
+                  onClick={() => {
+                    updateApplicationStatus(selectedApplication.id, 'REJECTED');
+                    setShowDetailModal(false);
+                  }}
+                  className="flex-1 bg-[var(--color-lamaRed)] hover:bg-[var(--color-lamaRedDark)] text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Reject
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const totalPages = Math.ceil(totalApplications / itemsPerPage);
+
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${variantClasses[variant]}`}>
-      {children}
-    </span>
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Applications Management</h1>
+            <p className="text-[var(--color-text-secondary)]">
+              Manage and review job applications ({totalApplications} total)
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button className="flex items-center gap-2 bg-[var(--color-lamaSky)] hover:bg-[var(--color-lamaSkyDark)] text-white px-4 py-2 rounded-lg transition-colors">
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="bg-white rounded-xl shadow-sm border border-[var(--color-border-light)] p-6 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--color-text-secondary)] h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search applications..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-[var(--color-border-light)] rounded-lg focus:ring-2 focus:ring-[var(--color-lamaSky)] focus:border-transparent"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            {['ALL', 'SUBMITTED', 'ACCEPTED', 'REJECTED'].map((status) => (
+              <button
+                key={status}
+                onClick={() => handleStatusChange(status)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  selectedStatus === status
+                    ? 'bg-[var(--color-lamaSkyDark)] text-white'
+                    : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-lamaSkyLight)]'
+                }`}
+              >
+                {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Applications Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-[var(--color-border-light)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-[var(--color-bg-secondary)]">
+              <tr className="text-left text-[var(--color-text-secondary)] text-sm">
+                <th className="px-6 py-4 font-medium">Application ID</th>
+                <th className="px-6 py-4 font-medium">Applied Date</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">Documents</th>
+                <th className="px-6 py-4 font-medium">Cover Letter</th>
+                <th className="px-6 py-4 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-[var(--color-text-secondary)]">
+                    Loading applications...
+                  </td>
+                </tr>
+              ) : filteredApplications.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-[var(--color-text-secondary)]">
+                    No applications found
+                  </td>
+                </tr>
+              ) : (
+                filteredApplications.map((application) => (
+                  <tr 
+                    key={application.id} 
+                    className="border-b border-[var(--color-border-light)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[var(--color-lamaSkyLight)] rounded-full flex items-center justify-center">
+                          <Users className="h-4 w-4 text-[var(--color-lamaSkyDark)]" />
+                        </div>
+                        <span className="font-medium text-[var(--color-text-primary)]">
+                          #{application.id}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-[var(--color-text-primary)]">
+                          {formatDate(application.appliedAt)}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
+                          {timeAgo(application.appliedAt)}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={application.status} />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        {application.resumeUrl && (
+                          <a
+                            href={application.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[var(--color-lamaSkyDark)] hover:text-[var(--color-lamaSky)] text-xs"
+                          >
+                            <FileText className="h-3 w-3" />
+                            Resume
+                          </a>
+                        )}
+                        {application.portfolioUrl && (
+                          <a
+                            href={application.portfolioUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[var(--color-lamaPurpleDark)] hover:text-[var(--color-lamaPurple)] text-xs"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Portfolio
+                          </a>
+                        )}
+                        {!application.resumeUrl && !application.portfolioUrl && (
+                          <span className="text-[var(--color-text-tertiary)] text-xs">No documents</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 max-w-xs">
+                      {application.coverLetter ? (
+                        <p className="text-[var(--color-text-primary)] text-sm truncate">
+                          {application.coverLetter}
+                        </p>
+                      ) : (
+                        <span className="text-[var(--color-text-tertiary)] text-xs">No cover letter</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedApplication(application);
+                            setShowDetailModal(true);
+                          }}
+                          className="p-2 text-[var(--color-lamaSkyDark)] hover:bg-[var(--color-lamaSkyLight)] rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        {application.status === 'SUBMITTED' && (
+                          <>
+                            <button
+                              onClick={() => updateApplicationStatus(application.id, 'ACCEPTED')}
+                              className="p-2 text-[var(--color-lamaGreenDark)] hover:bg-[var(--color-lamaGreenLight)] rounded-lg transition-colors"
+                              title="Accept"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => updateApplicationStatus(application.id, 'REJECTED')}
+                              className="p-2 text-[var(--color-lamaRedDark)] hover:bg-[var(--color-lamaRedLight)] rounded-lg transition-colors"
+                              title="Reject"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border-light)]">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-[var(--color-text-secondary)]">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalApplications)} of {totalApplications} applications
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-2 text-sm border border-[var(--color-border-light)] rounded-lg hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </button>
+                
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  const pageNumber = Math.max(1, currentPage - 2) + i;
+                  if (pageNumber > totalPages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                        currentPage === pageNumber
+                          ? 'bg-[var(--color-lamaSkyDark)] text-white'
+                          : 'border border-[var(--color-border-light)] hover:bg-[var(--color-bg-secondary)]'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-2 text-sm border border-[var(--color-border-light)] rounded-lg hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Application Detail Modal */}
+      {showDetailModal && <ApplicationDetailModal />}
+    </div>
   );
 };
 
-export default function UserPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string>('all');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setIsLoading(true);
-        const usersFromApi = await fetchUsers();
-        setUsers(usersFromApi);
-        setFilteredUsers(usersFromApi);
-      } catch (error) {
-        console.error('Failed to load users:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadUsers();
-  }, []);
-
-  useEffect(() => {
-    let result = users;
-    if (searchTerm) {
-      result = result.filter(u => 
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    if (selectedRole !== 'all') {
-      result = result.filter(u => u.role === selectedRole);
-    }
-    setFilteredUsers(result);
-  }, [searchTerm, selectedRole, users]);
-
-  const handleEdit = (user: User) => { 
-    setCurrentUser(user); 
-    setIsModalOpen(true); 
-  };
-
-  const handleDelete = (user: User) => { 
-    setCurrentUser(user); 
-    setIsDeleteConfirmOpen(true); 
-  };
-
-  const handleSave = (userData: User) => {
-    if (currentUser) {
-      setUsers(users.map(u => u.id === currentUser.id ? { ...u, ...userData } : u));
-    } else {
-      const newUser = { ...userData, id: users.length + 1 };
-      setUsers([...users, newUser]);
-    }
-    setIsModalOpen(false); 
-    setCurrentUser(null);
-  };
-
-  const confirmDelete = () => {
-    if (!currentUser) return;
-    setUsers(users.filter(u => u.id !== currentUser.id));
-    setIsDeleteConfirmOpen(false); 
-    setCurrentUser(null);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  const uniqueRoles = Array.from(new Set(users.map(u => u.role)));
-
-  return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="flex flex-col space-y-8">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
-            <Button 
-              onClick={() => { 
-                setCurrentUser(null); 
-                setIsModalOpen(true); 
-              }}
-              className="w-full sm:w-auto px-6 py-2 text-base"
-            >
-              Add New User
-            </Button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                Search Users
-              </label>
-              <Input 
-                id="search"
-                placeholder="Search by name or email..." 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full text-base py-2.5"
-              />
-            </div>
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Role
-              </label>
-              <Select 
-                id="role"
-                value={selectedRole} 
-                onChange={(e) => setSelectedRole(e.target.value)} 
-                options={[
-                  { value: 'all', label: 'All Roles' }, 
-                  ...uniqueRoles.map(r => ({ value: r, label: r }))
-                ]}
-                className="w-full text-base py-2.5"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((u, index) => (
-                    <tr key={u.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? 'bg-gray-25' : ''}`}>
-                      <td className="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{u.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-600">{u.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={
-                          u.role === 'ADMIN' ? 'primary' : 
-                          u.role === 'TECHNICIAN' ? 'secondary' : 
-                          'warning'
-                        }>
-                          {u.role}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={u.active ? 'success' : 'danger'}>
-                          {u.active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-600">
-                        <div className="flex space-x-3">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleEdit(u)}
-                            className="px-4 py-1.5 hover:bg-gray-100"
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleDelete(u)}
-                            className="px-4 py-1.5 hover:bg-red-700"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-6 text-center text-base text-gray-500">
-                      No users found matching your criteria
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Modals */}
-      <UserModal 
-        isOpen={isModalOpen} 
-        onClose={() => { 
-          setIsModalOpen(false); 
-          setCurrentUser(null); 
-        }} 
-        user={currentUser} 
-        roles={uniqueRoles.map(r => ({ id: r, name: r, permissions: [] }))} 
-        onSave={handleSave} 
-      />
-      
-      <DeleteConfirmationModal 
-        isOpen={isDeleteConfirmOpen} 
-        onClose={() => setIsDeleteConfirmOpen(false)} 
-        onConfirm={confirmDelete} 
-        userName={currentUser?.name || ''} 
-      />
-    </div>
-  );
-}
-// ```
+export default ApplicationsManagement;

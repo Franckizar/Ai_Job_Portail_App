@@ -1,3 +1,4 @@
+// ```java
 package com.example.security.user.connection;
 
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import com.example.security.user.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,24 +22,18 @@ public class ConnectionService {
     private final ConnectionRepository connectionRepository;
     private final UserRepository userRepository;
 
-    /**
-     * Send a connection request
-     */
     public Connection sendRequest(Integer requesterId, Integer receiverId) {
         log.info("Sending connection request from user {} to user {}", requesterId, receiverId);
         
-        // Validate input
         if (requesterId.equals(receiverId)) {
             throw new IllegalStateException("Cannot send connection request to yourself");
         }
         
-        // Find users
         User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new IllegalArgumentException("Requester user not found with id: " + requesterId));
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new IllegalArgumentException("Receiver user not found with id: " + receiverId));
 
-        // Check if connection already exists
         Optional<Connection> existingConnection = connectionRepository
                 .findByRequesterAndReceiver(requester, receiver);
         
@@ -52,14 +48,12 @@ public class ConnectionService {
             }
         }
         
-        // Check reverse connection (receiver to requester)
         Optional<Connection> reverseConnection = connectionRepository
                 .findByRequesterAndReceiver(receiver, requester);
         
         if (reverseConnection.isPresent()) {
             ConnectionStatus reverseStatus = reverseConnection.get().getStatus();
             if (reverseStatus == ConnectionStatus.PENDING) {
-                // Auto-accept if there's a pending reverse request
                 Connection connection = reverseConnection.get();
                 connection.setStatus(ConnectionStatus.ACCEPTED);
                 connection.setUpdatedAt(LocalDateTime.now());
@@ -70,7 +64,6 @@ public class ConnectionService {
             }
         }
 
-        // Create new connection request
         Connection connection = Connection.builder()
                 .requester(requester)
                 .receiver(receiver)
@@ -84,9 +77,6 @@ public class ConnectionService {
         return saved;
     }
 
-    /**
-     * Accept a connection request
-     */
     public Connection acceptRequest(Integer connectionId) {
         log.info("Accepting connection request with id: {}", connectionId);
         
@@ -105,9 +95,6 @@ public class ConnectionService {
         return saved;
     }
 
-    /**
-     * Reject a connection request
-     */
     public Connection rejectRequest(Integer connectionId) {
         log.info("Rejecting connection request with id: {}", connectionId);
         
@@ -126,9 +113,6 @@ public class ConnectionService {
         return saved;
     }
 
-    /**
-     * Block a connection
-     */
     public Connection blockConnection(Integer connectionId) {
         log.info("Blocking connection with id: {}", connectionId);
         
@@ -143,9 +127,6 @@ public class ConnectionService {
         return saved;
     }
 
-    /**
-     * Get all connections for a user (as requester or receiver)
-     */
     @Transactional(readOnly = true)
     public List<Connection> getUserConnections(Integer userId) {
         log.debug("Getting all connections for user: {}", userId);
@@ -156,9 +137,6 @@ public class ConnectionService {
         return connectionRepository.findByRequesterOrReceiver(user, user);
     }
 
-    /**
-     * Get accepted connections (friends) for a user
-     */
     @Transactional(readOnly = true)
     public List<Connection> getUserFriends(Integer userId) {
         log.debug("Getting friends for user: {}", userId);
@@ -171,9 +149,6 @@ public class ConnectionService {
         );
     }
 
-    /**
-     * Get pending connection requests received by a user
-     */
     @Transactional(readOnly = true)
     public List<Connection> getPendingRequests(Integer userId) {
         log.debug("Getting pending requests for user: {}", userId);
@@ -184,9 +159,6 @@ public class ConnectionService {
         return connectionRepository.findByReceiverAndStatus(user, ConnectionStatus.PENDING);
     }
 
-    /**
-     * Get connection requests sent by a user
-     */
     @Transactional(readOnly = true)
     public List<Connection> getSentRequests(Integer userId) {
         log.debug("Getting sent requests for user: {}", userId);
@@ -197,9 +169,6 @@ public class ConnectionService {
         return connectionRepository.findByRequesterAndStatus(user, ConnectionStatus.PENDING);
     }
 
-    /**
-     * Remove/Delete a connection
-     */
     public void removeConnection(Integer connectionId) {
         log.info("Removing connection with id: {}", connectionId);
         
@@ -210,9 +179,6 @@ public class ConnectionService {
         log.info("Connection {} removed successfully", connectionId);
     }
 
-    /**
-     * Check if two users are connected (friends)
-     */
     @Transactional(readOnly = true)
     public boolean areUsersConnected(Integer userId1, Integer userId2) {
         User user1 = userRepository.findById(userId1)
@@ -228,9 +194,6 @@ public class ConnectionService {
         return connection1.isPresent() || connection2.isPresent();
     }
 
-    /**
-     * Get connection status between two users
-     */
     @Transactional(readOnly = true)
     public String getConnectionStatus(Integer requesterId, Integer receiverId) {
         log.info("Getting connection status between requester {} and receiver {}", requesterId, receiverId);
@@ -251,5 +214,18 @@ public class ConnectionService {
         }
         
         return "none";
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConnectionResponseDTO.UserDTO> searchUsersByEmail(String email) {
+        log.debug("Searching users with email containing: {}", email);
+        List<User> users = userRepository.findByEmailContainingIgnoreCase(email);
+        return users.stream().map(user -> ConnectionResponseDTO.UserDTO.builder()
+                .id(user.getId())
+                .firstname(user.getFirstname() != null ? user.getFirstname() : "")
+                .lastname(user.getLastname() != null ? user.getLastname() : "")
+                .email(user.getEmail() != null ? user.getEmail() : "No email available")
+                .build()
+        ).collect(Collectors.toList());
     }
 }

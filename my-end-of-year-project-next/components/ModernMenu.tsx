@@ -90,7 +90,7 @@ const ModernMenu = () => {
     {
       icon: <Users className="w-4 h-4" />,
       label: "Jobs",
-      href: "/Job/Jobs",
+      href: "/Job/sjobs",
       visible: ["ADMIN"],
       // onClick: () => handleNavigation("/Job/jobs"),
       onClick: () => handleNavigation("/Job/sjobs"),
@@ -114,7 +114,7 @@ const ModernMenu = () => {
       icon: <Users className="w-4 h-4" />,
       label: "Subscriptions",
       href: "/Job/Subscriptions",
-      visible: ["ADMIN"],
+      visible: ["TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/Subscriptions"),
     },
     {
@@ -128,7 +128,7 @@ const ModernMenu = () => {
       icon: <Users className="w-4 h-4" />,
       label: "Posts",
       href: "/Job/list/dashL",
-      visible: ["JOB_SEEKER"],
+      visible: [ "ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/list/dashL"),
     },
     {
@@ -162,7 +162,7 @@ const ModernMenu = () => {
     {
       icon: <Users className="w-4 h-4" />,
       label: "connections",
-      href: "/Job/list/PERSONAL_EMPLOYER_JOB",
+      href: "/Job/connection",
       visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/connection"),
     },
