@@ -39,6 +39,7 @@ export function Header() {
     { key: 'jobs', label: 'Find Jobs', icon: Briefcase, href: '/Job_portail/Find_Jobs' },
     { key: 'community', label: 'Community', href: '/Job_portail/Community' },
     { key: 'about', label: 'About Us', href: '/Job_portail/About_Us' },
+    { key: 'QR', label: 'QR_code', href: '/Job_portail/QR' },
   ];
 
   const isActive = (href: string) => pathname === href;

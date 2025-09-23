@@ -63,7 +63,7 @@ public class Application {
     }
 
     public enum ApplicationStatus {
-        SUBMITTED, REVIEWED, SHORTLISTED, REJECTED, ACCEPTED
+        SUBMITTED, REVIEWED, SHORTLISTED, REJECTED, ACCEPTED,PENDING
     }
 
 

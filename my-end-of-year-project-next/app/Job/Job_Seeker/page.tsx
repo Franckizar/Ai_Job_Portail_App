@@ -1,215 +1,361 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { 
-  Briefcase, Users, FileText, BarChart2, Settings, Mail, Bell, Shield, 
+
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/Job_portail/Home/components/auth/AuthContext';
+import { fetchWithAuth } from '@/fetchWithAuth';
+import { toast } from 'react-toastify';
+import {
+  Briefcase, Users, FileText, BarChart2, Settings, Mail, Bell, Shield,
   DollarSign, MapPin, Activity, ClipboardList, MessageSquare, Database,
-  Search, Filter, Download, Plus, MoreVertical, ChevronDown, ChevronUp,ChevronRight,
+  Search, Filter, Download, Plus, MoreVertical, ChevronDown, ChevronUp, ChevronRight,
   ArrowUp, ArrowDown, Clock, CheckCircle, AlertCircle
 } from 'lucide-react';
 
-const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeJobs: 0,
-    pendingApprovals: 0,
-    totalApplications: 0,
-    premiumEnterprises: 0,
-    revenue: 0,
-    matchesMade: 0
-  });
-  const [recentActivities, setRecentActivities] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('7d');
+interface JobSeekerProfile {
+  id: number;
+  user: {
+    id: number;
+    email: string;
+  };
+  fullName: string;
+  bio: string;
+  resumeUrl: string;
+  profileImageUrl: string;
+}
+
+interface ApplicationDTO {
+  id: number;
+  jobSeekerId: number;
+  jobId: number;
+  status: string;
+  appliedAt: string;
+  jobTitle: string;
+  companyName: string;
+}
+
+interface JobResponse {
+  id: number;
+  title: string;
+  description: string;
+  city: string;
+  state: string;
+  country: string;
+  salaryMin: number;
+  salaryMax: number;
+  status: string;
+  employerName: string;
+}
+
+interface ApplicationStats {
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+}
+
+interface DashboardData {
+  profile: JobSeekerProfile;
+  applications: ApplicationDTO[];
+  applicationStats: ApplicationStats;
+  recommendedJobs: JobResponse[];
+}
+
+const JobSeekerPage = () => {
+  const { user } = useAuth();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      
+    const fetchDashboard = async () => {
+      if (!user?.jobSeekerId) {
+        toast.error('Job seeker profile not found');
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        setStats({
-          totalUsers: 2458,
-          activeJobs: 189,
-          pendingApprovals: 23,
-          totalApplications: 3421,
-          premiumEnterprises: 56,
-          revenue: 1254000,
-          matchesMade: 843
+        // Fetch dashboard data (profile and recommended jobs)
+        const dashboardResponse = await fetchWithAuth(`http://localhost:8088/api/v1/auth/jobseeker/dashboard/${user.userId}`);
+        if (!dashboardResponse.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+        const dashboardData = await dashboardResponse.json();
+
+        // Fetch application statistics
+        const statsResponse = await fetchWithAuth(`http://localhost:8088/api/v1/auth/jobs/jobseeker/${user.jobSeekerId}/application-stats`);
+        const applicationStats = statsResponse.ok ? await statsResponse.json() : { total: 0, pending: 0, accepted: 0, rejected: 0 };
+
+        // Fetch recent applications
+        const applicationsResponse = await fetchWithAuth(`http://localhost:8088/api/v1/auth/jobs/jobseeker/${user.jobSeekerId}/recent-applications?limit=5`);
+        const applications = applicationsResponse.ok ? await applicationsResponse.json() : [];
+
+        setDashboardData({
+          ...dashboardData,
+          applicationStats,
+          applications
         });
 
-        setRecentActivities([
-          { 
-            id: 1, 
-            type: 'new_user', 
-            title: 'New premium user', 
-            description: 'Tech Solutions Inc. upgraded to enterprise plan', 
-            time: '5 mins ago',
-            icon: <CheckCircle className="h-5 w-5 text-green-500" />
-          },
-          { 
-            id: 2, 
-            type: 'job_post', 
-            title: 'Job requires approval', 
-            description: 'Senior DevOps Engineer at Cloud Innovations', 
-            time: '25 mins ago',
-            icon: <AlertCircle className="h-5 w-5 text-yellow-500" />
-          },
-          { 
-            id: 3, 
-            type: 'payment', 
-            title: 'Payment received', 
-            description: '25,000 XAF from Digital Marketing Pros', 
-            time: '1 hour ago',
-            icon: <DollarSign className="h-5 w-5 text-blue-500" />
-          },
-          { 
-            id: 4, 
-            type: 'new_enterprise', 
-            title: 'New enterprise registered', 
-            description: 'Data Analytics Co. joined the platform', 
-            time: '3 hours ago',
-            icon: <Database className="h-5 w-5 text-purple-500" />
-          }
-        ]);
-
       } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+        console.error('Error fetching dashboard:', error);
+        toast.error('Failed to load dashboard data');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, [timeRange]);
+    fetchDashboard();
+  }, [user?.userId, user?.jobSeekerId]);
+
+  const fetchMoreApplications = async () => {
+    if (!user?.jobSeekerId) return;
+    
+    setApplicationsLoading(true);
+    try {
+      const response = await fetchWithAuth(`http://localhost:8088/api/v1/auth/jobs/jobseeker/${user.jobSeekerId}/recent-applications?limit=20`);
+      if (response.ok) {
+        const applications = await response.json();
+        setDashboardData(prev => prev ? { ...prev, applications } : null);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      toast.error('Failed to load applications');
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Job Seeker Dashboard</h1>
+          <p className="text-gray-600">Failed to load dashboard data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user hasn't registered as job seeker yet
+  if (!dashboardData.profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Welcome to Job Seeker Dashboard</h1>
+
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Complete Your Job Seeker Profile</h2>
+            <p className="text-gray-600 mb-6">
+              To access the full dashboard features, you need to register as a job seeker first.
+            </p>
+            <button
+              onClick={() => {
+                toast.info('Registration feature coming soon!');
+              }}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+            >
+              Register as Job Seeker
+            </button>
+          </div>
+
+          {/* Show recommended jobs even without profile */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold">Recommended Jobs</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboardData.recommendedJobs?.slice(0, 6).map((job) => (
+                <div key={job.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
+                  <p className="text-gray-600 text-sm mb-2">{job.employerName}</p>
+                  <p className="text-gray-500 text-sm mb-2">{job.city}, {job.state}</p>
+                  <p className="text-green-600 font-semibold">${job.salaryMin} - ${job.salaryMax}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = dashboardData.applicationStats || { total: 0, pending: 0, accepted: 0, rejected: 0 };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        {/* <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">Overview of platform activity and metrics</p>
-        </div> */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="24h">Last 24 hours</option>
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Job Seeker Dashboard</h1>
+          <p className="text-gray-600">Welcome back, {dashboardData?.profile?.fullName || 'Job Seeker'}</p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers} 
-          change={12.5} 
-          icon={<Users className="h-6 w-6" />}
+        <StatCard
+          title="Total Applications"
+          value={stats.total}
+          change={0}
+          icon={<FileText className="h-6 w-6" />}
         />
-        <StatCard 
-          title="Active Jobs" 
-          value={stats.activeJobs} 
-          change={5.2} 
-          icon={<Briefcase className="h-6 w-6" />}
+        <StatCard
+          title="Pending"
+          value={stats.pending}
+          change={0}
+          icon={<Clock className="h-6 w-6" />}
+          color="text-yellow-600"
+          bgColor="bg-yellow-100"
         />
-        <StatCard 
-          title="Pending Approvals" 
-          value={stats.pendingApprovals} 
-          change={-3.1} 
-          icon={<Shield className="h-6 w-6" />}
+        <StatCard
+          title="Accepted"
+          value={stats.accepted}
+          change={0}
+          icon={<CheckCircle className="h-6 w-6" />}
+          color="text-green-600"
+          bgColor="bg-green-100"
         />
-        <StatCard 
-          title="Revenue" 
-          value={`${(stats.revenue / 1000).toFixed(1)}K`} 
-          change={18.7} 
-          icon={<DollarSign className="h-6 w-6" />}
-          isCurrency={true}
+        <StatCard
+          title="Rejected"
+          value={stats.rejected}
+          change={0}
+          icon={<AlertCircle className="h-6 w-6" />}
+          color="text-red-600"
+          bgColor="bg-red-100"
         />
       </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
+        {/* Recent Applications */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold">Recent Activity</h2>
-            <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-              View all
+            <h2 className="text-lg font-semibold">Recent Applications</h2>
+            <button 
+              onClick={fetchMoreApplications}
+              disabled={applicationsLoading}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
+            >
+              {applicationsLoading ? 'Loading...' : 'View all'}
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
           <div className="space-y-4">
-            {recentActivities.map(activity => (
-              <ActivityItem key={activity.id} activity={activity} />
-            ))}
+            {dashboardData.applications?.length > 0 ? (
+              dashboardData.applications.map((app) => (
+                <ActivityItem
+                  key={app.id}
+                  activity={{
+                    id: app.id,
+                    type: 'application',
+                    title: app.jobTitle,
+                    description: `Applied to ${app.companyName}`,
+                    time: new Date(app.appliedAt).toLocaleDateString(),
+                    icon: app.status === 'ACCEPTED' ? <CheckCircle className="h-5 w-5 text-green-500" /> :
+                          app.status === 'REJECTED' ? <AlertCircle className="h-5 w-5 text-red-500" /> :
+                          <Clock className="h-5 w-5 text-yellow-500" />
+                  }}
+                />
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No applications yet</p>
+                <p className="text-sm">Start browsing jobs to apply!</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Profile & Quick Actions */}
         <div className="space-y-6">
+          {/* Profile Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold mb-4">Profile</h2>
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center select-none">
+            <span className="text-white text-lg font-semibold">
+              {(() => {
+                const firstName = localStorage.getItem('user_firstname') || '';
+                const lastName = localStorage.getItem('user_lastname') || '';
+                const fullName = firstName && lastName ? `${firstName} ${lastName}` : '';
+                return fullName ? fullName.charAt(0) : '?';
+              })()}
+            </span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900">
+              {(() => {
+                const firstName = localStorage.getItem('user_firstname') || '';
+                const lastName = localStorage.getItem('user_lastname') || '';
+                return firstName && lastName ? `${firstName} ${lastName}` : 'registered';
+                // return firstName && lastName ? `${firstName} ${lastName}` : 'Not registered';
+              })()}
+            </h3>
+            <p className="text-sm text-gray-600">{localStorage.getItem('email') || 'No email'}</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mt-3">
+          {localStorage.getItem('user_bio') || 'No bio available'}
+        </p>
+      </div>
+
+
+          {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3">
-              <ActionButton 
-                icon={<Users className="h-5 w-5" />}
-                label="Manage Users"
+              <ActionButton
+                icon={<Search className="h-5 w-5" />}
+                label="Browse Jobs"
                 color="bg-blue-100 text-blue-600"
               />
-              <ActionButton 
-                icon={<Briefcase className="h-5 w-5" />}
-                label="Approve Jobs"
+              <ActionButton
+                icon={<FileText className="h-5 w-5" />}
+                label="My Applications"
                 color="bg-green-100 text-green-600"
               />
-              <ActionButton 
-                icon={<DollarSign className="h-5 w-5" />}
-                label="View Payments"
+              <ActionButton
+                icon={<Settings className="h-5 w-5" />}
+                label="Update Profile"
                 color="bg-purple-100 text-purple-600"
               />
-              <ActionButton 
-                icon={<Settings className="h-5 w-5" />}
-                label="Settings"
+              <ActionButton
+                icon={<Download className="h-5 w-5" />}
+                label="Download Resume"
                 color="bg-gray-100 text-gray-600"
               />
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* System Status */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold mb-4">System Status</h2>
-            <div className="space-y-3">
-              <StatusItem 
-                label="API Service" 
-                status="operational" 
-                lastChecked="2 mins ago" 
-              />
-              <StatusItem 
-                label="Database" 
-                status="operational" 
-                lastChecked="5 mins ago" 
-              />
-              <StatusItem 
-                label="Payment Gateway" 
-                status="degraded" 
-                lastChecked="10 mins ago" 
-              />
-              <StatusItem 
-                label="AI Matching" 
-                status="operational" 
-                lastChecked="15 mins ago" 
-              />
+      {/* Recommended Jobs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold">Recommended Jobs</h2>
+          <button className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+            View all jobs
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {dashboardData.recommendedJobs?.slice(0, 6).map((job) => (
+            <div key={job.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
+              <p className="text-gray-600 text-sm mb-2">{job.employerName}</p>
+              <p className="text-gray-500 text-sm mb-2">{job.city}, {job.state}</p>
+              <p className="text-green-600 font-semibold">${job.salaryMin} - ${job.salaryMax}</p>
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -217,7 +363,15 @@ const AdminDashboard = () => {
 };
 
 // Stat Card Component
-const StatCard = ({ title, value, change, icon, isCurrency = false }) => (
+const StatCard = ({ 
+  title, 
+  value, 
+  change, 
+  icon, 
+  isCurrency = false, 
+  color = "text-blue-600", 
+  bgColor = "bg-blue-100" 
+}) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
     <div className="flex justify-between items-start">
       <div>
@@ -226,17 +380,9 @@ const StatCard = ({ title, value, change, icon, isCurrency = false }) => (
           {isCurrency ? `${value} XAF` : value}
         </p>
       </div>
-      <div className={`p-2 rounded-lg ${change >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+      <div className={`p-2 rounded-lg ${bgColor} ${color}`}>
         {icon}
       </div>
-    </div>
-    <div className={`flex items-center mt-3 text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-      {change >= 0 ? (
-        <ArrowUp className="h-4 w-4 mr-1" />
-      ) : (
-        <ArrowDown className="h-4 w-4 mr-1" />
-      )}
-      <span>{Math.abs(change)}% from last period</span>
     </div>
   </div>
 );
@@ -251,9 +397,8 @@ const ActivityItem = ({ activity }) => (
       <h3 className="font-medium text-gray-900 truncate">{activity.title}</h3>
       <p className="text-sm text-gray-500 truncate">{activity.description}</p>
     </div>
-    <div className="flex-shrink-0 flex items-center gap-1 text-xs text-gray-400">
-      <Clock className="h-3 w-3" />
-      <span>{activity.time}</span>
+    <div className="flex-shrink-0 text-xs text-gray-400">
+      {activity.time}
     </div>
   </div>
 );
@@ -268,17 +413,4 @@ const ActionButton = ({ icon, label, color }) => (
   </button>
 );
 
-// Status Item Component
-const StatusItem = ({ label, status, lastChecked }) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3">
-      <div className={`h-2.5 w-2.5 rounded-full ${
-        status === 'operational' ? 'bg-green-500' : 'bg-yellow-500'
-      }`}></div>
-      <span className="font-medium">{label}</span>
-    </div>
-    <span className="text-sm text-gray-500">{lastChecked}</span>
-  </div>
-);
-
-export default AdminDashboard;
+export default JobSeekerPage;

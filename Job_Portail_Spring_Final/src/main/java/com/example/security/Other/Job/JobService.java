@@ -1,5 +1,8 @@
 package com.example.security.Other.Job;
 
+import com.example.security.Other.Application.Application;
+import com.example.security.Other.Application.ApplicationDTO;
+import com.example.security.Other.Application.ApplicationRepository;
 import com.example.security.Other.Job.category.JobCategory;
 import com.example.security.Other.Job.category.JobCategoryRepository;
 import com.example.security.Other.JobSkill.CreateJobSkillDto;
@@ -31,6 +34,7 @@ public class JobService {
     private final EnterpriseRepository enterpriseRepository;
     private final PersonalEmployerProfileRepository personalEmployerProfileRepository;
     private final JobCategoryRepository jobCategoryRepository;
+    private final ApplicationRepository applicationRepository;
 
     // ---------------- CREATE JOB ----------------
     public JobResponse createJob(CreateJobRequest request) {
@@ -239,4 +243,102 @@ public long countJobsByStatus(Job.JobStatus status) {
     return jobRepository.countByStatus(status);
 }
 
+
+
+
+
+/////////////////////////
+// Add these methods to your existing JobService class
+
+// Get application counts by status for job seeker
+public Map<String, Long> getApplicationCountsByStatus(Integer jobSeekerId) {
+    Map<String, Long> counts = new HashMap<>();
+    
+    counts.put("total", applicationRepository.countByJobSeeker_Id(jobSeekerId));
+    counts.put("pending", applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, Application.ApplicationStatus.PENDING));
+    counts.put("accepted", applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, Application.ApplicationStatus.ACCEPTED));
+    counts.put("rejected", applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, Application.ApplicationStatus.REJECTED));
+    
+    return counts;
+}
+
+// Get application counts by status for technician
+public Map<String, Long> getTechnicianApplicationCountsByStatus(Integer technicianId) {
+    Map<String, Long> counts = new HashMap<>();
+    
+    counts.put("total", applicationRepository.countByTechnician_Id(technicianId));
+    counts.put("pending", applicationRepository.countByTechnician_IdAndStatus(technicianId, Application.ApplicationStatus.PENDING));
+    counts.put("accepted", applicationRepository.countByTechnician_IdAndStatus(technicianId, Application.ApplicationStatus.ACCEPTED));
+    counts.put("rejected", applicationRepository.countByTechnician_IdAndStatus(technicianId, Application.ApplicationStatus.REJECTED));
+    
+    return counts;
+}
+
+// Get recent applications for job seeker
+public List<ApplicationDTO> getRecentApplications(Integer jobSeekerId, int limit) {
+    return applicationRepository.findByJobSeeker_IdOrderByAppliedAtDesc(jobSeekerId)
+            .stream()
+            .limit(limit)
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+// Get recent applications for technician
+public List<ApplicationDTO> getRecentTechnicianApplications(Integer technicianId, int limit) {
+    return applicationRepository.findByTechnician_IdOrderByAppliedAtDesc(technicianId)
+            .stream()
+            .limit(limit)
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+}
+
+private ApplicationDTO convertToDTO(Application application) {
+    ApplicationDTO dto = new ApplicationDTO();
+    dto.setId(application.getId());
+    dto.setResumeUrl(application.getResumeUrl());
+    dto.setPortfolioUrl(application.getPortfolioUrl());
+    dto.setStatus(application.getStatus().toString());
+    dto.setAppliedAt(application.getAppliedAt());
+    dto.setCoverLetter(application.getCoverLetter());
+    dto.setJobId(application.getJob().getId());
+    
+    // Set job seeker or technician ID
+    if (application.getJobSeeker() != null) {
+        dto.setJobSeekerId(application.getJobSeeker().getId());
+    }
+    if (application.getTechnician() != null) {
+        dto.setTechnicianId(application.getTechnician().getId());
+    }
+    
+    // Set job details
+if (application.getJob() != null) {
+    dto.setJobTitle(application.getJob().getTitle());
+    dto.setJobLocation(application.getJob().getCity() + ", " + application.getJob().getState());
+    dto.setJobType(application.getJob().getType() != null 
+        ? application.getJob().getType().toString() 
+        : null);
+
+    // BigDecimal to Double conversion with null safety
+    dto.setSalaryMin(application.getJob().getSalaryMin() != null 
+        ? application.getJob().getSalaryMin().doubleValue() 
+        : null);
+    dto.setSalaryMax(application.getJob().getSalaryMax() != null 
+        ? application.getJob().getSalaryMax().doubleValue() 
+        : null);
+
+    // Set company name based on employer type, null safe
+    if (application.getJob().getEnterprise() != null) {
+        dto.setCompanyName(application.getJob().getEnterprise().getName());
+    } else if (application.getJob().getPersonalEmployer() != null &&
+               application.getJob().getPersonalEmployer().getUser() != null) {
+        String firstName = application.getJob().getPersonalEmployer().getUser().getFirstname();
+        String lastName = application.getJob().getPersonalEmployer().getUser().getLastname();
+        dto.setCompanyName((firstName != null ? firstName : "") + " " + 
+            (lastName != null ? lastName : ""));
+    }
+}
+
+    
+    return dto;
+}
 }

@@ -6,11 +6,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.security.Other.Application.ApplicationDTO;
 import com.example.security.Other.Job.Job.JobStatus;
 import com.example.security.Other.Job.Job.JobType;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -178,5 +180,59 @@ public ResponseEntity<Long> getJobCountByStatus(@PathVariable String status) {
     }
 // }
 }
+///////////////////////////////////
+// Add these methods to your existing JobController class
+// Add these methods to your existing JobController class
 
+@GetMapping("/jobseeker/{jobSeekerId}/application-stats")
+public ResponseEntity<Map<String, Long>> getJobSeekerApplicationStats(@PathVariable Integer jobSeekerId) {
+    try {
+        Map<String, Long> stats = jobService.getApplicationCountsByStatus(jobSeekerId);
+        return ResponseEntity.ok(stats);
+    } catch (NoSuchElementException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/jobseeker/{jobSeekerId}/recent-applications")
+public ResponseEntity<List<ApplicationDTO>> getJobSeekerRecentApplications(
+        @PathVariable Integer jobSeekerId,
+        @RequestParam(defaultValue = "5") int limit) {
+    try {
+        List<ApplicationDTO> applications = jobService.getRecentApplications(jobSeekerId, limit);
+        return ResponseEntity.ok(applications);
+    } catch (NoSuchElementException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/technician/{technicianId}/application-stats")
+public ResponseEntity<Map<String, Long>> getTechnicianApplicationStats(@PathVariable Integer technicianId) {
+    try {
+        Map<String, Long> stats = jobService.getTechnicianApplicationCountsByStatus(technicianId);
+        return ResponseEntity.ok(stats);
+    } catch (NoSuchElementException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/technician/{technicianId}/recent-applications")
+public ResponseEntity<List<ApplicationDTO>> getTechnicianRecentApplications(
+        @PathVariable Integer technicianId,
+        @RequestParam(defaultValue = "5") int limit) {
+    try {
+        List<ApplicationDTO> applications = jobService.getRecentTechnicianApplications(technicianId, limit);
+        return ResponseEntity.ok(applications);
+    } catch (NoSuchElementException e) {
+        return ResponseEntity.notFound().build();
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
 }

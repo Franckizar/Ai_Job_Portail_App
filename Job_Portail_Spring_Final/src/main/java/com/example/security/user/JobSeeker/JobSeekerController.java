@@ -59,6 +59,13 @@ public class JobSeekerController {
         return ResponseEntity.noContent().build();
     }
 
+    // GET dashboard data for JobSeeker by user ID
+    @GetMapping("/dashboard/{userId}")
+    public ResponseEntity<JobSeekerDashboardDTO> getDashboard(@PathVariable Integer userId) {
+        JobSeekerDashboardDTO dashboard = jobSeekerService.getDashboardData(userId);
+        return ResponseEntity.ok(dashboard);
+    }
+
     // Internal helper to map entity to response DTO
     private JobSeekerResponse toResponse(JobSeeker js) {
         return JobSeekerResponse.builder()
