@@ -212,7 +212,7 @@ const EnterpriseDashboard = () => {
   const handleQuickAction = (action) => {
     switch (action) {
       case 'post-job':
-        window.location.href = '/jobs/new';
+        window.location.href = '/Job/sjobss';
         break;
       case 'view-applications':
         window.location.href = '/applications';

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI SQL Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 { color: #333; }
+        textarea {
+            width: 400px;
+            height: 80px;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        pre {
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            width: 400px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI SQL Assistant</h1>
+    <textarea id="question" placeholder="Type your question here..."></textarea><br>
+    <button onclick="askAI()">Ask AI</button>
+
+    <pre id="response"></pre>
+
+    <script>
+        async function askAI() {
+            const question = document.getElementById('question').value;
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = "Loading...";
+
+            try {
+                const res = await fetch('http://localhost:5000/ai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    responseEl.textContent = `Answer:\n${data.answer}\n\nSQL:\n${data.sql}\n\nData Preview:\n${JSON.stringify(data.data_preview, null, 2)}`;
+                } else {
+                    responseEl.textContent = `Error: ${data.error || JSON.stringify(data)}`;
+                }
+
+            } catch (err) {
+                responseEl.textContent = `Request failed: ${err}`;
+            }
+        }
+    </script>
+</body>
+</html>

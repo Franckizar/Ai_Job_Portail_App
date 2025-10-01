@@ -133,12 +133,12 @@ const ModernMenu = () => {
       visible: ["JOB_SEEKER"],
       onClick: () => handleNavigation("/Job/ApplicationSeeker"),
     },
-    {
+   {
       icon: <Users className="w-4 h-4" />,
-      label: "Job Posts",
-      href: "/Job/list/dashL",
+      label: "Jobs",
+      href: "/Job/sjobss",
       visible: ["ENTERPRISE", "PERSONAL_EMPLOYER"],
-      onClick: () => handleNavigation("/Job/list/dashL"),
+      onClick: () => handleNavigation("/Job/sjobss"),
     },
     {
       icon: <Users className="w-4 h-4" />,
@@ -207,9 +207,10 @@ const ModernMenu = () => {
       icon: <Users className="w-4 h-4" />,
       label: "JOBS",
       href: "/Job/Subscriptions",
-      visible: ["ENTERPRISE", "PERSONAL_EMPLOYER"],
+      visible: ["ADMIN"],
       onClick: () => handleNavigation("/Job/sjobs"),
     },
+   
   ];
 
   if (!role) return null;

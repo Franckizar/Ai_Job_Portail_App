@@ -56,6 +56,8 @@ public class JobService {
         return buildResponse(job, jobSkills);
     }
 
+    
+
     // ---------------- GET ALL JOBS ----------------
     public List<JobResponse> getAllJobs() {
         return jobRepository.findAll().stream()

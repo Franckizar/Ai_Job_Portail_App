@@ -50,7 +50,7 @@ class JobService {
       throw new Error(`Failed to fetch skills: ${response.status} ${response.statusText}`);
     }
     const skills = await response.json();
-    console.log('Fetched skills:', skills); // Debug log
+    console.log('Fetched skills:', skills);
     return skills;
   }
 
@@ -60,7 +60,7 @@ class JobService {
       throw new Error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
     }
     const categories = await response.json();
-    console.log('Fetched categories:', categories); // Debug log
+    console.log('Fetched categories:', categories);
     return categories;
   }
 
@@ -76,7 +76,30 @@ class JobService {
     };
   }
 
-  async createJob(formData: JobFormData, employerId: number = 1): Promise<void> {
+  async createJob(formData: JobFormData): Promise<void> {
+    // Get user role and ID from localStorage
+    const userRole = localStorage.getItem('user_role');
+    let employerId: number | null = null;
+    let endpoint: string;
+
+    if (userRole === 'ENTERPRISE') {
+      const enterpriseId = localStorage.getItem('enterprise_id');
+      if (!enterpriseId) {
+        throw new Error('Enterprise ID not found. Please log in again.');
+      }
+      employerId = parseInt(enterpriseId);
+      endpoint = `${BASE_URL}/api/v1/auth/jobs/create/enterprise/${employerId}`;
+    } else if (userRole === 'PERSONAL_EMPLOYER') {
+      const personalEmployerId = localStorage.getItem('personal_employer_id');
+      if (!personalEmployerId) {
+        throw new Error('Personal Employer ID not found. Please log in again.');
+      }
+      employerId = parseInt(personalEmployerId);
+      endpoint = `${BASE_URL}/api/v1/auth/jobs/create/personalemployer/${employerId}`;
+    } else {
+      throw new Error(`User role '${userRole}' is not authorized to create jobs`);
+    }
+
     // Validate required fields
     if (!formData.title || !formData.description || !formData.categoryId) {
       throw new Error('Please fill all required fields');
@@ -98,16 +121,29 @@ class JobService {
       skills: formData.skills
     };
 
-    const response = await fetch(`${BASE_URL}/api/v1/auth/jobs/create/personalemployer/${employerId}`, {
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('jwt_token');
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || 'Failed to create job' };
+      }
       throw new Error(errorData.message || 'Failed to create job');
     }
   }
