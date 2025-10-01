@@ -6,6 +6,9 @@ import com.example.security.user.JobSeeker.JobSeeker;
 import com.example.security.user.JobSeeker.JobSeekerRepository;
 import com.example.security.user.Technicien.Technician;
 import com.example.security.user.Technicien.TechnicianRepository;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -141,37 +144,46 @@ public List<ApplicationDTO> getApplicationsByTechnicianId(Integer technicianId) 
     return applicationRepository.countByStatus(status);
 }
 /////////////////////////////////////////
-public List<JobSeekerApplicationDTO> getApplicationsForJobSeeker(Integer jobSeekerId) {
-    return applicationRepository.findByJobSeeker_Id(jobSeekerId)
-            .stream()
-            .map(JobSeekerApplicationDTO::new)
-            .collect(Collectors.toList());
-}
 
-public List<JobSeekerApplicationDTO> getApplicationsForJobSeekerByStatus(Integer jobSeekerId, ApplicationStatus status) {
-    return applicationRepository.findByJobSeeker_IdAndStatus(jobSeekerId, status)
-            .stream()
-            .map(JobSeekerApplicationDTO::new)
-            .collect(Collectors.toList());
-}
+    /**
+     * Get all applications for a job seeker
+     */
+    public List<ApplicationDTO> getApplicationsForJobSeeker(Integer jobSeekerId) {
+        return applicationRepository.findByJobSeeker_Id(jobSeekerId)
+                .stream()
+                .map(ApplicationDTO::new)
+                .collect(Collectors.toList());
+    }
 
-public ApplicationStatsDTO getApplicationStatsForJobSeeker(Integer jobSeekerId) {
-    long total = applicationRepository.countByJobSeeker_Id(jobSeekerId);
-    long submitted = applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, ApplicationStatus.SUBMITTED);
-    long accepted = applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, ApplicationStatus.ACCEPTED);
-    long rejected = applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, ApplicationStatus.REJECTED);
-    
-    return new ApplicationStatsDTO(total, submitted, accepted, rejected);
-}
+    /**
+     * Get all applications for a job seeker by status
+     */
+    public List<ApplicationDTO> getApplicationsForJobSeekerByStatus(Integer jobSeekerId, Application.ApplicationStatus status) {
+        // return applicationRepository.findByJobSeeker_IdAndStatus(jobSeekerId, status)
+        return applicationRepository.findByJobSeeker_IdAndStatus(jobSeekerId, status)
+                .stream()
+                .map(ApplicationDTO::new)
+                .collect(Collectors.toList());
+    }
 
-// Add this DTO class
-@Data
-@AllArgsConstructor
-public static class ApplicationStatsDTO {
-    private long total;
-    private long submitted;
-    private long accepted;
-    private long rejected;
-}
+    /**
+     * Stats for job seeker dashboard
+     */
+    public ApplicationStatsDTO getApplicationStatsForJobSeeker(Integer jobSeekerId) {
+        long total = applicationRepository.countByJobSeeker_Id(jobSeekerId);
+        long submitted = applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, Application.ApplicationStatus.SUBMITTED);
+        long accepted = applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, Application.ApplicationStatus.ACCEPTED);
+        long rejected = applicationRepository.countByJobSeeker_IdAndStatus(jobSeekerId, Application.ApplicationStatus.REJECTED);
 
+        return new ApplicationStatsDTO(total, submitted, accepted, rejected);
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class ApplicationStatsDTO {
+        private long total;
+        private long submitted;
+        private long accepted;
+        private long rejected;
+    }
 }

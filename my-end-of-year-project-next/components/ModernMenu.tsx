@@ -203,6 +203,13 @@ const ModernMenu = () => {
       visible: ["TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/Subscriptions"),
     },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "JOBS",
+      href: "/Job/Subscriptions",
+      visible: ["ENTERPRISE", "PERSONAL_EMPLOYER"],
+      onClick: () => handleNavigation("/Job/sjobs"),
+    },
   ];
 
   if (!role) return null;

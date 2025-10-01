@@ -235,4 +235,74 @@ public ResponseEntity<List<ApplicationDTO>> getTechnicianRecentApplications(
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 }
+
+
+///
+// In JobController.java - Add these endpoints
+
+// Enterprise Dashboard Endpoints
+@GetMapping("/enterprise/{enterpriseId}/stats")
+public ResponseEntity<EnterpriseStatsDTO> getEnterpriseStats(@PathVariable Integer enterpriseId) {
+    try {
+        EnterpriseStatsDTO stats = jobService.getEnterpriseStats(enterpriseId);
+        return ResponseEntity.ok(stats);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/enterprise/{enterpriseId}/recent-applications")
+public ResponseEntity<List<EnterpriseApplicationDTO>> getEnterpriseRecentApplications(
+        @PathVariable Integer enterpriseId,
+        @RequestParam(defaultValue = "5") int limit) {
+    try {
+        List<EnterpriseApplicationDTO> applications = jobService.getRecentApplicationsForEnterprise(enterpriseId, limit);
+        return ResponseEntity.ok(applications);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/enterprise/{enterpriseId}/active-jobs")
+public ResponseEntity<List<EnterpriseJobDTO>> getEnterpriseActiveJobs(@PathVariable Integer enterpriseId) {
+    try {
+        List<EnterpriseJobDTO> jobs = jobService.getActiveJobsForEnterprise(enterpriseId);
+        return ResponseEntity.ok(jobs);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+// Personal Employer Dashboard Endpoints
+@GetMapping("/employer/{employerId}/stats")
+public ResponseEntity<EnterpriseStatsDTO> getPersonalEmployerStats(@PathVariable Integer employerId) {
+    try {
+        EnterpriseStatsDTO stats = jobService.getPersonalEmployerStats(employerId);
+        return ResponseEntity.ok(stats);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/employer/{employerId}/recent-applications")
+public ResponseEntity<List<EnterpriseApplicationDTO>> getPersonalEmployerRecentApplications(
+        @PathVariable Integer employerId,
+        @RequestParam(defaultValue = "5") int limit) {
+    try {
+        List<EnterpriseApplicationDTO> applications = jobService.getRecentApplicationsForPersonalEmployer(employerId, limit);
+        return ResponseEntity.ok(applications);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
+
+@GetMapping("/employer/{employerId}/active-jobs")
+public ResponseEntity<List<EnterpriseJobDTO>> getPersonalEmployerActiveJobs(@PathVariable Integer employerId) {
+    try {
+        List<EnterpriseJobDTO> jobs = jobService.getActiveJobsForPersonalEmployer(employerId);
+        return ResponseEntity.ok(jobs);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+}
 }

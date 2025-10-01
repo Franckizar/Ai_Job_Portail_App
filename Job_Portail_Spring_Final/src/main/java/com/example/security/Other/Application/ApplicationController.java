@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/auth/applications")
@@ -132,46 +134,53 @@ public ResponseEntity<Long> getApplicationsCountByStatus(@PathVariable String st
 
 
 /////////////////////////////////////
+    // */
+    @GetMapping("/jobseeker/{jobSeekerId}/dashboard")
+    public ResponseEntity<List<ApplicationDTO>> getJobSeekerApplications(
+            @PathVariable Integer jobSeekerId,
+            @RequestParam(required = false) String status) {
 
-@GetMapping("/jobseeker/{jobSeekerId}/dashboard")
-public ResponseEntity<List<JobSeekerApplicationDTO>> getJobSeekerApplications(
-        @PathVariable Integer jobSeekerId,
-        @RequestParam(required = false) String status) {
-    
-    try {
-        List<JobSeekerApplicationDTO> applications;
-        if (status != null && !status.equalsIgnoreCase("ALL")) {
-            Application.ApplicationStatus applicationStatus = Application.ApplicationStatus.valueOf(status.toUpperCase());
-            applications = applicationService.getApplicationsForJobSeekerByStatus(jobSeekerId, applicationStatus);
-        } else {
-            applications = applicationService.getApplicationsForJobSeeker(jobSeekerId);
+        try {
+            List<ApplicationDTO> applications;
+            if (status != null && !status.equalsIgnoreCase("ALL")) {
+                Application.ApplicationStatus applicationStatus =
+                        Application.ApplicationStatus.valueOf(status.toUpperCase());
+                applications = applicationService.getApplicationsForJobSeekerByStatus(jobSeekerId, applicationStatus);
+            } else {
+                applications = applicationService.getApplicationsForJobSeeker(jobSeekerId);
+            }
+            return ResponseEntity.ok(applications);
+        } catch (IllegalArgumentException e) {
+            // If status is invalid
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(applications);
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest().build();
     }
-}
 
-@GetMapping("/jobseeker/{jobSeekerId}/stats")
-public ResponseEntity<ApplicationService.ApplicationStatsDTO> getJobSeekerApplicationStats(
-        @PathVariable Integer jobSeekerId) {
-    return ResponseEntity.ok(applicationService.getApplicationStatsForJobSeeker(jobSeekerId));
-}
+    /**
+     * Stats endpoint
+     */
+    @GetMapping("/jobseeker/{jobSeekerId}/stats")
+    public ResponseEntity<ApplicationService.ApplicationStatsDTO> getJobSeekerApplicationStats(
+            @PathVariable Integer jobSeekerId) {
+        return ResponseEntity.ok(applicationService.getApplicationStatsForJobSeeker(jobSeekerId));
+    }
 
-@GetMapping("/jobseeker/{jobSeekerId}/recent")
-public ResponseEntity<List<JobSeekerApplicationDTO>> getRecentApplications(
-        @PathVariable Integer jobSeekerId,
-        @RequestParam(defaultValue = "5") int limit) {
-    
-    List<JobSeekerApplicationDTO> applications = applicationService.getApplicationsForJobSeeker(jobSeekerId);
-    
-    // Sort by applied date descending and limit results
-    List<JobSeekerApplicationDTO> recentApplications = applications.stream()
-            .sorted((a, b) -> b.getAppliedAt().compareTo(a.getAppliedAt()))
-            .limit(limit)
-            .collect(Collectors.toList());
-    
-    return ResponseEntity.ok(recentApplications);
-}
+    /**
+     * Recent applications endpoint
+     */
+    @GetMapping("/jobseeker/{jobSeekerId}/recent")
+    public ResponseEntity<List<ApplicationDTO>> getRecentApplications(
+            @PathVariable Integer jobSeekerId,
+            @RequestParam(defaultValue = "5") int limit) {
 
+        List<ApplicationDTO> applications = applicationService.getApplicationsForJobSeeker(jobSeekerId);
+
+        // Sort by applied date descending and limit
+        List<ApplicationDTO> recentApplications = applications.stream()
+                .sorted(Comparator.comparing(ApplicationDTO::getAppliedAt).reversed())
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(recentApplications);
+    }
 }

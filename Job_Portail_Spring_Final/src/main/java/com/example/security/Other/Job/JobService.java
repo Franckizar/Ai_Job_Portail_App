@@ -15,12 +15,15 @@ import com.example.security.user.Enterprise.Enterprise;
 import com.example.security.user.Enterprise.EnterpriseRepository;
 import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfile;
 import com.example.security.user.PersonalEmployerProfile.PersonalEmployerProfileRepository;
+import org.springframework.data.domain.PageRequest;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 @Service
@@ -340,5 +343,151 @@ if (application.getJob() != null) {
 
     
     return dto;
+}
+
+//////
+// In JobService.java
+
+
+
+// Enterprise Dashboard Statistics
+public EnterpriseStatsDTO getEnterpriseStats(Integer enterpriseId) {
+    Long activeJobs = jobRepository.countActiveJobsByEnterprise(enterpriseId);
+    Long totalApplications = applicationRepository.countByEnterpriseId(enterpriseId);
+Long interviewsScheduled = applicationRepository.countShortlistedByEnterpriseId(enterpriseId);
+Long hiredThisMonth = applicationRepository.countAcceptedThisMonthByEnterpriseId(enterpriseId);
+
+// And for personal employer:
+// Long interviewsScheduled = applicationRepository.countShortlistedByPersonalEmployerId(personalEmployerId);
+// Long hiredThisMonth = applicationRepository.countAcceptedThisMonthByPersonalEmployerId(personalEmployerId);
+    
+    // For demo - replace with actual implementations
+    Long profileViews = 245L;
+    Integer responseRate = 85;
+    LocalDate premiumUntil = LocalDate.now().plusMonths(6);
+    
+    return EnterpriseStatsDTO.builder()
+            .activeJobs(activeJobs)
+            .totalApplications(totalApplications)
+            .interviewsScheduled(interviewsScheduled)
+            .hiredThisMonth(hiredThisMonth)
+            .profileViews(profileViews)
+            .responseRate(responseRate)
+            .premiumUntil(premiumUntil)
+            .build();
+}
+
+public EnterpriseStatsDTO getPersonalEmployerStats(Integer personalEmployerId) {
+    Long activeJobs = jobRepository.countActiveJobsByPersonalEmployer(personalEmployerId);
+    Long totalApplications = applicationRepository.countByPersonalEmployerId(personalEmployerId);
+    Long interviewsScheduled = applicationRepository.countShortlistedByPersonalEmployerId(personalEmployerId); // FIXED
+    Long hiredThisMonth = applicationRepository.countAcceptedThisMonthByPersonalEmployerId(personalEmployerId); // FIXED
+    
+    // For demo - you can replace these with actual implementations when available
+    Long profileViews = 120L;
+    Integer responseRate = 78;
+    
+    return EnterpriseStatsDTO.builder()
+            .activeJobs(activeJobs)
+            .totalApplications(totalApplications)
+            .interviewsScheduled(interviewsScheduled)
+            .hiredThisMonth(hiredThisMonth)
+            .profileViews(profileViews)
+            .responseRate(responseRate)
+            .premiumUntil(null)
+            .build();
+}
+
+// Recent Applications for Enterprise/Employer
+public List<EnterpriseApplicationDTO> getRecentApplicationsForEnterprise(Integer enterpriseId, int limit) {
+    return applicationRepository.findRecentApplicationsByEnterpriseId(enterpriseId, PageRequest.of(0, limit))
+            .stream()
+            .map(this::convertToEnterpriseApplicationDTO)
+            .collect(Collectors.toList());
+}
+
+public List<EnterpriseApplicationDTO> getRecentApplicationsForPersonalEmployer(Integer personalEmployerId, int limit) {
+    return applicationRepository.findRecentApplicationsByPersonalEmployerId(personalEmployerId, PageRequest.of(0, limit))
+            .stream()
+            .map(this::convertToEnterpriseApplicationDTO)
+            .collect(Collectors.toList());
+}
+
+// Helper conversion method
+private EnterpriseApplicationDTO convertToEnterpriseApplicationDTO(Application application) {
+    String candidateName = "";
+    String experience = "";
+    List<String> skills = new ArrayList<>();
+    
+    if (application.getJobSeeker() != null && application.getJobSeeker().getUser() != null) {
+        candidateName = application.getJobSeeker().getUser().getFirstname() + " " + 
+                       application.getJobSeeker().getUser().getLastname();
+        experience = "5 years";
+        skills = Arrays.asList("React", "TypeScript", "Node.js");
+    }
+    
+    return EnterpriseApplicationDTO.builder()
+            .id(application.getId())
+            .candidateName(candidateName)
+            .jobTitle(application.getJob().getTitle())
+            .status(application.getStatus().toString())
+            .applicationDate(application.getAppliedAt())
+            .matchScore(92)
+            .experience(experience)
+            .skills(skills)
+            .build();
+}
+
+
+
+// In JobService.java - Add these methods
+
+// Get active jobs for enterprise
+public List<EnterpriseJobDTO> getActiveJobsForEnterprise(Integer enterpriseId) {
+    List<Job> jobs = jobRepository.findByEnterpriseIdAndStatus(enterpriseId, Job.JobStatus.ACTIVE);
+    return jobs.stream()
+            .map(this::convertToEnterpriseJobDTO)
+            .collect(Collectors.toList());
+}
+
+// Get active jobs for personal employer
+public List<EnterpriseJobDTO> getActiveJobsForPersonalEmployer(Integer personalEmployerId) {
+    List<Job> jobs = jobRepository.findByPersonalEmployerIdAndStatus(personalEmployerId, Job.JobStatus.ACTIVE);
+    return jobs.stream()
+            .map(this::convertToEnterpriseJobDTO)
+            .collect(Collectors.toList());
+}
+
+// Helper method to convert Job to EnterpriseJobDTO
+private EnterpriseJobDTO convertToEnterpriseJobDTO(Job job) {
+    Long applicationCount = applicationRepository.countByJobId(job.getId());
+    
+    return EnterpriseJobDTO.builder()
+            .id(job.getId())
+            .title(job.getTitle())
+            .department(job.getCategory() != null ? job.getCategory().getName() : "General")
+            .applicationCount(applicationCount)
+            .status(job.getStatus().toString())
+            .postedDate(job.getCreatedAt())
+            .type(job.getType().toString())
+            .location(formatLocation(job.getCity(), job.getState()))
+            .salary(formatSalary(job.getSalaryMin(), job.getSalaryMax()))
+            .build();
+}
+
+// Helper method to format location
+private String formatLocation(String city, String state) {
+    if (city == null && state == null) return "Remote";
+    if (city == null) return state;
+    if (state == null) return city;
+    return city + ", " + state;
+}
+
+// Helper method to format salary
+private String formatSalary(BigDecimal min, BigDecimal max) {
+    if (min == null && max == null) return "Negotiable";
+    if (min == null) return "Up to " + max.intValue();
+    if (max == null) return "From " + min.intValue();
+    return min.intValue() + " - " + max.intValue();
 }
 }
