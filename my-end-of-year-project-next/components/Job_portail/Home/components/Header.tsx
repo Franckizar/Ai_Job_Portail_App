@@ -92,7 +92,7 @@ export function Header() {
               <div className="w-8 h-8 bg-[var(--color-lamaSkyDark)] rounded-lg flex items-center justify-center">
                 <Briefcase className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-[var(--color-text-primary)]">JobLama</span>
+              <span className="text-xl font-bold text-[var(--color-text-primary)]">Rioduslink</span>
             </Link>
 
             {/* Desktop Navigation */}
