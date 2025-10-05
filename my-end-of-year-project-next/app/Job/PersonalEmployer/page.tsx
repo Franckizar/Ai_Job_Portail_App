@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { 
   Briefcase, Users, Calendar, UserCheck, Plus, ChevronDown, ChevronRight,
@@ -8,8 +9,8 @@ import {
 import { fetchWithAuth } from '../../../fetchWithAuth';
 
 const EnterpriseDashboard = () => {
-  const [userRole, setUserRole] = useState(null);
-  const [userId, setUserId] = useState(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [stats, setStats] = useState({
     activeJobs: 0,
     totalApplications: 0,
@@ -17,41 +18,25 @@ const EnterpriseDashboard = () => {
     hiredThisMonth: 0,
     profileViews: 0,
     responseRate: 0,
-    premiumUntil: null
+    premiumUntil: null as string | null,
   });
-  const [recentApplications, setRecentApplications] = useState([]);
-  const [activeJobs, setActiveJobs] = useState([]);
-  const [upcomingInterviews, setUpcomingInterviews] = useState([]);
+  const [recentApplications, setRecentApplications] = useState<any[]>([]);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
 
-  // Get user role and ID
+  // Get user role and ID from localStorage
   useEffect(() => {
-    const getUserInfo = async () => {
-      try {
-        // This should be replaced with your actual user info endpoint
-        const userResponse = await fetchWithAuth('/api/v1/auth/me');
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          setUserRole(userData.role);
-          if (userData.role === 'ENTERPRISE') {
-            setUserId(userData.enterpriseId || userData.id);
-          } else if (userData.role === 'PERSONAL_EMPLOYER') {
-            setUserId(userData.personalEmployerId || userData.id);
-          }
-        } else {
-          // Fallback for testing - remove in production
-          setUserRole('ENTERPRISE');
-          setUserId(1);
-        }
-      } catch (error) {
-        console.error('Failed to get user info:', error);
-        // Fallback for testing
-        setUserRole('ENTERPRISE');
-        setUserId(1);
-      }
-    };
-    getUserInfo();
+    const role = localStorage.getItem('user_role');
+    setUserRole(role);
+    
+    if (role === 'ENTERPRISE') {
+      const enterpriseId = localStorage.getItem('enterprise_id');
+      setUserId(enterpriseId ? parseInt(enterpriseId) : null);
+    } else if (role === 'PERSONAL_EMPLOYER') {
+      const personalEmployerId = localStorage.getItem('personal_employer_id');
+      setUserId(personalEmployerId ? parseInt(personalEmployerId) : null);
+    }
   }, []);
 
   // Fetch dashboard data
@@ -91,20 +76,15 @@ const EnterpriseDashboard = () => {
         const jobsResponse = await fetchWithAuth(`${baseEndpoint}/active-jobs`);
         if (jobsResponse.ok) {
           const jobsData = await jobsResponse.json();
-          setActiveJobs(jobsData);
+          setActiveJobs(jobsData.map((job: any) => ({
+            ...job,
+            salaryMin: parseFloat(job.salary.split(' - ')[0]) || 0,
+            salaryMax: parseFloat(job.salary.split(' - ')[1]) || 0,
+            createdAt: job.postedDate,
+          })));
         } else {
           console.error('Failed to fetch active jobs, using mock data');
           setActiveJobs(getMockJobs(userRole));
-        }
-
-        // Fetch upcoming interviews
-        const interviewsResponse = await fetchWithAuth(`${baseEndpoint}/upcoming-interviews`);
-        if (interviewsResponse.ok) {
-          const interviewsData = await interviewsResponse.json();
-          setUpcomingInterviews(interviewsData);
-        } else {
-          console.error('Failed to fetch interviews, using mock data');
-          setUpcomingInterviews(getMockInterviews(userRole));
         }
 
       } catch (error) {
@@ -120,7 +100,7 @@ const EnterpriseDashboard = () => {
   }, [userRole, userId, timeRange]);
 
   // Mock data generators
-  const getMockStats = (role) => ({
+  const getMockStats = (role: string) => ({
     activeJobs: role === 'ENTERPRISE' ? 8 : 3,
     totalApplications: role === 'ENTERPRISE' ? 156 : 45,
     interviewsScheduled: role === 'ENTERPRISE' ? 12 : 4,
@@ -130,7 +110,7 @@ const EnterpriseDashboard = () => {
     premiumUntil: role === 'ENTERPRISE' ? '2024-12-31' : null
   });
 
-  const getMockApplications = (role) => [
+  const getMockApplications = (role: string) => [
     { 
       id: 1, 
       candidateName: 'John Smith', 
@@ -163,7 +143,7 @@ const EnterpriseDashboard = () => {
     }
   ];
 
-  const getMockJobs = (role) => [
+  const getMockJobs = (role: string) => [
     { 
       id: 1, 
       title: role === 'ENTERPRISE' ? 'Senior Frontend Developer' : 'Home Renovation Specialist',
@@ -188,37 +168,13 @@ const EnterpriseDashboard = () => {
     }
   ];
 
-  const getMockInterviews = (role) => [
-    { 
-      id: 1, 
-      candidateName: 'Mike Chen', 
-      jobTitle: role === 'ENTERPRISE' ? 'DevOps Engineer' : 'Plumbing Specialist',
-      date: '2024-01-16', 
-      time: '10:00 AM',
-      type: 'Technical Interview',
-      interviewers: ['Jane Smith']
-    },
-    { 
-      id: 2, 
-      candidateName: 'Lisa Brown', 
-      jobTitle: role === 'ENTERPRISE' ? 'Product Manager' : 'Electrical Technician',
-      date: '2024-01-16', 
-      time: '2:00 PM',
-      type: 'Culture Fit',
-      interviewers: ['Sarah Johnson']
-    }
-  ];
-
-  const handleQuickAction = (action) => {
+  const handleQuickAction = (action: string) => {
     switch (action) {
       case 'post-job':
         window.location.href = '/Job/sjobss';
         break;
       case 'view-applications':
         window.location.href = '/applications';
-        break;
-      case 'schedule-interview':
-        // Implement interview scheduling
         break;
       case 'analytics':
         window.location.href = '/analytics';
@@ -402,60 +358,10 @@ const EnterpriseDashboard = () => {
                 onClick={() => handleQuickAction('view-applications')}
               />
               <ActionButton 
-                icon={<Calendar className="h-5 w-5" />}
-                label="Schedule Interview"
-                color="bg-purple-100 text-purple-600"
-                onClick={() => handleQuickAction('schedule-interview')}
-              />
-              <ActionButton 
                 icon={<Building className="h-5 w-5" />}
                 label="Analytics"
                 color="bg-orange-100 text-orange-600"
                 onClick={() => handleQuickAction('analytics')}
-              />
-            </div>
-          </div>
-
-          {/* Upcoming Interviews */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Interviews</h2>
-            <div className="space-y-4">
-              {upcomingInterviews.map(interview => (
-                <InterviewItem 
-                  key={interview.id} 
-                  interview={interview}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Performance Metrics */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h2>
-            <div className="space-y-4">
-              <MetricItem 
-                label="Response Rate" 
-                value={`${stats.responseRate}%`} 
-                trend="up"
-                change={5}
-              />
-              <MetricItem 
-                label="Profile Views" 
-                value={stats.profileViews} 
-                trend="up"
-                change={12}
-              />
-              <MetricItem 
-                label="Avg. Time to Hire" 
-                value="23 days" 
-                trend="down"
-                change={-3}
-              />
-              <MetricItem 
-                label="Candidate Satisfaction" 
-                value="4.8/5" 
-                trend="up"
-                change={2}
               />
             </div>
           </div>
@@ -610,28 +516,6 @@ const JobRow = ({ job }) => {
   );
 };
 
-// Interview Item Component
-const InterviewItem = ({ interview }) => (
-  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-    <div className="flex-1 min-w-0">
-      <h3 className="font-medium text-gray-900 truncate">{interview.candidateName}</h3>
-      <p className="text-sm text-gray-600 truncate">{interview.jobTitle}</p>
-      <div className="flex items-center gap-2 mt-1">
-        <Clock className="h-3 w-3 text-gray-400" />
-        <span className="text-xs text-gray-500">
-          {new Date(interview.date).toLocaleDateString()} at {interview.time}
-        </span>
-      </div>
-      <p className="text-xs text-gray-500 mt-1">{interview.type}</p>
-    </div>
-    <div className="flex items-center gap-2">
-      <button className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors">
-        Join
-      </button>
-    </div>
-  </div>
-);
-
 // Action Button Component
 const ActionButton = ({ icon, label, color, onClick }) => (
   <button 
@@ -645,18 +529,5 @@ const ActionButton = ({ icon, label, color, onClick }) => (
   </button>
 );
 
-// Metric Item Component
-const MetricItem = ({ label, value, trend, change }) => (
-  <div className="flex items-center justify-between">
-    <div>
-      <p className="font-medium text-gray-900">{label}</p>
-      <p className="text-lg font-semibold text-gray-900">{value}</p>
-    </div>
-    <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-      {trend === 'up' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-      <span className="font-medium">{Math.abs(change)}%</span>
-    </div>
-  </div>
-);
 
 export default EnterpriseDashboard;

@@ -1,69 +1,75 @@
-// ```typescript
 'use client';
 
 import { useState } from 'react';
 import { FileText, XCircle, Download } from 'lucide-react';
-import { fetchWithAuth } from '../../../fetchWithAuth';
+
+interface CVResponse {
+  content: string;
+  contentType: string;
+}
 
 const CvViewer = () => {
   const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const baseURL = 'http://localhost:8088';
-  const jobSeekerId = 2; // Hardcoded for testing; replace with dynamic ID if needed
-  const userType = 'jobseeker'; // Matches endpoint
+  const jobSeekerId = 2; // replace with dynamic ID
+  const userType = 'jobseeker';
 
   const fetchCv = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchWithAuth(`${baseURL}/api/v1/auth/cv/${jobSeekerId}/${userType}`, {
+      const response = await fetch(`${baseURL}/api/v1/auth/cv/${jobSeekerId}/${userType}`, {
         method: 'GET',
-        headers: {
-          Accept: 'application/pdf',
-        },
       });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch CV: ${response.statusText}`);
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const data: CVResponse = await response.json();
+      console.log('Received base64 content, length:', data.content.length);
+
+      // Convert base64 string to binary
+      const binaryString = atob(data.content);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Create blob from binary data
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      console.log('Created blob, type:', blob.type, 'size:', blob.size);
+
+      // Create object URL for display
+      const url = URL.createObjectURL(blob);
       setCvUrl(url);
       setShowModal(true);
     } catch (err) {
-      setError('Error fetching CV. Please try again.');
-      console.error(err);
+      console.error('Fetch error:', err);
+      setError('Error fetching or displaying CV. Check console for details.');
     } finally {
       setLoading(false);
     }
   };
 
   const downloadCv = () => {
-    if (cvUrl) {
-      const link = document.createElement('a');
-      link.href = cvUrl;
-      link.download = `jobseeker_${jobSeekerId}_cv.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
-  const openInNewTab = () => {
-    if (cvUrl) {
-      window.open(cvUrl, '_blank');
-    }
+    if (!cvUrl) return;
+    const link = document.createElement('a');
+    link.href = cvUrl;
+    link.download = `jobseeker_${jobSeekerId}_cv.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const closeModal = () => {
+    if (cvUrl) URL.revokeObjectURL(cvUrl);
+    setCvUrl(null);
     setShowModal(false);
-    if (cvUrl) {
-      URL.revokeObjectURL(cvUrl);
-      setCvUrl(null);
-    }
   };
 
   return (
@@ -73,37 +79,24 @@ const CvViewer = () => {
           View Job Seeker CV
         </h1>
 
-        <div className="flex gap-4">
-          <button
-            onClick={fetchCv}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-[var(--color-lamaSky)] hover:bg-[var(--color-lamaSkyDark)] text-white'
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            {loading ? 'Loading CV...' : 'View CV for Job Seeker'}
-          </button>
-          {cvUrl && (
-            <button
-              onClick={openInNewTab}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-lamaPurple)] hover:bg-[var(--color-lamaPurpleDark)] text-white transition-colors"
-            >
-              <FileText className="h-4 w-4" />
-              Open in New Tab
-            </button>
-          )}
-        </div>
+        <button
+          onClick={fetchCv}
+          disabled={loading}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            loading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-[var(--color-lamaSky)] hover:bg-[var(--color-lamaSkyDark)] text-white'
+          }`}
+        >
+          <FileText className="h-4 w-4" />
+          {loading ? 'Loading CV...' : 'View CV for Job Seeker'}
+        </button>
 
-        {error && (
-          <p className="mt-4 text-[var(--color-lamaRed)]">{error}</p>
-        )}
+        {error && <p className="mt-4 text-[var(--color-lamaRed)]">{error}</p>}
 
         {showModal && cvUrl && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               <div className="p-6 border-b border-[var(--color-border-light)] flex justify-between items-center">
                 <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
                   Job Seeker CV
@@ -127,12 +120,11 @@ const CvViewer = () => {
               </div>
               <div className="p-6">
                 <iframe
-                  src={`${cvUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                  title="Job Seeker CV"
+                  src={cvUrl}
                   width="100%"
                   height="600px"
-                  className="rounded-lg border-none"
-                  style={{ backgroundColor: '#fff' }}
+                  className="rounded-lg border-0"
+                  title="CV PDF Viewer"
                 />
               </div>
             </div>
@@ -143,5 +135,4 @@ const CvViewer = () => {
   );
 };
 
-export default CvViewer;
-// ```
+export default CvViewer;  
