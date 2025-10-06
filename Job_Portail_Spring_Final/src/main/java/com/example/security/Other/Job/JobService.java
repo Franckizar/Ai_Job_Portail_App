@@ -420,16 +420,27 @@ private EnterpriseApplicationDTO convertToEnterpriseApplicationDTO(Application a
     String candidateName = "";
     String experience = "";
     List<String> skills = new ArrayList<>();
+    Integer jobSeekerId = null;
+    Integer technicianId = null;
     
     if (application.getJobSeeker() != null && application.getJobSeeker().getUser() != null) {
+        jobSeekerId = application.getJobSeeker().getId();
         candidateName = application.getJobSeeker().getUser().getFirstname() + " " + 
                        application.getJobSeeker().getUser().getLastname();
         experience = "5 years";
         skills = Arrays.asList("React", "TypeScript", "Node.js");
+    } else if (application.getTechnician() != null && application.getTechnician().getUser() != null) {
+        technicianId = application.getTechnician().getId();
+        candidateName = application.getTechnician().getUser().getFirstname() + " " + 
+                       application.getTechnician().getUser().getLastname();
+        experience = "3 years";
+        skills = Arrays.asList("Plumbing", "Electrical", "HVAC");
     }
     
     return EnterpriseApplicationDTO.builder()
             .id(application.getId())
+            .jobSeekerId(jobSeekerId)
+            .technicianId(technicianId)
             .candidateName(candidateName)
             .jobTitle(application.getJob().getTitle())
             .status(application.getStatus().toString())

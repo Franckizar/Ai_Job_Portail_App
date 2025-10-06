@@ -115,8 +115,8 @@ const ModernMenu = () => {
     },
     {
       icon: <Users className="w-4 h-4" />,
-      label: "Applicationssss",
-      href: "/Job/Applications",
+      label: "Applications",
+      href: "/Job/EE_Applications",
       visible: ["ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/EE_Applications"),
     },
@@ -133,6 +133,13 @@ const ModernMenu = () => {
       href: "/Job/ApplicationSeeker",
       visible: ["JOB_SEEKER"],
       onClick: () => handleNavigation("/Job/ApplicationSeeker"),
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: "cv",
+      href: "/Job/test",
+      visible: ["JOB_SEEKER"],
+      onClick: () => handleNavigation("/Job/test"),
     },
    {
       icon: <Users className="w-4 h-4" />,
@@ -176,20 +183,13 @@ const ModernMenu = () => {
       visible: ["ADMIN", "TECHNICIAN", "JOB_SEEKER", "ENTERPRISE", "PERSONAL_EMPLOYER"],
       onClick: () => handleNavigation("/Job/list/dash"),
     },
-    {
-      icon: <Users className="w-4 h-4" />,
-      label: "Job Management",
-      href: "/Job/list/dash",
-      visible: ["PERSONAL_EMPLOYER"],
-      onClick: () => handleNavigation("/Job/list/dash"),
-    },
-    {
-      icon: <Users className="w-4 h-4" />,
-      label: "Applications",
-      href: "/Job/list/dash",
-      visible: ["PERSONAL_EMPLOYER"],
-      onClick: () => handleNavigation("/Job/list/dash"),
-    },
+    // {
+    //   icon: <Users className="w-4 h-4" />,
+    //   label: "Applications",
+    //   href: "/Job/list/dash",
+    //   visible: ["PERSONAL_EMPLOYER"],
+    //   onClick: () => handleNavigation("/Job/list/dash"),
+    // },
     {
       icon: <Users className="w-4 h-4" />,
       label: "Test B",
