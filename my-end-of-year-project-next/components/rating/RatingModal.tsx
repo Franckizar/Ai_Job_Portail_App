@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import RatingForm from './RatingForm';
 import RatingDisplay from './RatingDisplay';
 import { ratingService, RatingDTO } from '../../lib/services/ratingService';
+import { useAuth } from '../Job_portail/Home/components/auth/AuthContext';
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
   const [existingRating, setExistingRating] = useState<RatingDTO | null>(null);
   const [canRate, setCanRate] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -35,17 +37,32 @@ const RatingModal: React.FC<RatingModalProps> = ({
     }
   }, [isOpen, userId, category]);
 
+  // Get current user ID
+  const getCurrentUserId = (): number => {
+    if (user?.userId) {
+      return user.userId;
+    }
+    // Fallback to localStorage
+    const userIdStr = localStorage.getItem('user_id');
+    if (userIdStr) {
+      return parseInt(userIdStr);
+    }
+    throw new Error('User not authenticated');
+  };
+
   const checkRatingPermissions = async () => {
     setLoading(true);
     
     try {
+      const currentUserId = getCurrentUserId();
+      
       if (category) {
         // Check if user can rate for specific category
-        const canRateResult = await ratingService.canRateUser(userId, category);
+        const canRateResult = await ratingService.canRateUser(currentUserId, userId, category);
         setCanRate(canRateResult);
 
         // Check if there's an existing rating
-        const existingRatingResult = await ratingService.getRatingBetweenUsers(userId, category);
+        const existingRatingResult = await ratingService.getRatingBetweenUsers(currentUserId, userId, category);
         setExistingRating(existingRatingResult);
       } else {
         // For general rating, assume they can rate

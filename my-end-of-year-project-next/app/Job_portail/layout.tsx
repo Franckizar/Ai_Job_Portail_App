@@ -4,7 +4,7 @@ import { Footer } from '@/components/Job_portail/Home/components/Footer';
 import { AuthProvider } from '@/components/Job_portail/Home/components/auth/AuthContext';
 import { AppRouterProvider } from '@/components/Job_portail/Home/components/AppRouter';
 import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// import 'react-toastify/dist/ReactToastify.css';
 import CookieConsentBanner from '@/components/Job_portail/Home/components/CookieConsentBanner';
 
 export default function JobPortailLayout({ children }: { children: React.ReactNode }) {

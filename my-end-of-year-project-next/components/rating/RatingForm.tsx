@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ratingService, CreateRatingRequest, RatingCategory, RatingDTO } from '../../lib/services/ratingService';
+import { useAuth } from '../Job_portail/Home/components/auth/AuthContext';
 
 interface RatingFormProps {
   ratedUserId: number;
@@ -27,10 +28,24 @@ const RatingForm: React.FC<RatingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
   const [hoveredRating, setHoveredRating] = useState<number>(0);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Get current user ID
+  const getCurrentUserId = (): number => {
+    if (user?.userId) {
+      return user.userId;
+    }
+    // Fallback to localStorage
+    const userIdStr = localStorage.getItem('user_id');
+    if (userIdStr) {
+      return parseInt(userIdStr);
+    }
+    throw new Error('User not authenticated');
+  };
 
   const loadCategories = async () => {
     try {
@@ -69,10 +84,12 @@ const RatingForm: React.FC<RatingFormProps> = ({
         ratedUserType
       };
 
+      const currentUserId = getCurrentUserId();
+      
       if (existingRating) {
-        await ratingService.updateRating(existingRating.id, request);
+        await ratingService.updateRating(existingRating.id, currentUserId, request);
       } else {
-        await ratingService.createRating(request);
+        await ratingService.createRating(currentUserId, request);
       }
 
       onRatingSubmitted?.();

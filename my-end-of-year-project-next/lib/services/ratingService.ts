@@ -48,8 +48,8 @@ export interface RatingStatsDTO {
 class RatingService {
   private baseUrl = '/api/v1/auth/ratings';
 
-  async createRating(request: CreateRatingRequest): Promise<RatingDTO> {
-    const response = await fetchWithAuth(`${this.baseUrl}`, {
+  async createRating(raterId: number, request: CreateRatingRequest): Promise<RatingDTO> {
+    const response = await fetchWithAuth(`${this.baseUrl}/${raterId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,11 +84,11 @@ class RatingService {
     return response.json();
   }
 
-  async getMyRatings(): Promise<RatingDTO[]> {
-    const response = await fetchWithAuth(`${this.baseUrl}/my-ratings`);
+  async getRatingsGivenByUser(userId: number): Promise<RatingDTO[]> {
+    const response = await fetchWithAuth(`${this.baseUrl}/user/${userId}/given-ratings`);
     
     if (!response.ok) {
-      throw new Error('Failed to fetch my ratings');
+      throw new Error('Failed to fetch ratings given by user');
     }
 
     return response.json();
@@ -134,8 +134,8 @@ class RatingService {
     return response.json();
   }
 
-  async updateRating(ratingId: number, request: CreateRatingRequest): Promise<RatingDTO> {
-    const response = await fetchWithAuth(`${this.baseUrl}/${ratingId}`, {
+  async updateRating(ratingId: number, userId: number, request: CreateRatingRequest): Promise<RatingDTO> {
+    const response = await fetchWithAuth(`${this.baseUrl}/${ratingId}/user/${userId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -150,8 +150,8 @@ class RatingService {
     return response.json();
   }
 
-  async deleteRating(ratingId: number): Promise<void> {
-    const response = await fetchWithAuth(`${this.baseUrl}/${ratingId}`, {
+  async deleteRating(ratingId: number, userId: number): Promise<void> {
+    const response = await fetchWithAuth(`${this.baseUrl}/${ratingId}/user/${userId}`, {
       method: 'DELETE',
     });
 
@@ -160,8 +160,8 @@ class RatingService {
     }
   }
 
-  async canRateUser(userId: number, category: string): Promise<boolean> {
-    const response = await fetchWithAuth(`${this.baseUrl}/can-rate/${userId}/category/${category}`);
+  async canRateUser(raterId: number, userId: number, category: string): Promise<boolean> {
+    const response = await fetchWithAuth(`${this.baseUrl}/can-rate/${raterId}/${userId}/category/${category}`);
     
     if (!response.ok) {
       throw new Error('Failed to check if user can be rated');
@@ -171,8 +171,8 @@ class RatingService {
     return result.canRate;
   }
 
-  async getRatingBetweenUsers(userId: number, category: string): Promise<RatingDTO | null> {
-    const response = await fetchWithAuth(`${this.baseUrl}/between/${userId}/category/${category}`);
+  async getRatingBetweenUsers(raterId: number, userId: number, category: string): Promise<RatingDTO | null> {
+    const response = await fetchWithAuth(`${this.baseUrl}/between/${raterId}/${userId}/category/${category}`);
     
     if (response.status === 404) {
       return null;
@@ -195,15 +195,7 @@ class RatingService {
     return response.json();
   }
 
-  async getMyRatingStats(): Promise<RatingStatsDTO> {
-    const response = await fetchWithAuth(`${this.baseUrl}/my-stats`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch my rating stats');
-    }
-
-    return response.json();
-  }
+  // Removed getMyRatingStats - use getRatingStats(userId) instead
 
   // Helper methods
   renderStars(rating: number): string {

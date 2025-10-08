@@ -114,7 +114,7 @@ export default function SubscriptionTest({ userId }: SubscriptionTestProps) {
 
   return (
     <div className="p-6 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border-light)] max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
+      {/* <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
             🧪 Subscription API Test Panel
@@ -130,7 +130,7 @@ export default function SubscriptionTest({ userId }: SubscriptionTestProps) {
         >
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
-      </div>
+      </div> */}
       
       {isExpanded && (
         <>

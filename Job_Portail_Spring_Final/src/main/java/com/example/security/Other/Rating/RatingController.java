@@ -4,8 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -23,11 +21,12 @@ public class RatingController {
     /**
      * Create a new rating
      */
-    @PostMapping
-    public ResponseEntity<RatingDTO> createRating(@Valid @RequestBody CreateRatingRequest request) {
+    @PostMapping("/{raterId}")
+    public ResponseEntity<RatingDTO> createRating(
+            @PathVariable Integer raterId,
+            @Valid @RequestBody CreateRatingRequest request) {
         System.out.println("[RatingController] Received rating request: " + request);
         try {
-            Integer raterId = getCurrentUserId();
             System.out.println("[RatingController] Rater ID: " + raterId);
             RatingDTO rating = ratingService.createRating(raterId, request);
             System.out.println("[RatingController] Rating created successfully: " + rating.getId());
@@ -76,12 +75,11 @@ public class RatingController {
     }
 
     /**
-     * Get ratings given by current user
+     * Get ratings given by a user
      */
-    @GetMapping("/my-ratings")
-    public ResponseEntity<List<RatingDTO>> getMyRatings() {
+    @GetMapping("/user/{userId}/given-ratings")
+    public ResponseEntity<List<RatingDTO>> getRatingsGivenByUser(@PathVariable Integer userId) {
         try {
-            Integer userId = getCurrentUserId();
             List<RatingDTO> ratings = ratingService.getRatingsGivenByUser(userId);
             return ResponseEntity.ok(ratings);
         } catch (Exception e) {
@@ -156,12 +154,12 @@ public class RatingController {
     /**
      * Update a rating
      */
-    @PutMapping("/{ratingId}")
+    @PutMapping("/{ratingId}/user/{userId}")
     public ResponseEntity<RatingDTO> updateRating(
             @PathVariable Integer ratingId,
+            @PathVariable Integer userId,
             @Valid @RequestBody CreateRatingRequest request) {
         try {
-            Integer userId = getCurrentUserId();
             RatingDTO updatedRating = ratingService.updateRating(ratingId, userId, request);
             return ResponseEntity.ok(updatedRating);
         } catch (IllegalArgumentException e) {
@@ -174,10 +172,11 @@ public class RatingController {
     /**
      * Delete a rating
      */
-    @DeleteMapping("/{ratingId}")
-    public ResponseEntity<Void> deleteRating(@PathVariable Integer ratingId) {
+    @DeleteMapping("/{ratingId}/user/{userId}")
+    public ResponseEntity<Void> deleteRating(
+            @PathVariable Integer ratingId,
+            @PathVariable Integer userId) {
         try {
-            Integer userId = getCurrentUserId();
             ratingService.deleteRating(ratingId, userId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
@@ -188,14 +187,14 @@ public class RatingController {
     }
 
     /**
-     * Check if current user can rate another user for a specific category
+     * Check if a user can rate another user for a specific category
      */
-    @GetMapping("/can-rate/{userId}/category/{category}")
+    @GetMapping("/can-rate/{raterId}/{userId}/category/{category}")
     public ResponseEntity<Map<String, Boolean>> canRateUser(
+            @PathVariable Integer raterId,
             @PathVariable Integer userId,
             @PathVariable Rating.RatingCategory category) {
         try {
-            Integer raterId = getCurrentUserId();
             boolean canRate = ratingService.canUserRate(raterId, userId, category);
             return ResponseEntity.ok(Map.of("canRate", canRate));
         } catch (Exception e) {
@@ -204,14 +203,14 @@ public class RatingController {
     }
 
     /**
-     * Get rating between current user and another user for a specific category
+     * Get rating between two users for a specific category
      */
-    @GetMapping("/between/{userId}/category/{category}")
+    @GetMapping("/between/{raterId}/{userId}/category/{category}")
     public ResponseEntity<RatingDTO> getRatingBetweenUsers(
+            @PathVariable Integer raterId,
             @PathVariable Integer userId,
             @PathVariable Rating.RatingCategory category) {
         try {
-            Integer raterId = getCurrentUserId();
             Optional<RatingDTO> rating = ratingService.getRatingBetweenUsers(raterId, userId, category);
             
             if (rating.isPresent()) {
@@ -245,30 +244,11 @@ public class RatingController {
     }
 
     /**
-     * Get current user's rating statistics
-     */
-    @GetMapping("/my-stats")
-    public ResponseEntity<RatingStatsDTO> getMyRatingStats() {
-        try {
-            Integer userId = getCurrentUserId();
-            RatingStatsDTO stats = ratingService.getRatingStats(userId);
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
      * Get all users for rating system
      */
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
             List<com.example.security.user.User> users = ratingService.getAllUsersForRating();
             List<Map<String, Object>> userDTOs = users.stream()
                     .map(user -> {
@@ -288,17 +268,5 @@ public class RatingController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    /**
-     * Helper method to get current authenticated user ID
-     */
-    private Integer getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof com.example.security.user.User) {
-            com.example.security.user.User user = (com.example.security.user.User) authentication.getPrincipal();
-            return user.getId();
-        }
-        throw new IllegalStateException("User not authenticated");
     }
 }
