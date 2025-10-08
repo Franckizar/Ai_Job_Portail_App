@@ -8,6 +8,7 @@ import { JobModalProvider } from '@/components/Job_portail/Home/context/JobModal
 import { AuthProvider  } from '@/components/Job_portail/Home/components/auth/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Briefcase } from 'lucide-react';
 
 export default function DashboardClientWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -43,7 +44,13 @@ export default function DashboardClientWrapper({ children }: { children: React.R
           <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/50">
             <div className="flex items-center justify-between px-6 py-4">
               <Link href="/" className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-800">Rioduslink</h1>
+               <Link href="/Job_portail/Home" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[var(--color-lamaSkyDark)] rounded-lg flex items-center justify-center">
+                <Briefcase className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-[var(--color-text-primary)]">Rioduslink</span>
+            </Link>
+              {/* <h1 className="text-2xl font-bold text-gray-800">Rioduslink</h1> */}
                 {/* <Image
                   src="/wamb.png"
                   alt="logo"
