@@ -6,6 +6,7 @@
     import com.example.security.Other.Message.Message;
     import com.example.security.Other.Notification.Notification;
     import com.example.security.Other.Payment.Payment;
+    import com.example.security.Other.Rating.Rating;
     import com.example.security.Other.Subscription.Subscription;
     import com.example.security.Other.UserImage.UserImage;
     // import com.example.security.Other.UserSkillId.UserSkill;
@@ -230,6 +231,15 @@ private java.util.Set<Connection> sentConnections = new java.util.HashSet<>();
 @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
 @ToString.Exclude
 private java.util.Set<Connection> receivedConnections = new java.util.HashSet<>();
+
+// ========== Rating Relationships ==========
+@OneToMany(mappedBy = "rater", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+@JsonIgnore
+private List<Rating> ratingsGiven;
+
+@OneToMany(mappedBy = "ratedUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+@JsonIgnore
+private List<Rating> ratingsReceived;
 
 
     }

@@ -4,6 +4,7 @@ package com.example.security.secure;
 // import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 // import org.springframework.web.bind.annotation.CookieValue;
@@ -13,6 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.security.auth.Authentication.AuthenticationService;
+import com.example.security.UserRepository;
+import com.example.security.user.User;
+import com.example.security.user.Role;
+import com.example.security.secure.Admin.UserDTO;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 // import com.example.security.auth.AuthenticationService;
 
@@ -23,7 +31,36 @@ import com.example.security.auth.Authentication.AuthenticationService;
 public class Admin_User_Controller {
 
     @Autowired  // Not compatible with 'final'!
-    private AuthenticationService authenticationService; 
+    private AuthenticationService authenticationService;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    // Get all users (for rating system)
+    @GetMapping("/users")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        try {
+            List<User> users = userRepository.findAll();
+            List<UserDTO> userDTOs = users.stream()
+                    .map(user -> {
+                        UserDTO dto = new UserDTO();
+                        dto.setId(user.getId());
+                        dto.setFirstname(user.getFirstname());
+                        dto.setLastname(user.getLastname());
+                        dto.setEmail(user.getEmail());
+                        dto.setRoles(user.getRoles().stream()
+                                .map(Role::name)
+                                .collect(Collectors.toList()));
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(userDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
     @GetMapping("/hello_admin_user")
     public ResponseEntity<String> sayHello(){
         return ResponseEntity.ok("hello from the secure admin_user endpoint");
