@@ -25,6 +25,7 @@ const protectedEndpoints = [
   "/api/v1/auth/change-password",
   "/api/v1/sharedPlus/me", // Add your /me endpoint
   "/api/v1/admin", // Add admin routes here
+  // Note: subscription endpoints are NOT protected, so they're not included here
   // Add all other protected API routes here
   // Note: /authenticate should NOT be in protected endpoints as it's used to GET the token
 ];

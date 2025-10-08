@@ -1,12 +1,12 @@
+// ```tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import { use } from 'react';
 import { useAuth } from '@/components/Job_portail/Home/components/auth/AuthContext';
 import { toast } from 'react-toastify';
 import { fetchWithAuth } from '@/fetchWithAuth';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 interface Application {
   id: number;
@@ -18,25 +18,17 @@ interface Application {
   jobId: number;
 }
 
-interface Params {
-  jobid: string;
-}
-
-export default function ApplyPage({ params: paramsPromise }: { params: Promise<Params> }) {
+export default function ApplyPage({ params: paramsPromise }: { params: Promise<{ jobid: string }> }) {
   const params = use(paramsPromise);
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [job, setJob] = useState<{ id: number; title: string } | null>(null);
   const [resume, setResume] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ resume?: string; recaptcha?: string }>({});
+  const [errors, setErrors] = useState<{ resume?: string }>({});
   const [hasApplied, setHasApplied] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
-  const SITE_KEY = '6LcV0o4rAAAAAKX0RVwKLS05y2ZHvZQjNMIq_-CA';
-
-  // Fetch job details
+  // Fetch job details from backend
   useEffect(() => {
     const fetchJob = async () => {
       try {
@@ -68,22 +60,26 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
 
       try {
         const userId = user.jobSeekerId || user.technicianId;
-        if (!userId) throw new Error('User ID is missing');
+        if (!userId) {
+          throw new Error('User ID is missing');
+        }
         const endpoint =
           user.role === 'JOB_SEEKER'
             ? `http://localhost:8088/api/v1/auth/applications/by-jobseeker/${user.jobSeekerId}`
             : `http://localhost:8088/api/v1/auth/applications/by-technician/${user.technicianId}`;
-
+        
         const response = await fetchWithAuth(endpoint, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
 
         if (!response.ok) {
+          console.error('Application check failed:', response.status, await response.text());
           throw new Error('Failed to check existing applications');
         }
 
         const applications: Application[] = await response.json();
+        console.log('Fetched applications:', applications);
         const jobId = Number(params.jobid);
         const alreadyApplied = applications.some((app) => app.jobId === jobId);
         setHasApplied(alreadyApplied);
@@ -98,10 +94,9 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
     checkExistingApplication();
   }, [isAuthenticated, user, params.jobid]);
 
-  // Validate form
+  // Validate resume
   const validateForm = () => {
-    const newErrors: { resume?: string; recaptcha?: string } = {};
-
+    const newErrors: { resume?: string } = {};
     if (!resume) {
       newErrors.resume = 'Resume is required';
     } else if (!resume.type.includes('pdf')) {
@@ -111,34 +106,11 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
     } else if (resume.size > 5 * 1024 * 1024) {
       newErrors.resume = 'Resume file size exceeds 5MB';
     }
-
-    if (!recaptchaToken) {
-      newErrors.recaptcha = 'Please complete the reCAPTCHA verification';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle reCAPTCHA change
-  const handleRecaptchaChange = (token: string | null) => {
-    setRecaptchaToken(token);
-    setErrors((prev) => ({ ...prev, recaptcha: token ? undefined : 'Please complete the reCAPTCHA verification' }));
-  };
-
-  // Handle reCAPTCHA error
-  const handleRecaptchaError = () => {
-    setRecaptchaToken(null);
-    setErrors((prev) => ({ ...prev, recaptcha: 'reCAPTCHA error occurred. Please try again.' }));
-  };
-
-  // Handle reCAPTCHA expiration
-  const handleRecaptchaExpired = () => {
-    setRecaptchaToken(null);
-    setErrors((prev) => ({ ...prev, recaptcha: 'reCAPTCHA expired. Please verify again.' }));
-  };
-
-  // Handle form submission
+  // Handle form submission (application + CV upload)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -168,12 +140,12 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
     setIsSubmitting(true);
 
     try {
-      // Step 1: Submit application with reCAPTCHA token
+      // Step 1: Submit application
       const applicationPayload = {
         jobId: Number(params.jobid),
-        recaptchaToken: recaptchaToken,
         ...(user.jobSeekerId ? { jobSeekerId: user.jobSeekerId } : { technicianId: user.technicianId }),
       };
+      console.log('Submitting application with payload:', applicationPayload);
 
       const applicationResponse = await fetchWithAuth('http://localhost:8088/api/v1/auth/applications', {
         method: 'POST',
@@ -195,6 +167,7 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
       const userType = user.role === 'JOB_SEEKER' ? 'jobseeker' : 'technician';
       formData.append('userId', userId.toString());
       formData.append('userType', userType);
+      console.log('Submitting CV upload with userId:', userId, 'userType:', userType);
 
       const cvResponse = await fetchWithAuth('http://localhost:8088/api/v1/auth/cv/upload', {
         method: 'POST',
@@ -206,17 +179,13 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
         throw new Error(data.message || 'Failed to upload CV');
       }
 
-      toast.success('Application and CV submitted successfully!');
+      const cvResult = await cvResponse.text();
+      toast.success(cvResult);
+      toast.success('Application submitted successfully!');
       router.push(user.role === 'JOB_SEEKER' ? '/Job/Job_Seeker' : '/Job/TECHNICIAN');
     } catch (err) {
       console.error('Submission error:', err);
       toast.error(err instanceof Error ? err.message : 'An error occurred while submitting');
-
-      // Reset reCAPTCHA on error
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-        setRecaptchaToken(null);
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -278,10 +247,7 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
                       id="resume"
                       type="file"
                       accept="application/pdf"
-                      onChange={(e) => {
-                        setResume(e.target.files?.[0] || null);
-                        setErrors((prev) => ({ ...prev, resume: undefined }));
-                      }}
+                      onChange={(e) => setResume(e.target.files?.[0] || null)}
                       className="sr-only"
                     />
                     <label htmlFor="resume" className="flex flex-col items-center justify-center cursor-pointer">
@@ -303,23 +269,6 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
                   {errors.resume && <p className="mt-1 text-sm text-red-600">{errors.resume}</p>}
                 </div>
 
-                {/* reCAPTCHA Widget */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Security Verification <span className="text-red-500">*</span>
-                  </label>
-                  <div className={`inline-block ${errors.recaptcha ? 'border-2 border-red-500 rounded p-1' : ''}`}>
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey={SITE_KEY}
-                      onChange={handleRecaptchaChange}
-                      onErrored={handleRecaptchaError}
-                      onExpired={handleRecaptchaExpired}
-                    />
-                  </div>
-                  {errors.recaptcha && <p className="mt-2 text-sm text-red-600">{errors.recaptcha}</p>}
-                </div>
-
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -337,3 +286,4 @@ export default function ApplyPage({ params: paramsPromise }: { params: Promise<P
     </div>
   );
 }
+// ```
