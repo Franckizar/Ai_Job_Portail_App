@@ -43,14 +43,15 @@ export default function DashboardClientWrapper({ children }: { children: React.R
           <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200/50">
             <div className="flex items-center justify-between px-6 py-4">
               <Link href="/" className="flex items-center gap-3">
-                <Image
+              <h1 className="text-2xl font-bold text-gray-800">Rioduslink</h1>
+                {/* <Image
                   src="/wamb.png"
                   alt="logo"
                   width={250}
                   height={40}
                   className="rounded-lg"
                   priority
-                />
+                /> */}
               </Link>
               <div className="flex-1 flex justify-center">
                 <ModernMenu />
