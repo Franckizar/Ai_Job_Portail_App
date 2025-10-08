@@ -20,7 +20,7 @@
 // declare global {
 //   interface Window {
 //     grecaptcha: any;
-//     onRecaptchaLoad: () => void;
+//     onRecaptchaLoadCallback: () => void;
 //   }
 // }
 
@@ -36,56 +36,74 @@
 //   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 //   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
 //   const recaptchaRef = useRef<HTMLDivElement>(null);
+//   const widgetId = useRef<number | null>(null);
 
-//   const RECAPTCHA_SITE_KEY = '6Lfgqd8rAAAAAOA5TmMaDAQoiqikMixQqEaUq6a8';
+//   const SITE_KEY = '6LcV0o4rAAAAAKX0RVwKLS05y2ZHvZQjNMIq_-CA';
 
 //   // Load reCAPTCHA script
 //   useEffect(() => {
-//     if (document.getElementById('recaptcha-script')) {
-//       if (window.grecaptcha && window.grecaptcha.render) {
-//         setRecaptchaLoaded(true);
-//         renderRecaptcha();
+//     const loadRecaptchaScript = () => {
+//       if (document.getElementById('recaptcha-script')) {
+//         if (window.grecaptcha && window.grecaptcha.render) {
+//           setRecaptchaLoaded(true);
+//           initializeRecaptcha();
+//         }
+//         return;
 //       }
-//       return;
-//     }
 
-//     const script = document.createElement('script');
-//     script.id = 'recaptcha-script';
-//     script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit';
-//     script.async = true;
-//     script.defer = true;
-    
-//     window.onRecaptchaLoad = () => {
-//       setRecaptchaLoaded(true);
-//       renderRecaptcha();
+//       window.onRecaptchaLoadCallback = () => {
+//         setRecaptchaLoaded(true);
+//         initializeRecaptcha();
+//       };
+
+//       const script = document.createElement('script');
+//       script.id = 'recaptcha-script';
+//       script.src = `https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoadCallback&render=explicit`;
+//       script.async = true;
+//       script.defer = true;
+//       document.head.appendChild(script);
 //     };
 
-//     document.head.appendChild(script);
+//     loadRecaptchaScript();
 
 //     return () => {
-//       window.onRecaptchaLoad = () => {};
+//       if (widgetId.current !== null && window.grecaptcha) {
+//         try {
+//           window.grecaptcha.reset(widgetId.current);
+//         } catch (e) {
+//           console.log('Recaptcha cleanup error:', e);
+//         }
+//       }
 //     };
 //   }, []);
 
-//   const renderRecaptcha = () => {
-//     if (recaptchaRef.current && window.grecaptcha && window.grecaptcha.render) {
-//       try {
-//         recaptchaRef.current.innerHTML = '';
-        
-//         window.grecaptcha.render(recaptchaRef.current, {
-//           sitekey: RECAPTCHA_SITE_KEY,
-//           callback: (token: string) => {
-//             setRecaptchaToken(token);
-//             setErrors(prev => ({ ...prev, recaptcha: undefined }));
-//           },
-//           'expired-callback': () => {
-//             setRecaptchaToken(null);
-//             setErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA expired. Please verify again.' }));
-//           },
-//         });
-//       } catch (error) {
-//         console.error('Error rendering reCAPTCHA:', error);
+//   const initializeRecaptcha = () => {
+//     if (!recaptchaRef.current || !window.grecaptcha) return;
+
+//     try {
+//       if (widgetId.current !== null) {
+//         window.grecaptcha.reset(widgetId.current);
 //       }
+
+//       recaptchaRef.current.innerHTML = '';
+
+//       widgetId.current = window.grecaptcha.render(recaptchaRef.current, {
+//         sitekey: SITE_KEY,
+//         callback: (token: string) => {
+//           setRecaptchaToken(token);
+//           setErrors(prev => ({ ...prev, recaptcha: undefined }));
+//         },
+//         'expired-callback': () => {
+//           setRecaptchaToken(null);
+//           setErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA expired. Please verify again.' }));
+//         },
+//         'error-callback': () => {
+//           setRecaptchaToken(null);
+//           setErrors(prev => ({ ...prev, recaptcha: 'reCAPTCHA error occurred. Please try again.' }));
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Error rendering reCAPTCHA:', error);
 //     }
 //   };
 
@@ -256,8 +274,8 @@
 //       toast.error(err instanceof Error ? err.message : 'An error occurred while submitting');
       
 //       // Reset reCAPTCHA on error
-//       if (window.grecaptcha) {
-//         window.grecaptcha.reset();
+//       if (window.grecaptcha && widgetId.current !== null) {
+//         window.grecaptcha.reset(widgetId.current);
 //         setRecaptchaToken(null);
 //       }
 //     } finally {
@@ -321,7 +339,10 @@
 //                       id="resume"
 //                       type="file"
 //                       accept="application/pdf"
-//                       onChange={(e) => setResume(e.target.files?.[0] || null)}
+//                       onChange={(e) => {
+//                         setResume(e.target.files?.[0] || null);
+//                         setErrors(prev => ({ ...prev, resume: undefined }));
+//                       }}
 //                       className="sr-only"
 //                     />
 //                     <label htmlFor="resume" className="flex flex-col items-center justify-center cursor-pointer">
@@ -343,16 +364,18 @@
 //                   {errors.resume && <p className="mt-1 text-sm text-red-600">{errors.resume}</p>}
 //                 </div>
 
-//                 {/* reCAPTCHA */}
+//                 {/* reCAPTCHA Widget */}
 //                 <div>
 //                   <label className="block text-sm font-medium text-gray-700 mb-2">
-//                     Verification <span className="text-red-500">*</span>
+//                     Security Verification <span className="text-red-500">*</span>
 //                   </label>
-//                   <div ref={recaptchaRef} className={errors.recaptcha ? 'border-2 border-red-500 rounded inline-block' : ''}></div>
+//                   <div className={`inline-block ${errors.recaptcha ? 'border-2 border-red-500 rounded p-1' : ''}`}>
+//                     <div ref={recaptchaRef}></div>
+//                   </div>
 //                   {!recaptchaLoaded && (
 //                     <p className="text-sm text-gray-500 mt-2">Loading verification...</p>
 //                   )}
-//                   {errors.recaptcha && <p className="mt-1 text-sm text-red-600">{errors.recaptcha}</p>}
+//                   {errors.recaptcha && <p className="mt-2 text-sm text-red-600">{errors.recaptcha}</p>}
 //                 </div>
 
 //                 <button

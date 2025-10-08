@@ -11,7 +11,7 @@ const ParentPage = () => {
     <div className="h-full bg-white p-4 rounded-md">
       {/* <h1 className="text-2xl font-bold mb-4">Welcome to Your Dashboard</h1>
       <p className="text-gray-600">Here you can find your latest announcements, events, and more.</p> */}
-      <h1 className='text-xl font-semibold'>Schedule (Takam Franck)</h1>
+      <h1 className='text-xl font-semibold'>Schedule (Takam Franc)</h1>
       <BigCalendar/>
     </div>
     </div>
