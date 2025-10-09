@@ -210,12 +210,12 @@ if (existingTokenOpt.isPresent()) {
     passwordResetTokenRepository.save(resetToken);
 }
 
-String resetLink = "https://modest-integral-ibex.ngrok-free.app/Job_portail/Home/test?token=" + token;
+String resetLink = "https://modest-integral-ibex.ngrok-free.app/Forget_password?token=" + token;
 
 // String resetLink = "https://yourdomain.com/reset-password?token=" + token;
 emailService.sendPasswordResetEmail(email, resetLink);
 
-return "Reset email sent";
+return "Reset email sent"; 
    }
 
 //////////////////////////////////////////////////////////////////////

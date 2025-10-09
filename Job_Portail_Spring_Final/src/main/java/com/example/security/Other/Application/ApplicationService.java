@@ -6,6 +6,7 @@ import com.example.security.user.JobSeeker.JobSeeker;
 import com.example.security.user.JobSeeker.JobSeekerRepository;
 import com.example.security.user.Technicien.Technician;
 import com.example.security.user.Technicien.TechnicianRepository;
+import com.example.security.config.EmailService;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class ApplicationService {
     private final JobRepository jobRepository;
     private final JobSeekerRepository jobSeekerRepository;
     private final TechnicianRepository technicianRepository;
+    private final EmailService emailService;
 
 public Application createApplication(ApplicationRequest request) {
 
@@ -38,18 +40,25 @@ public Application createApplication(ApplicationRequest request) {
         Application application = new Application();
         application.setJob(job);
 
+        String applicantName = "";
+        String applicantEmail = "";
+
         // Step 2: Get and set applicant (either job seeker or technician)
         if (request.getJobSeekerId() != null) {
             System.out.println("Received jobSeekerId: " + request.getJobSeekerId());
             JobSeeker jobSeeker = jobSeekerRepository.findById(request.getJobSeekerId())
                     .orElseThrow(() -> new RuntimeException("JobSeeker not found with ID: " + request.getJobSeekerId()));
             application.setJobSeeker(jobSeeker);
+            applicantName = jobSeeker.getFullName();
+            applicantEmail = jobSeeker.getEmail();
             System.out.println("✔️ Job seeker set: " + jobSeeker.getFullName());
         } else if (request.getTechnicianId() != null) {
             System.out.println("Received technicianId: " + request.getTechnicianId());
             Technician technician = technicianRepository.findById(request.getTechnicianId())
                     .orElseThrow(() -> new RuntimeException("Technician not found with ID: " + request.getTechnicianId()));
             application.setTechnician(technician);
+            applicantName = technician.getFullName();
+            applicantEmail = technician.getEmail();
             System.out.println("✔️ Technician set: " + technician.getFullName());
         } else {
             throw new RuntimeException("❌ Either JobSeekerId or TechnicianId must be provided.");
@@ -63,7 +72,34 @@ public Application createApplication(ApplicationRequest request) {
         // Step 4: Save
         Application saved = applicationRepository.save(application);
         System.out.println("✅ Application saved with ID: " + saved.getId());
+
+        // Step 5: Send confirmation email
+        try {
+            String companyName = getCompanyName(job);
+            emailService.sendApplicationConfirmationEmail(
+                applicantEmail,
+                applicantName,
+                job.getTitle(),
+                companyName,
+                saved.getId()
+            );
+            System.out.println("✅ Confirmation email sent to: " + applicantEmail);
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send confirmation email: " + e.getMessage());
+            // Don't throw exception here - application was saved successfully
+        }
+
         return saved;
+    }
+
+    private String getCompanyName(Job job) {
+        if (job.getEnterprise() != null) {
+            return job.getEnterprise().getName();
+        } else if (job.getPersonalEmployer() != null) {
+            return job.getPersonalEmployer().getUser().getFirstname() + " " +
+                   job.getPersonalEmployer().getUser().getLastname();
+        }
+        return "Job Portal Company";
     }
 
     public Application updateApplication(Integer id, Application updatedApplication) {

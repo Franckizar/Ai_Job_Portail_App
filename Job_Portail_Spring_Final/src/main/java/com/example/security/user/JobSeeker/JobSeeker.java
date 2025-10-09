@@ -33,4 +33,8 @@ public class JobSeeker {
     @JoinColumn(name = "cv_id")
     private CV cv;
 
+    public String getEmail() {
+        return user != null ? user.getEmail() : null;
+    }
+
 }
