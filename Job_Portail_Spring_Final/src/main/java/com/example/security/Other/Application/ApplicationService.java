@@ -165,8 +165,57 @@ public List<ApplicationDTO> getApplicationsByTechnicianId(Integer technicianId) 
         public Application updateApplicationStatus(Integer id, Application.ApplicationStatus newStatus) {
         Application application = applicationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found with ID: " + id));
+        
+        Application.ApplicationStatus oldStatus = application.getStatus();
         application.setStatus(newStatus);
-        return applicationRepository.save(application);
+        Application savedApplication = applicationRepository.save(application);
+        
+        // Send email notification if status changed to ACCEPTED or REJECTED
+        if (oldStatus != newStatus && (newStatus == Application.ApplicationStatus.ACCEPTED || newStatus == Application.ApplicationStatus.REJECTED)) {
+            try {
+                String applicantName = "";
+                String applicantEmail = "";
+                
+                // Get applicant details
+                if (application.getJobSeeker() != null) {
+                    applicantName = application.getJobSeeker().getFullName();
+                    applicantEmail = application.getJobSeeker().getEmail();
+                } else if (application.getTechnician() != null) {
+                    applicantName = application.getTechnician().getFullName();
+                    applicantEmail = application.getTechnician().getEmail();
+                }
+                
+                if (applicantEmail != null && !applicantEmail.isEmpty()) {
+                    String companyName = getCompanyName(application.getJob());
+                    String jobTitle = application.getJob().getTitle();
+                    
+                    if (newStatus == Application.ApplicationStatus.ACCEPTED) {
+                        emailService.sendApplicationAcceptanceEmail(
+                            applicantEmail,
+                            applicantName,
+                            jobTitle,
+                            companyName,
+                            application.getId()
+                        );
+                        System.out.println("✅ Acceptance email sent to: " + applicantEmail);
+                    } else if (newStatus == Application.ApplicationStatus.REJECTED) {
+                        emailService.sendApplicationRejectionEmail(
+                            applicantEmail,
+                            applicantName,
+                            jobTitle,
+                            companyName,
+                            application.getId()
+                        );
+                        System.out.println("✅ Rejection email sent to: " + applicantEmail);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send status update email: " + e.getMessage());
+                // Don't throw exception here - status update was successful
+            }
+        }
+        
+        return savedApplication;
     }
 
  public long getSubmittedApplicationsCount() {

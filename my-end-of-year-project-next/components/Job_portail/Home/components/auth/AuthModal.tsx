@@ -1,3 +1,4 @@
+// ```typescriptreact
 import React, { useState } from "react";
 import {
   Dialog,
@@ -18,9 +19,7 @@ import {
   Mail,
   Lock,
   User,
-  Building2,
   UserCheck,
-  Wrench,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -36,7 +35,7 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-type UserRole = "job_seeker" | "technician" | "recruiter" | "enterprise";
+type UserRole = "job_seeker" | "recruiter";
 type AuthView =
   | "login"
   | "register"
@@ -78,19 +77,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     role: "job_seeker" as UserRole,
   });
 
-  
   const roleOptions = [
     { value: "JOB_SEEKER", label: "Job Seeker", description: "Find opportunities", icon: User },
-    { value: "TECHNICIAN", label: "Technician", description: "Technical roles", icon: Wrench },
     { value: "PERSONAL_EMPLOYER", label: "Recruiter", description: "Hire talent", icon: UserCheck },
-    { value: "ENTERPRISE", label: "Enterprise", description: "Business solutions", icon: Building2 },
-
-    //   ADMIN,
-    // TECHNICIAN,
-    // JOB_SEEKER,
-    // ENTERPRISE,
-    // UNKNOWN,
-    // PERSONAL_EMPLOYER
   ];
 
   const validatePassword = (password: string) => {
@@ -157,43 +146,42 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   const handleRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError('');
-  setSuccess('');
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
 
-  if (registerData.password !== registerData.confirmPassword) {
-    setError('Passwords do not match');
-    setIsLoading(false);
-    return;
-  }
-
-  if (!passwordValidation.isValid) {
-    setError('Please ensure your password meets all requirements');
-    setIsLoading(false);
-    return;
-  }
-
-  try {
-    const success = await register(
-      registerData.email,
-      registerData.password,
-      registerData.firstName,
-      registerData.lastName,
-      registerData.role // ✅ matches UserRole
-    );
-
-    if (success) {
-      setCurrentView('verify-email');
-      setSuccess('Account created! Please check your email for verification.');
+    if (registerData.password !== registerData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
     }
-  } catch (err: any) {
-    setError(err.message || 'Registration failed. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
 
+    if (!passwordValidation.isValid) {
+      setError('Please ensure your password meets all requirements');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const success = await register(
+        registerData.email,
+        registerData.password,
+        registerData.firstName,
+        registerData.lastName,
+        registerData.role
+      );
+
+      if (success) {
+        setCurrentView('verify-email');
+        setSuccess('Account created! Please check your email for verification.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -518,7 +506,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                             />
                             <Label
                               htmlFor={`reg-${role.value}`}
-                              className="flex flex-col items-center gap-1 p-2 border-2 border-[#C3EBFA] rounded-md cursor-pointer hover:border-[#7DD3FC] peer-checked:border-[#7DD3FC] peer-checked:bg-[#EDF9FD] transition-all"
+                              className={cn(
+                                "flex flex-col items-center gap-1 p-2 border-2 rounded-md cursor-pointer transition-all",
+                                registerData.role === role.value
+                                  ? "border-[#7DD3FC] bg-[#EDF9FD] text-[#1F2937]"
+                                  : "border-[#C3EBFA] hover:border-[#7DD3FC]"
+                              )}
                             >
                               <Icon className="h-4 w-4 text-[#6B7280]" />
                               <span className="text-xs font-medium text-[#1F2937] text-center">
@@ -701,3 +694,4 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     </Dialog>
   );
 }
+// ```

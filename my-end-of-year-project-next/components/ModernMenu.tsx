@@ -68,6 +68,7 @@ const ModernMenu = () => {
         break;
       case "TECHNICIAN":
         dashboardPath = "/Job/Technician";
+        // dashboardPath = "/Job/Job_Seeker";
         break;
       case "JOB_SEEKER":
         dashboardPath = "/Job/Job_Seeker";
@@ -131,14 +132,14 @@ const ModernMenu = () => {
       icon: <Users className="w-4 h-4" />,
       label: "Applications",
       href: "/Job/ApplicationSeeker",
-      visible: ["JOB_SEEKER"],
+      visible: ["JOB_SEEKER","TECHNICIAN"],
       onClick: () => handleNavigation("/Job/ApplicationSeeker"),
     },
     {
       icon: <Users className="w-4 h-4" />,
       label: "cv",
       href: "/Job/test",
-      visible: ["JOB_SEEKER"],
+      visible: ["JOB_SEEKER","TECHNICIAN"],
       onClick: () => handleNavigation("/Job/test"),
     },
    {
@@ -190,13 +191,13 @@ const ModernMenu = () => {
     //   visible: ["PERSONAL_EMPLOYER"],
     //   onClick: () => handleNavigation("/Job/list/dash"),
     // },
-    {
-      icon: <Users className="w-4 h-4" />,
-      label: "Test B",
-      href: "/Job/list/dashL",
-      visible: ["TECHNICIAN"],
-      onClick: () => handleNavigation("/Job/list/dashL"),
-    },
+    // {
+    //   icon: <Users className="w-4 h-4" />,
+    //   label: "Test B",
+    //   href: "/Job/list/dashL",
+    //   visible: ["TECHNICIAN"],
+    //   onClick: () => handleNavigation("/Job/list/dashL"),
+    // },
     {
       icon: <Users className="w-4 h-4" />,
       label: "Subscriptions",

@@ -77,4 +77,76 @@ public class EmailService {
         message.setText(emailBody);
         javaMailSender.send(message);
     }
+
+    public void sendApplicationAcceptanceEmail(String toEmail, String applicantName, String jobTitle, String companyName, Integer applicationId) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("takamarthur3@gmail.com");
+        message.setTo(toEmail);
+        message.setSubject("Congratulations! Your Application Has Been Accepted - " + jobTitle);
+        
+        String emailBody = String.format(
+            "Dear %s,\n\n" +
+            "Congratulations! We are delighted to inform you that your application has been ACCEPTED.\n\n" +
+            "Application Details:\n" +
+            "- Position: %s\n" +
+            "- Company: %s\n" +
+            "- Application ID: #%d\n" +
+            "- Status Updated: %s\n\n" +
+            "What's Next?\n" +
+            "Our HR team will contact you within the next 2-3 business days to discuss the next steps in the hiring process. " +
+            "This may include scheduling interviews, discussing salary expectations, or providing additional information about the role.\n\n" +
+            "Please ensure your contact information is up to date and be prepared to respond promptly to our communications.\n\n" +
+            "We are excited about the possibility of having you join our team and look forward to working with you!\n\n" +
+            "Congratulations once again!\n\n" +
+            "Best regards,\n" +
+            "The Hiring Team\n" +
+            "%s\n" +
+            "Job Portal System",
+            applicantName,
+            jobTitle,
+            companyName,
+            applicationId,
+            java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm")),
+            companyName
+        );
+        
+        message.setText(emailBody);
+        javaMailSender.send(message);
+    }
+
+    public void sendApplicationRejectionEmail(String toEmail, String applicantName, String jobTitle, String companyName, Integer applicationId) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("takamarthur3@gmail.com");
+        message.setTo(toEmail);
+        message.setSubject("Application Update - " + jobTitle);
+        
+        String emailBody = String.format(
+            "Dear %s,\n\n" +
+            "Thank you for your interest in the %s position at %s and for taking the time to apply.\n\n" +
+            "Application Details:\n" +
+            "- Position: %s\n" +
+            "- Company: %s\n" +
+            "- Application ID: #%d\n" +
+            "- Status Updated: %s\n\n" +
+            "After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.\n\n" +
+            "This decision was not easy, as we received many qualified applications. We encourage you to continue exploring opportunities with us in the future, as we are always looking for talented individuals.\n\n" +
+            "We wish you the best of luck in your job search and future career endeavors.\n\n" +
+            "Thank you again for your interest in our company.\n\n" +
+            "Best regards,\n" +
+            "The Hiring Team\n" +
+            "%s\n" +
+            "Job Portal System",
+            applicantName,
+            jobTitle,
+            companyName,
+            jobTitle,
+            companyName,
+            applicationId,
+            java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm")),
+            companyName
+        );
+        
+        message.setText(emailBody);
+        javaMailSender.send(message);
+    }
 }

@@ -62,4 +62,3 @@ public interface RatingRepository extends JpaRepository<Rating, Integer> {
     @Query("SELECT r FROM Rating r WHERE r.ratedUser = :user ORDER BY r.createdAt DESC")
     List<Rating> findRatingsForUserWithLimit(@Param("user") User user, org.springframework.data.domain.Pageable pageable);
 }
-}

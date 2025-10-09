@@ -38,7 +38,7 @@ export function Header() {
   const navigationItems = [
     { key: 'jobs', label: 'Find Jobs', icon: Briefcase, href: '/Job_portail/Find_Jobs' },
     { key: 'community', label: 'Community', href: '/Job_portail/Community' },
-    // { key: 'QR', label: 'QR_code', href: '/Job_portail/QR' },
+    { key: 'QR', label: 'QR_code', href: '/Job_portail/QR' },
     { key: 'Ratings', label: 'Ratings', href: '/Job_portail/Ratings' },
     { key: 'Subscription', label: 'Subscription', href: '/Job_portail/Subscription' },
     { key: 'about', label: 'About Us', href: '/Job_portail/About_Us' },
